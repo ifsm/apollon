@@ -1,112 +1,171 @@
-class PitchClassSom:
-    def __init__(self, dims=(10, 10, 3), eta=.8, nh=5, metric='eucledian'):
-        """
-        Parameter:
-            dims:    tripel (nx, ny, nw), mit
-                     nx == Anzahl der Neuronen auf der x-Achse
-                     ny == Anzahl der Neuronen auf der y-Achse
-                     nw == Dimension der Feature-Vektoren
+#!python3
+# -*- coding: utf-8 -*-
 
-            eta:     Startwert für die Lernrate
+# apollon/som/som.py
+# SelfOrganizingMap module
+#
 
-            nh:      Startwert für den Nachbarschaftsradius
+import numpy as _np
+from scipy import _stats
+from scipy.spatial import distance as _distance
 
-            metric:  Name der verwendeten Metrik
+from utilities import decrease_linear # as _decrease_linear
+from utilities import decrease_expo # as _decrease_expo
 
+class _som_base:
 
-        Wir modellieren die Karte zwei-dimensionale Array, wobei die Zeilen die Neuronen
-        darstellen und die Spalten die einzelnen Elemente des dazu gehörenden
-        Gewichtsvektors. Beispiel:
+    def __init__(self, dims=(10, 10, 3), eta=.8, nh=5,
+                 metric='euclidean', init_distr='simplex'):
 
-                 [.....
-                   w1  w2  w3
-        Neuron 1  [.5, .6, .9],
-        Neuron 2  [.3, .2, .1]
-                 .......]
+        # check dimensions
+        for d in dims:
+            if not isinstance(d, int) or not d >= 1:
+                raise ValueError('Dimensions must be integer > 0.')
 
-        Zusätzlich sollen die Gewichte automatische anhand einer uniformen
-        Verteilung initialisiert werden.
-        """
-        # wir seichern die eingegebenen Dimensionen als Eigenschaft (member) des SOM
         self.shape = dims
-        self.center = dims[0]//2, dims[1]//2
+        self.dx = self.shape[0]
+        self.dy = self.shape[1]
+        self.dw = self.shape[2]
+        self.n_N = self.dx * self.dy    # number of neurons
 
-        self.init_eta = eta
-        self.init_rnh = nh
+        self.center = self.dx // 2, self.dy // 2
 
-        self.n_N = self.shape[0] * self.shape[1]    # Hilfsvariable für die Anzahl der Neuronen
+        # check parameters
+        if 0 <= eta <= 1.:
+            self.init_eta = eta
+        else:
+            raise ValueError('eta not in [0, 1]')
 
-        # Initialisierung der Karte
-        self.lattice = np.random.uniform(0, 1, size=(self.n_N, self.shape[2]))
+        if isinstance(nh, int) and nh > 1:
+            self.init_nhr = nh
+        else:
+            raise ValueError('Neighbourhood radius must be int > 0.')
 
-        # Initialisierung der activation map
-        self._activation_map = np.zeros(self.n_N)
+        if metric in _distance.__all__:
+            self.metric = metric
+        else:
+            raise ValueError('Unknown metric.')
 
-        # grid data
-        self.grid = dstack(mgrid[0:dims[0], 0:dims[1]])
+        # Init weights
+        np.random.seed(1)
+
+        if init_distr == 'uniform':
+            self.lattice = np.random.uniform(0, 1, size=(self.n_N, self.dw))
+        elif init_distr == 'simplex':
+            self.lattice = stats.dirichlet.rvs([1] * self.dw, self.n_N)
+
+        # Allocate array for winner histogram
+        # TODO: add array to collect for every winner the correspondig inp vector.
+        self.whist = np.zeros(self.n_N)
+
+        # grid data for neighbourhood calculation
+        self._grid = dstack(mgrid[0:dims[0], 0:dims[1]])
 
 
-    def linear_decrease(self, sw, c_it, N_it):
-        """Linearer Abfall
+    def get_winners(self, data, argax=1):
+        # TODO: if the distance between an input vector and more than one lattice
+        #       neuro is the same, choose winner randomly.
+        if data.ndim == 1:
+            d = _distance.cdist(data[None, :], self.lattice, metric=self.metric)
+            return np.argmin(d)
+        elif data.ndim == 2:
+            ds = _distance.cdist(data, self.lattice, metric=self.metric)
+            return np.argmin(ds, axis=argax)
+        else:
+            raise ValueError('Wrong dimension of input data: {}'.format(data.ndim))
 
-        Params:
-            sw:     Startwert
-            c_it:   aktuelle Iteration
-            N_Nit:  Gesamtzahl der Interationen
-        """
-        return sw - sw * c_it / N_it
 
-    def exponential_decrease(self, sw, c_it, N_it, slope=1):
-        """Exponentieller Abfall.
+    def _neighbourhood(self, point, nhr):
+        var = stats.multivariate_normal(mean=point, cov=((nhr, 0), (0, nhr)))
+        out = var.pdf(self._grid)
+        return (out / np.max(out)).reshape(self.n_N, 1)
 
-        Params:
-            sw:     Startwert
-            c_it:   aktuelle Iteration
-            N_Nit:  Gesamtzahl der Interationen
-            slope:  Kontrolliert die Steilheit der Kurve
-        """
-        return np.exp(-c_it * slope / N_it) * sw
 
-    def eucledian_distance(self, vA, vB):
-        """Wir gehen davon aus, dass vA und vB numpy arrays sind."""
-        return np.sqrt(((vA-vB)**2).sum())
+    def plot_whist(self):
+        # TODO: integrate aplot._new_figure()
+        plt.imshow(self.whist.reshape(self.dx, self.dy),
+               vmin=0, cmap='Greys', interpolation='None')
+        # TODO: use decorator of aplot instead for mode switching.
+        self._switchInteractive()
 
-    def plot_activation_map(self):
-        plt.imshow(self._activation_map.reshape(self.shape[0], self.shape[1]),
-                   vmin=0, cmap='Greys',
-                   interpolation='None')
+
+    def plot_umatrix(self, w=1, ax=None):
+        # TODO: integrate aplot._new_figure()
+        udm = umatrix(self.lattice, self.dx, self.dy, w=w)
+        if ax is None:
+            ax = plt.gca()
+        ax.imshow(udm)
+        # TODO: use decorator of aplot instead for mode switching.
+        self._switchInteractive()
+
+
+    @staticmethod
+    def _switchInteractive():
         if not plt.isinteractive():
             plt.show()
 
-    def get_winners(self, data):
-        return np.argmin(distance.cdist(data, self.lattice), axis=1)
+    def calibrate(self, data, targets):
+        '''Retrieve the best matching unit for every element
+           in `data` and mark it with the corresponding target value.
+        '''
+        bmu = self.get_winners(data)
+        x, y = _np.unravel_index(bmu, (self.shape[0], self.shape[1]))
+        fig, ax = plt.subplots(1)
+        self.plot_umatrix(ax=ax)
+        # TODO: align text to center of rects of umatrix plot
+        for i,j,t in zip(x,y, targets):
+            ax.text(j,i,t)
+        # TODO: use decorator of aplot instead for mode switching.
+        self._switchInteractive()
 
-    def neighbourhood(self, point, r_nh):
-        var = stats.multivariate_normal(mean=point, cov=((r_nh, 0), (0, r_nh)))
-        out = var.pdf(self.grid)
-        return (out / np.max(out)).reshape(self.n_N, 1)
+    # TODO: does not work
+    def cluster(self, data, targets):
+        '''Retriev the best matching element of data for every
+           map unit and save the corresponding target value in a
+           new array.'''
 
-    def train(self, data, N_it):
-        for i in range(N_it):
-            c_eta = self.linear_decrease(self.init_eta, i, N_it)
-            c_rnh = self.exponential_decrease(self.init_rnh, i, N_it)
+        out = _np.zeros(self.n_N)
+        bmiv = self.get_winners(data, argax=0)
+        out[bmiv] = targets[bmiv]
+        imshow(out.reshape(self.dx, self.dy))
+        #return out
+
+
+class SelfOrganizingMap(_som_base):
+    def __init__(self, dims=(10, 10, 3), eta=.8, nh=5,
+                 metric='euclidean', init_distr='simplex'):
+        super().__init__(dims, eta, nh, metric, init_distr)
+
+
+
+    def train_basic(self, data, N_iter, feed_rnd=True):
+
+        if feed_rnd:
+            data_set = _np.random.permutation(data)
+        else:
+            data_set = data
+
+        for (c_iter, c_eta, c_nhr) in \
+            zip(range(N_iter),
+                decrease_linear(self.init_eta, N_iter),
+                decrease_linear(self.init_nhr, N_iter)):
 
             # get bmus
-            bm_units = self.get_winners(data)
+            for fv in data_set:
+                bm_units = self.get_winners(fv)
 
-            # update activation map
-            self._activation_map[bm_units] += 1
+                # update activation map
+                self.whist[bm_units] += 1
 
+                # get bmu's multi index
+                bmu_midx = unravel_index(bm_units, (self.shape[0], self.shape[1]))
 
-            b_idx = zip(*unravel_index(bm_units, (self.shape[0], self.shape[1])))
+                # calculate neighbourhood over bmu given current radius
+                c_nh = self._neighbourhood(bmu_midx, c_nhr)
 
-            for bi, di in zip(b_idx, data):
-                c_nh = self.neighbourhood(bi, c_rnh)
-                self.lattice += c_eta * c_nh * (di - self.lattice)
+                # update lattice
+                self.lattice += c_eta * c_nh * (fv - self.lattice)
 
-    def calibrate(self, data):
-        bmu = self.get_winners(data)
-        return unravel_index(bmu, (self.shape[0], self.shape[1]))
 
     def map_response(self, data_i):
-        return distance.cdist(data_i[None, :], self.lattice)
+        return _distance.cdist(data_i[None, :], self.lattice)

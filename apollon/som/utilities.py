@@ -70,3 +70,33 @@ def distance_map3d(som, w=1, ax=None, plotit=True, **kwargs):
         ax.plot_surface(X, Y, _np.flipud(out), vmin=0, vmax=1,
                         cstride=1, rstride=1, **kwargs)
     return out
+
+
+def decrease_linear(start, step, stop=1):
+    '''Linearily decrease `start`  in `step` steps to `stop`.'''
+    a = (stop - start) / (step-1)
+    for x in range(step):
+        yield a * x + start
+
+
+def decrease_expo(start, step, stop=1):
+    '''Exponentially decrease `start`  in `step` steps to `stop`.'''
+    b = np.log(stop / start) / (step-1)
+    for x in range(step):
+        yield start * exp(b*x)
+
+
+def umatrix(lattice, dx, dy, metric='euclidean', w=1, normed=True):
+    dxy = dx, dy
+    out = zeros(dxy)
+
+    for i in ndindex(dxy):
+        nb = _rect_neighbourhood(dxy, i, w=1)
+        i_flat = ravel_multi_index(i, dxy)
+        out[i] = distance.cdist(lattice[i_flat, None],
+                                lattice[~nb.mask.flatten()],
+                                metric=metric, p=2).sum()
+    if norm:
+        return out / np.max(out)
+    else:
+        return out
