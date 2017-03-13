@@ -151,6 +151,22 @@ class _som_base:
             ax.imshow(self._cmap.reshape(self.dx, self.dy))
             return ax
 
+    @switch_interactive
+    def plot_variables(self, **kwargs):
+        # TODO: add docstring
+
+        x = int(_np.sqrt(self.dw))
+        if x == 1:
+            y = self.dw
+        else:
+            y = self.dw - x
+
+        fig, ax = _new_figure(**kwargs)
+        for i in range(1, self.dw+1):
+            ax = fig.add_subplot(x, y, i)
+            ax.imshow(self.lattice[:,i-1].reshape(self.dx, self.dy))
+            ax.set_title(str(i))
+
 
 class SelfOrganizingMap(_som_base):
     def __init__(self, dims=(10, 10, 3), eta=.8, nh=5,
