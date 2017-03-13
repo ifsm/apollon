@@ -85,36 +85,45 @@ class _som_base:
 
     @switch_interactive
     def plot_whist(self, ax=None):
+        # TODO: add docstring
         if ax is None:
             fig, ax = _new_figure()
         ax.imshow(self.whist.reshape(self.dx, self.dy),
                vmin=0, cmap='Greys', interpolation='None')
+        return ax
 
 
     @switch_interactive
-    def plot_umatrix(self, w=1, ax=None):
-        udm = _utilities.umatrix(self.lattice, self.dx, self.dy, w=w)
+    def plot_umatrix(self, w=1, ax=None, **kwargs):
+        # TODO: add docstring
         if ax is None:
-            fig, ax = _new_figure()
+            fig, ax = _new_figure(xlim=(0, self.dx),
+                                  ylim=(0, self.dy), **kwargs)
+        udm = _utilities.umatrix(self.lattice, self.dx, self.dy, w=w)
         ax.imshow(udm)
+        return (ax, udm)
 
 
-    def calibrate(self, data, targets):
+    @switch_interactive
+    def calibrate(self, data, targets, **kwargs):
+        # TODO: add params to docstring
         '''Retrieve the best matching unit for every element
            in `data` and mark it with the corresponding target value.
         '''
+        ax, udm = self.plot_umatrix(**kwargs)
         bmu = self.get_winners(data)
-        x, y = __np.unravel_index(bmu, (self.shape[0], self.shape[1]))
-        fig, ax = plt.subplots(1)
-        self.plot_umatrix(ax=ax)
-        # TODO: align text to center of rects of umatrix plot
-        for i,j,t in zip(x,y, targets):
-            ax.text(j,i,t)
-        # TODO: use decorator of aplot instead for mode switching.
-        self._switchInteractive()
+        x, y = _np.unravel_index(bmu, (self.shape[0], self.shape[1]))
+
+        for i, j, t in zip(x, y, targets):
+            ax.text (j, i, t,
+                    horizontalalignment='center',
+                    verticalalignment='center')
+        return (ax, udm, (x,y))
+
 
     # TODO: does not work
     def cluster(self, data, targets):
+        # TODO: add params to docstring
         '''Retriev the best matching element of data for every
            map unit and save the corresponding target value in a
            new array.'''

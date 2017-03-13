@@ -28,14 +28,17 @@ from apollon.apollon_globals import plot_params as _plot_params
 from apollon.decorators import switch_interactive
 
 
-def _new_figure(spines='nice', **kwargs):
+def _new_figure(spines='nice', xlim=None, ylim=None, dp=(10, 10), **kwargs):
     '''Create a new figure with a single axis and fancy spines
     Params:
-        spines    (str) choose between "nice" and "standard" spines
-        **kwargs   pass all keywords to matplotlib.figure
+        spines    (str) Plot mode for spines. Eiterh 'nice' or 'standard'.
+        xlim      (tuple) Data extent on abscissae.
+        ylim      (tuple) Data extent on ordinate.
+        dp        (tuple) Distance of ticks in percet of data extent.
+        **kwargs  pass all keywords to matplotlib.figure.
 
     Return:
-        (tuple)    A figure and a AxesSubplot instance
+        (tuple)    A figure and a AxesSubplot instance.
     '''
     fig = _plt.figure(**kwargs)
     ax = fig.add_subplot(1, 1, 1)
@@ -49,7 +52,18 @@ def _new_figure(spines='nice', **kwargs):
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
 
-        # Show tick on left and bottom spines, only
+        # Set ticks
+        if xlim is not None:
+            d = (xlim[1] - xlim[0]) * dp[0] / 100
+            xt = _np.arange(xlim[0], xlim[1]+1, d)
+            ax.set_xticks(xt)
+
+        if ylim is not None:
+            d = (ylim[1] - ylim[0]) * dp[1] / 100
+            yt = _np.arange(ylim[0], ylim[1]+1, d)
+            ax.set_yticks(yt)
+
+        # Show ticks on left and bottom spines, only
         ax.xaxis.set_ticks_position('bottom')
         ax.yaxis.set_ticks_position('left')
         ax.axison = True
@@ -57,7 +71,8 @@ def _new_figure(spines='nice', **kwargs):
 
     elif spines == 'standard':
         return fig, ax
-
+    else:
+        raise ValueError('Unknown spine plot mode: {}'.format(spines))
 
 @switch_interactive
 def fourplot(data, lag=1, standardized=True):
