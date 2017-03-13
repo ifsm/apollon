@@ -63,6 +63,10 @@ class _som_base:
         # grid data for neighbourhood calculation
         self._grid = _np.dstack(_np.mgrid[0:dims[0], 0:dims[1]])
 
+        # calibration
+        self.isCalibrated = False
+        self._cmap = None
+
 
     def get_winners(self, data, argax=1):
         # TODO: if the distance between an input vector and more than one lattice
@@ -81,6 +85,16 @@ class _som_base:
         var = _stats.multivariate_normal(mean=point, cov=((nhr, 0), (0, nhr)))
         out = var.pdf(self._grid)
         return (out / _np.max(out)).reshape(self.n_N, 1)
+
+
+    def calibrate(self, data, targets):
+        '''Retriev for every map unit the best matching vector of the input
+           data set. Save its target value at the map units position on a
+           new array called cmap (calibrate map).
+        '''
+        bmiv = self.get_winners(data, argax=0)
+        self._cmap = targets[bmiv]
+        self.isCalibrated = True
 
 
     @switch_interactive
@@ -106,10 +120,11 @@ class _som_base:
 
 
     @switch_interactive
-    def calibrate(self, data, targets, interp='None', **kwargs):
+    def plot_dataclass(self, data, targets, interp='None', **kwargs):
         # TODO: add params to docstring
-        '''Retrieve the best matching unit for every element
-           in `data` and mark it with the corresponding target value.
+        '''Represent the input data on the map by retrieving the best
+           matching unit for every elementin `data`. Mark each map unit
+           with the corresponding target value.
         '''
         ax, udm = self.plot_umatrix(interp=interp, **kwargs)
         bmu = self.get_winners(data)
@@ -123,18 +138,18 @@ class _som_base:
         return (ax, udm, (x,y))
 
 
-    # TODO: does not work
-    def cluster(self, data, targets):
+    @switch_interactive
+    def plot_calibration(self, ax=None, **kwargs):
         # TODO: add params to docstring
-        '''Retriev the best matching element of data for every
-           map unit and save the corresponding target value in a
-           new array.'''
-
-        out = __np.zeros(self.n_N)
-        bmiv = self.get_winners(data, argax=0)
-        out[bmiv] = targets[bmiv]
-        imshow(out.reshape(self.dx, self.dy))
-        #return out
+        '''Plot calibrated map.'''
+        if not self.isCalibrated:
+            raise ValueError('Map not calibrated.')
+        else:
+            if ax is None:
+                fig, ax = _new_figure(xlim=(0, self.dx),
+                                      ylim=(0, self.dy), **kwargs)
+            ax.imshow(self._cmap.reshape(self.dx, self.dy))
+            return ax
 
 
 class SelfOrganizingMap(_som_base):
