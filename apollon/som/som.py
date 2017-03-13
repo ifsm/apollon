@@ -84,38 +84,40 @@ class _som_base:
 
 
     @switch_interactive
-    def plot_whist(self, ax=None):
+    def plot_whist(self, interp='None', ax=None, **kwargs):
         # TODO: add docstring
         if ax is None:
-            fig, ax = _new_figure()
+            fig, ax = _new_figure(xlim=(0, self.dx),
+                                  ylim=(0, self.dy), **kwargs)
         ax.imshow(self.whist.reshape(self.dx, self.dy),
-               vmin=0, cmap='Greys', interpolation='None')
+               vmin=0, cmap='Greys', interpolation=interp)
         return ax
 
 
     @switch_interactive
-    def plot_umatrix(self, w=1, ax=None, **kwargs):
+    def plot_umatrix(self, w=1, interp='None', ax=None, **kwargs):
         # TODO: add docstring
         if ax is None:
             fig, ax = _new_figure(xlim=(0, self.dx),
                                   ylim=(0, self.dy), **kwargs)
         udm = _utilities.umatrix(self.lattice, self.dx, self.dy, w=w)
-        ax.imshow(udm)
+        ax.imshow(udm, interpolation=interp)
         return (ax, udm)
 
 
     @switch_interactive
-    def calibrate(self, data, targets, **kwargs):
+    def calibrate(self, data, targets, interp='None', **kwargs):
         # TODO: add params to docstring
         '''Retrieve the best matching unit for every element
            in `data` and mark it with the corresponding target value.
         '''
-        ax, udm = self.plot_umatrix(**kwargs)
+        ax, udm = self.plot_umatrix(interp=interp, **kwargs)
         bmu = self.get_winners(data)
         x, y = _np.unravel_index(bmu, (self.shape[0], self.shape[1]))
 
+        fd = {'color':'#cccccc'}
         for i, j, t in zip(x, y, targets):
-            ax.text (j, i, t,
+            ax.text (j, i, t, fontdict=fd,
                     horizontalalignment='center',
                     verticalalignment='center')
         return (ax, udm, (x,y))
