@@ -18,7 +18,8 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as _np
 from scipy.spatial import distance as _distance
 
-from apollon.som.topologies import _rect_neighbourhood
+import apollon.som.topologies as _topologies
+
 
 def activation_map(som, **kwargs):
     ax = _plt.gca()
@@ -96,17 +97,17 @@ def decrease_expo(start, step, stop=1):
             yield start * _np.exp(b*x)
 
 
-def umatrix(lattice, dx, dy, metric='euclidean', w=1, normed=True):
+def umatrix(lattice, dx, dy, metric='euclidean', w=1, isNormed=True):
     dxy = dx, dy
-    out = zeros(dxy)
+    out = _np.zeros(dxy)
 
-    for i in ndindex(dxy):
-        nb = _rect_neighbourhood(dxy, i, w=1)
-        i_flat = ravel_multi_index(i, dxy)
-        out[i] = distance.cdist(lattice[i_flat, None],
+    for i in _np.ndindex(dxy):
+        nb = _topologies.rect_neighbourhood(dxy, i, w=1)
+        i_flat = _np.ravel_multi_index(i, dxy)
+        out[i] = _distance.cdist(lattice[i_flat, None],
                                 lattice[~nb.mask.flatten()],
                                 metric=metric, p=2).sum()
-    if norm:
+    if isNormed:
         return out / _np.max(out)
     else:
         return out

@@ -9,8 +9,8 @@ import numpy as _np
 from scipy import stats as _stats
 from scipy.spatial import distance as _distance
 
-from apollon.som.utilities import decrease_linear # as _decrease_linear
-from apollon.som.utilities import decrease_expo # as _decrease_expo
+from apollon.som import utilities as _utilities
+
 
 class _som_base:
 
@@ -52,14 +52,14 @@ class _som_base:
         if init_distr == 'uniform':
             self.lattice = _np.random.uniform(0, 1, size=(self.n_N, self.dw))
         elif init_distr == 'simplex':
-            self.lattice = stats.dirichlet.rvs([1] * self.dw, self.n_N)
+            self.lattice = _stats.dirichlet.rvs([1] * self.dw, self.n_N)
 
         # Allocate array for winner histogram
         # TODO: add array to collect for every winner the correspondig inp vector.
         self.whist = _np.zeros(self.n_N)
 
         # grid data for neighbourhood calculation
-        self._grid = dstack(mgrid[0:dims[0], 0:dims[1]])
+        self._grid = _np.dstack(_np.mgrid[0:dims[0], 0:dims[1]])
 
 
     def get_winners(self, data, argax=1):
@@ -76,7 +76,7 @@ class _som_base:
 
 
     def _neighbourhood(self, point, nhr):
-        var = stats.multivariate_normal(mean=point, cov=((nhr, 0), (0, nhr)))
+        var = _stats.multivariate_normal(mean=point, cov=((nhr, 0), (0, nhr)))
         out = var.pdf(self._grid)
         return (out / _np.max(out)).reshape(self.n_N, 1)
 
@@ -91,9 +91,9 @@ class _som_base:
 
     def plot_umatrix(self, w=1, ax=None):
         # TODO: integrate aplot._new_figure()
-        udm = umatrix(self.lattice, self.dx, self.dy, w=w)
+        udm = _utilities.umatrix(self.lattice, self.dx, self.dy, w=w)
         if ax is None:
-            ax = plt.gca()
+            ax = _plt.gca()
         ax.imshow(udm)
         # TODO: use decorator of aplot instead for mode switching.
         self._switchInteractive()
@@ -141,14 +141,14 @@ class SelfOrganizingMap(_som_base):
     def train_basic(self, data, N_iter, feed_rnd=True):
 
         if feed_rnd:
-            data_set = __np.random.permutation(data)
+            data_set = _np.random.permutation(data)
         else:
             data_set = data
 
         for (c_iter, c_eta, c_nhr) in \
             zip(range(N_iter),
-                decrease_linear(self.init_eta, N_iter),
-                decrease_linear(self.init_nhr, N_iter)):
+                _utilities.decrease_linear(self.init_eta, N_iter),
+                _utilities.decrease_linear(self.init_nhr, N_iter)):
 
             # get bmus
             for fv in data_set:
@@ -158,7 +158,7 @@ class SelfOrganizingMap(_som_base):
                 self.whist[bm_units] += 1
 
                 # get bmu's multi index
-                bmu_midx = unravel_index(bm_units, (self.shape[0], self.shape[1]))
+                bmu_midx = _np.unravel_index(bm_units, (self.shape[0], self.shape[1]))
 
                 # calculate neighbourhood over bmu given current radius
                 c_nh = self._neighbourhood(bmu_midx, c_nhr)

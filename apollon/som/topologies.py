@@ -16,7 +16,7 @@ Functions:
 import numpy as _np
 
 
-def _rect_neighbourhood(mat_shape, point, w=1):
+def rect_neighbourhood(mat_shape, point, w=1):
     if point[0] - w < 0:
         rows1 = 0
     else:
