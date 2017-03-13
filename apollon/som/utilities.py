@@ -81,9 +81,9 @@ def decrease_linear(start, step, stop=1):
 
 def decrease_expo(start, step, stop=1):
     '''Exponentially decrease `start`  in `step` steps to `stop`.'''
-    b = np.log(stop / start) / (step-1)
+    b = _np.log(stop / start) / (step-1)
     for x in range(step):
-        yield start * exp(b*x)
+        yield start * _np.exp(b*x)
 
 
 def umatrix(lattice, dx, dy, metric='euclidean', w=1, normed=True):
@@ -97,6 +97,6 @@ def umatrix(lattice, dx, dy, metric='euclidean', w=1, normed=True):
                                 lattice[~nb.mask.flatten()],
                                 metric=metric, p=2).sum()
     if norm:
-        return out / np.max(out)
+        return out / _np.max(out)
     else:
         return out

@@ -6,11 +6,11 @@
 #
 
 import numpy as _np
-from scipy import _stats
+from scipy import stats as _stats
 from scipy.spatial import distance as _distance
 
-from utilities import decrease_linear # as _decrease_linear
-from utilities import decrease_expo # as _decrease_expo
+from apollon.som.utilities import decrease_linear # as _decrease_linear
+from apollon.som.utilities import decrease_expo # as _decrease_expo
 
 class _som_base:
 
@@ -47,16 +47,16 @@ class _som_base:
             raise ValueError('Unknown metric.')
 
         # Init weights
-        np.random.seed(1)
+        _np.random.seed(1)
 
         if init_distr == 'uniform':
-            self.lattice = np.random.uniform(0, 1, size=(self.n_N, self.dw))
+            self.lattice = _np.random.uniform(0, 1, size=(self.n_N, self.dw))
         elif init_distr == 'simplex':
             self.lattice = stats.dirichlet.rvs([1] * self.dw, self.n_N)
 
         # Allocate array for winner histogram
         # TODO: add array to collect for every winner the correspondig inp vector.
-        self.whist = np.zeros(self.n_N)
+        self.whist = _np.zeros(self.n_N)
 
         # grid data for neighbourhood calculation
         self._grid = dstack(mgrid[0:dims[0], 0:dims[1]])
@@ -67,10 +67,10 @@ class _som_base:
         #       neuro is the same, choose winner randomly.
         if data.ndim == 1:
             d = _distance.cdist(data[None, :], self.lattice, metric=self.metric)
-            return np.argmin(d)
+            return _np.argmin(d)
         elif data.ndim == 2:
             ds = _distance.cdist(data, self.lattice, metric=self.metric)
-            return np.argmin(ds, axis=argax)
+            return _np.argmin(ds, axis=argax)
         else:
             raise ValueError('Wrong dimension of input data: {}'.format(data.ndim))
 
@@ -78,7 +78,7 @@ class _som_base:
     def _neighbourhood(self, point, nhr):
         var = stats.multivariate_normal(mean=point, cov=((nhr, 0), (0, nhr)))
         out = var.pdf(self._grid)
-        return (out / np.max(out)).reshape(self.n_N, 1)
+        return (out / _np.max(out)).reshape(self.n_N, 1)
 
 
     def plot_whist(self):
@@ -109,7 +109,7 @@ class _som_base:
            in `data` and mark it with the corresponding target value.
         '''
         bmu = self.get_winners(data)
-        x, y = _np.unravel_index(bmu, (self.shape[0], self.shape[1]))
+        x, y = __np.unravel_index(bmu, (self.shape[0], self.shape[1]))
         fig, ax = plt.subplots(1)
         self.plot_umatrix(ax=ax)
         # TODO: align text to center of rects of umatrix plot
@@ -124,7 +124,7 @@ class _som_base:
            map unit and save the corresponding target value in a
            new array.'''
 
-        out = _np.zeros(self.n_N)
+        out = __np.zeros(self.n_N)
         bmiv = self.get_winners(data, argax=0)
         out[bmiv] = targets[bmiv]
         imshow(out.reshape(self.dx, self.dy))
@@ -141,7 +141,7 @@ class SelfOrganizingMap(_som_base):
     def train_basic(self, data, N_iter, feed_rnd=True):
 
         if feed_rnd:
-            data_set = _np.random.permutation(data)
+            data_set = __np.random.permutation(data)
         else:
             data_set = data
 
