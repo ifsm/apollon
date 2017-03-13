@@ -111,7 +111,7 @@ class _som_base:
 
 
     @switch_interactive
-    def plot_dataclass(self, data, targets, interp='None', **kwargs):
+    def plot_datamap(self, data, targets, interp='None', marker=True, **kwargs):
         # TODO: add params to docstring
         '''Represent the input data on the map by retrieving the best
            matching unit for every elementin `data`. Mark each map unit
@@ -122,10 +122,13 @@ class _som_base:
         x, y = _np.unravel_index(bmu, (self.shape[0], self.shape[1]))
 
         fd = {'color':'#cccccc'}
+        if marker:
+            ax.scatter(y, x, s=40, marker='x', color='r')
         for i, j, t in zip(x, y, targets):
-            ax.text (j, i, t, fontdict=fd,
+            ax.text(j, i, t, fontdict=fd,
                     horizontalalignment='center',
                     verticalalignment='center')
+
         return (ax, udm, (x,y))
 
 
@@ -200,6 +203,8 @@ class SelfOrganizingMap(_som_base):
             zip(range(N_iter),
                 _utilities.decrease_linear(self.init_eta, N_iter),
                 _utilities.decrease_linear(self.init_nhr, N_iter)):
+
+            print(c_iter, end=' ')
 
             # get bmus
             for fv in data_set:
