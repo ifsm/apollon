@@ -74,16 +74,26 @@ def distance_map3d(som, w=1, ax=None, plotit=True, **kwargs):
 
 def decrease_linear(start, step, stop=1):
     '''Linearily decrease `start`  in `step` steps to `stop`.'''
-    a = (stop - start) / (step-1)
-    for x in range(step):
-        yield a * x + start
+    if step < 1 or not isinstance(step, int):
+        raise ValueError('Param `step` must be int >= 1.')
+    elif step == 1:
+        yield start
+    else:
+        a = (stop - start) / (step-1)
+        for x in range(step):
+            yield a * x + start
 
 
 def decrease_expo(start, step, stop=1):
     '''Exponentially decrease `start`  in `step` steps to `stop`.'''
-    b = _np.log(stop / start) / (step-1)
-    for x in range(step):
-        yield start * _np.exp(b*x)
+    if step < 1 or not isinstance(step, int):
+        raise ValueError('Param `step` must be int >= 1.')
+    elif step == 1:
+        yield start
+    else:
+        b = _np.log(stop / start) / (step-1)
+        for x in range(step):
+            yield start * _np.exp(b*x)
 
 
 def umatrix(lattice, dx, dy, metric='euclidean', w=1, normed=True):
