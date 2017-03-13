@@ -11,7 +11,7 @@ from scipy.spatial import distance as _distance
 
 from apollon.som import utilities as _utilities
 from apollon.decorators import switch_interactive
-from apollon.aplot import _new_figure
+from apollon.aplot import _new_figure, _new_axis
 
 
 class _som_base:
@@ -98,25 +98,16 @@ class _som_base:
 
 
     @switch_interactive
-    def plot_whist(self, interp='None', ax=None, **kwargs):
-        # TODO: add docstring
-        if ax is None:
-            fig, ax = _new_figure(xlim=(0, self.dx),
-                                  ylim=(0, self.dy), **kwargs)
-        ax.imshow(self.whist.reshape(self.dx, self.dy),
-               vmin=0, cmap='Greys', interpolation=interp)
-        return ax
-
-
-    @switch_interactive
-    def plot_umatrix(self, w=1, interp='None', ax=None, **kwargs):
-        # TODO: add docstring
-        if ax is None:
-            fig, ax = _new_figure(xlim=(0, self.dx),
-                                  ylim=(0, self.dy), **kwargs)
-        udm = _utilities.umatrix(self.lattice, self.dx, self.dy, w=w)
-        ax.imshow(udm, interpolation=interp)
-        return (ax, udm)
+    def plot_calibration(self, ax=None, **kwargs):
+        # TODO: add params to docstring
+        '''Plot calibrated map.'''
+        if not self.isCalibrated:
+            raise ValueError('Map not calibrated.')
+        else:
+            if ax is None:
+                ax = _new_axis(xlim=(0, self.dx), ylim=(0, self.dy), **kwargs)
+            ax.imshow(self._cmap.reshape(self.dx, self.dy))
+            return ax
 
 
     @switch_interactive
@@ -139,33 +130,56 @@ class _som_base:
 
 
     @switch_interactive
-    def plot_calibration(self, ax=None, **kwargs):
-        # TODO: add params to docstring
-        '''Plot calibrated map.'''
-        if not self.isCalibrated:
-            raise ValueError('Map not calibrated.')
+    def plot_variables(self, interp='None', titles=True, axison=False, **kwargs):
+        '''Represent the influence of each variable of the input data on the
+        som lattice as heat map.
+
+        Params:
+            interp:     (str) matplotlib interpolation method name.
+            titles:     (bool) Print variable above each heatmap.
+            axison:     (bool) Plot spines if True.
+        '''
+        _z = _np.sqrt(self.dw)
+        _iz = int(_z)
+
+        if _z % 2 == 0:
+            if _z == 1:
+                x = _iz
+                y = self.dw
+            else:
+                x = y = _iz
         else:
-            if ax is None:
-                fig, ax = _new_figure(xlim=(0, self.dx),
-                                      ylim=(0, self.dy), **kwargs)
-            ax.imshow(self._cmap.reshape(self.dx, self.dy))
-            return ax
+            x = _iz
+            y = self.dw - x**2
+
+        fig = _new_figure(**kwargs)
+        for i in range(1, self.dw+1):
+            ax = _new_axis(fig=fig, sp_pos=(x, y, i), axison=axison)
+            ax.imshow(self.lattice[:,i-1].reshape(self.dx, self.dy),
+                      interpolation=interp)
+            if titles:
+                ax.set_title(str(i))
+
 
     @switch_interactive
-    def plot_variables(self, **kwargs):
+    def plot_whist(self, interp='None', ax=None, **kwargs):
         # TODO: add docstring
+        if ax is None:
+            ax = _new_axis(xlim=(0, self.dx), ylim=(0, self.dy), **kwargs)
+        ax.imshow(self.whist.reshape(self.dx, self.dy),
+               vmin=0, cmap='Greys', interpolation=interp)
+        return ax
 
-        x = int(_np.sqrt(self.dw))
-        if x == 1:
-            y = self.dw
-        else:
-            y = self.dw - x
 
-        fig, ax = _new_figure(**kwargs)
-        for i in range(1, self.dw+1):
-            ax = fig.add_subplot(x, y, i)
-            ax.imshow(self.lattice[:,i-1].reshape(self.dx, self.dy))
-            ax.set_title(str(i))
+    @switch_interactive
+    def plot_umatrix(self, w=1, interp='None', ax=None, **kwargs):
+        # TODO: add docstring
+        if ax is None:
+            ax = _new_axis(xlim=(0, self.dx), ylim=(0, self.dy), **kwargs)
+        udm = _utilities.umatrix(self.lattice, self.dx, self.dy, w=w)
+        ax.imshow(udm, interpolation=interp)
+        return (ax, udm)
+
 
 
 class SelfOrganizingMap(_som_base):
