@@ -10,6 +10,8 @@ from scipy import stats as _stats
 from scipy.spatial import distance as _distance
 
 from apollon.som import utilities as _utilities
+from apollon.decorators import switch_interactive
+from apollon.aplot import _new_figure
 
 
 class _som_base:
@@ -81,28 +83,21 @@ class _som_base:
         return (out / _np.max(out)).reshape(self.n_N, 1)
 
 
-    def plot_whist(self):
-        # TODO: integrate aplot._new_figure()
-        plt.imshow(self.whist.reshape(self.dx, self.dy),
+    @switch_interactive
+    def plot_whist(self, ax=None):
+        if ax is None:
+            fig, ax = _new_figure()
+        ax.imshow(self.whist.reshape(self.dx, self.dy),
                vmin=0, cmap='Greys', interpolation='None')
-        # TODO: use decorator of aplot instead for mode switching.
-        self._switchInteractive()
 
 
+    @switch_interactive
     def plot_umatrix(self, w=1, ax=None):
-        # TODO: integrate aplot._new_figure()
         udm = _utilities.umatrix(self.lattice, self.dx, self.dy, w=w)
         if ax is None:
-            ax = _plt.gca()
+            fig, ax = _new_figure()
         ax.imshow(udm)
-        # TODO: use decorator of aplot instead for mode switching.
-        self._switchInteractive()
 
-
-    @staticmethod
-    def _switchInteractive():
-        if not plt.isinteractive():
-            plt.show()
 
     def calibrate(self, data, targets):
         '''Retrieve the best matching unit for every element
