@@ -70,6 +70,9 @@ class _som_base:
         self.isCalibrated = False
         self._cmap = None
 
+        # measures
+        self.quantization_error = []
+
 
     def get_winners(self, data, argax=1):
         '''Get the best matching neurons for every vector in data.
@@ -79,17 +82,17 @@ class _som_base:
                 argax   (int) Axis used for minimization 1=x, 0=y.
 
             Return:
-                (np.array) Indices of bmus.
+                (np.array, np.ndarray) Indices of bmus and min dists.
         '''
         # TODO: if the distance between an input vector and more than one lattice
         #       neuro is the same, choose winner randomly.
 
         if data.ndim == 1:
             d = _distance.cdist(data[None, :], self.lattice, metric=self.metric)
-            return _np.argmin(d)
+            return _np.argmin(d), _np.min(d)
         elif data.ndim == 2:
             ds = _distance.cdist(data, self.lattice, metric=self.metric)
-            return _np.argmin(ds, axis=argax)
+            return _np.argmin(ds, axis=argax), _np.min(ds, axis=argax).sum()
         else:
             raise ValueError('Wrong dimension of input data: {}'.format(data.ndim))
 
@@ -232,8 +235,10 @@ class SelfOrganizingMap(_som_base):
 
 
     def _basic_update(self, data_set, c_eta, c_nhr):
+        total_qE = 0
         for fv in data_set:
-            bm_units = self.get_winners(fv)
+            bm_units, c_qE = self.get_winners(fv)
+            total_qE += c_qE
 
             # update activation map
             self.whist[bm_units] += 1
@@ -246,12 +251,12 @@ class SelfOrganizingMap(_som_base):
 
             # update lattice
             self.lattice += c_eta * c_nh * (fv - self.lattice)
-
+        self.quantization_error.append(total_qE)
 
     def _batch_update(self, data_set, c_nhr):
         # get bmus for vector in data_set
-        bm_units = self.get_winners(data_set)
-
+        bm_units, total_qE = self.get_winners(data_set)
+        self.quantization_error.append(total_qE)
         # get bmu's multi index
         bmu_midx = _np.unravel_index(bm_units, (self.shape[0], self.shape[1]))
 
@@ -273,6 +278,9 @@ class SelfOrganizingMap(_som_base):
             zip(range(N_iter),
                 _utilities.decrease_linear(self.init_nhr, N_iter)):
 
+            # verbose
+            print(c_iter, end=' ')
+
             # feed data in given order
             self._batch_update(data, c_nhr)
 
@@ -286,7 +294,7 @@ class SelfOrganizingMap(_som_base):
                 _utilities.decrease_linear(self.init_nhr, N_iter)):
 
             # verbose
-            #print(c_iter, end=' ')
+            print(c_iter, end=' ')
 
             # feed data in given order
             self._basic_update(data, c_eta, c_nhr)
