@@ -16,7 +16,7 @@ from apollon.aplot import _new_figure, _new_axis
 
 class _som_base:
 
-    def __init__(self, dims=(10, 10, 3), eta=.8, nh=5,
+    def __init__(self, dims=(10, 10, 3), eta=.8, nhr=5,
                  metric='euclidean', init_distr='simplex'):
 
         # check dimensions
@@ -33,13 +33,16 @@ class _som_base:
         self.center = self.dx // 2, self.dy // 2
 
         # check parameters
-        if 0 <= eta <= 1.:
-            self.init_eta = eta
+        if eta is None:
+            self.init_eta = None
         else:
-            raise ValueError('eta not in [0, 1]')
+            if (0 <= eta <= 1.):
+                self.init_eta = eta
+            else:
+                raise ValueError('eta not in [0, 1]')
 
-        if isinstance(nh, int) and nh > 1:
-            self.init_nhr = nh
+        if isinstance(nhr, int) and nhr > 1:
+            self.init_nhr = nhr
         else:
             raise ValueError('Neighbourhood radius must be int > 0.')
 
