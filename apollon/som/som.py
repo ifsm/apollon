@@ -228,33 +228,77 @@ class SelfOrganizingMap(_som_base):
         super().__init__(dims, eta, nh, metric, init_distr)
 
 
+    def _basic_update(self, data_set, c_eta, c_nhr):
+        for fv in data_set:
+            bm_units = self.get_winners(fv)
 
-    def train_basic(self, data, N_iter, feed_rnd=True):
+            # update activation map
+            self.whist[bm_units] += 1
 
-        if feed_rnd:
-            data_set = _np.random.permutation(data)
-        else:
-            data_set = data
+            # get bmu's multi index
+            bmu_midx = _np.unravel_index(bm_units, (self.shape[0], self.shape[1]))
 
+            # calculate neighbourhood over bmu given current radius
+            c_nh = self._neighbourhood(bmu_midx, c_nhr)
+
+            # update lattice
+            self.lattice += c_eta * c_nh * (fv - self.lattice)
+
+
+    def _batch_update(self, data_set, c_nhr):
+        # get bmus for vector in data_set
+        bm_units = self.get_winners(data_set)
+
+        # get bmu's multi index
+        bmu_midx = _np.unravel_index(bm_units, (self.shape[0], self.shape[1]))
+
+        w_nh = _np.zeros((self.n_N, 1))
+        w_lat = _np.zeros((self.n_N, self.dw))
+
+        for bx, by, fv in zip(*bmu_midx, data_set):
+            c_nh = self._neighbourhood((bx, by), c_nhr)
+            w_nh += c_nh
+            w_lat += c_nh * fv
+
+        self.lattice = w_lat / w_nh
+
+
+    def train_batch(self, data, N_iter):
+        '''Train using batch algorithm.'''
+        # main loop
+        for (c_iter, c_nhr) in \
+            zip(range(N_iter),
+                _utilities.decrease_linear(self.init_nhr, N_iter)):
+
+            # feed data in given order
+            self._batch_update(data, c_nhr)
+
+
+    def train_basic_order(self, data, N_iter):
+        '''Train by feeding the data in the give order.'''
+        # main loop
         for (c_iter, c_eta, c_nhr) in \
             zip(range(N_iter),
                 _utilities.decrease_linear(self.init_eta, N_iter),
                 _utilities.decrease_linear(self.init_nhr, N_iter)):
 
-            print(c_iter, end=' ')
+            # verbose
+            #print(c_iter, end=' ')
 
-            # get bmus
-            for fv in data_set:
-                bm_units = self.get_winners(fv)
+            # feed data in given order
+            self._basic_update(data, c_eta, c_nhr)
 
-                # update activation map
-                self.whist[bm_units] += 1
 
-                # get bmu's multi index
-                bmu_midx = _np.unravel_index(bm_units, (self.shape[0], self.shape[1]))
+    def train_basic_rnd(self, data, N_iter):
+        '''Train by shuffeling the dataset each iteration'''
+        # main loop
+        for (c_iter, c_eta, c_nhr) in \
+            zip(range(N_iter),
+                _utilities.decrease_linear(self.init_eta, N_iter),
+                _utilities.decrease_linear(self.init_nhr, N_iter)):
 
-                # calculate neighbourhood over bmu given current radius
-                c_nh = self._neighbourhood(bmu_midx, c_nhr)
+            # verbose
+            #print(c_iter, end=' ')
 
-                # update lattice
-                self.lattice += c_eta * c_nh * (fv - self.lattice)
+            # always shuffle data
+            self._basic_update(_np.random.permutation(data), c_eta, c_nhr)
