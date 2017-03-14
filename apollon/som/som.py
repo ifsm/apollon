@@ -69,8 +69,18 @@ class _som_base:
 
 
     def get_winners(self, data, argax=1):
+        '''Get the best matching neurons for every vector in data.
+
+           Params:
+                data    (np.array) Input data set
+                argax   (int) Axis used for minimization 1=x, 0=y.
+
+            Return:
+                (np.array) Indices of bmus.
+        '''
         # TODO: if the distance between an input vector and more than one lattice
         #       neuro is the same, choose winner randomly.
+
         if data.ndim == 1:
             d = _distance.cdist(data[None, :], self.lattice, metric=self.metric)
             return _np.argmin(d)
@@ -112,10 +122,18 @@ class _som_base:
 
     @switch_interactive
     def plot_datamap(self, data, targets, interp='None', marker=True, **kwargs):
-        # TODO: add params to docstring
         '''Represent the input data on the map by retrieving the best
            matching unit for every elementin `data`. Mark each map unit
            with the corresponding target value.
+
+           Params:
+                data    (2d-array) Input data set.
+                targets (array) Class labels or values.
+                interp  (str) matplotlib interpolation method name.
+                marker  (bool) Plot markers in bmu position if True.
+
+           Return:
+                (AxesSubplot) axis, umatrix, bmu_xy
         '''
         ax, udm = self.plot_umatrix(interp=interp, **kwargs)
         bmu = self.get_winners(data)
@@ -138,9 +156,9 @@ class _som_base:
         som lattice as heat map.
 
         Params:
-            interp:     (str) matplotlib interpolation method name.
-            titles:     (bool) Print variable above each heatmap.
-            axison:     (bool) Plot spines if True.
+            interp     (str) matplotlib interpolation method name.
+            titles     (bool) Print variable above each heatmap.
+            axison     (bool) Plot spines if True.
         '''
         _z = _np.sqrt(self.dw)
         _iz = int(_z)
@@ -166,7 +184,16 @@ class _som_base:
 
     @switch_interactive
     def plot_whist(self, interp='None', ax=None, **kwargs):
-        # TODO: add docstring
+        '''Plot the winner histogram of the lattice. The darker color on
+           position (x, y) the more often neuron (x, y) was choosen as winner.
+
+           Params:
+               interp    (str) matplotlib interpolation method name.
+               ax        (plt.Axis) Provide custom axis object.
+
+           Return:
+               (AxesSubplot) the axis.
+        '''
         if ax is None:
             ax = _new_axis(xlim=(0, self.dx), ylim=(0, self.dy), **kwargs)
         ax.imshow(self.whist.reshape(self.dx, self.dy),
@@ -176,7 +203,17 @@ class _som_base:
 
     @switch_interactive
     def plot_umatrix(self, w=1, interp='None', ax=None, **kwargs):
-        # TODO: add docstring
+        '''Plot the umatrix. The color on each unit (x, y) represents its
+           mean distance to all direct neighbours.
+
+           Params:
+               w        (int) Neighbourhood width.
+               interp   (str) matplotlib interpolation method name.
+               ax       (plt.Axis) Provide custom axis object.
+
+           Return:
+               (AxesSubplot, np.array) the axis, umatrix
+        '''
         if ax is None:
             ax = _new_axis(xlim=(0, self.dx), ylim=(0, self.dy), **kwargs)
         udm = _utilities.umatrix(self.lattice, self.dx, self.dy, w=w)
@@ -221,7 +258,3 @@ class SelfOrganizingMap(_som_base):
 
                 # update lattice
                 self.lattice += c_eta * c_nh * (fv - self.lattice)
-
-
-    def map_response(self, data_i):
-        return _distance.cdist(data_i[None, :], self.lattice)
