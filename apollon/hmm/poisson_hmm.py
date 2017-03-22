@@ -93,6 +93,7 @@ class PoissonHmm(_HMM_Base):
         '''Return a tuple of HMM parameters.'''
         return (self._init_lambda, self._init_gamma, self._delta)
 
+
     def natural_params(self, w_params):
         '''Transform working params of PoissonHMM to natural params.
 
@@ -101,13 +102,15 @@ class PoissonHmm(_HMM_Base):
 
             Return:
                 (lambda_, gamma_, delta_) tuple of poisson means,
-                transition probability matrix and stationary distribution.'''
+                transition probability matrix and stationary distribution.
+        '''
         bt = _np.exp(w_params)
         bt_lambda = bt[:self.m]
         bt_gamma = _np.eye(self.m)
         _tools.set_offdiag(bt_gamma, bt[self.m:])
         bt_gamma /= bt_gamma.sum(axis=1, keepdims=True)
         return bt_lambda, bt_gamma, _utils.calculate_delta(bt_gamma)
+
 
     def working_params(self, lambda_, gamma_):
         '''Transform PoissonHMM natural parameters to working params for
@@ -119,24 +122,20 @@ class PoissonHmm(_HMM_Base):
                 1. sum(gamma_i) = 1.
                 2. gamma_ij is element of [0, 1.]
             This function removes these constraints using a generalized logit
-            transfomr. The resulting array working parameters has size equal
-            to m**2.
+            transform. The resulting array of working parameters has size equal
+            to m*(m-1).
 
             Params:
                 lambda_    (np.ndarray) Means of state dependend distributions.
                 gamma_     (np.ndarray) Transition probability matrix.
 
             Return:
-                (np.ndarray) of working params.'''
-
-        # remove lambda > 0
+                (np.ndarray) of working params.
+        '''
         w_lambda = _np.log(lambda_)
-
-        # remove gamma_ij element [0, 1] and gamma_i == 1
-        tau = _np.log(gamma_ / gamma_.diagonal()[:, None])
-        w_gamma = _tools.get_offdiag(tau)
-
+        w_gamma = _utils.transform_gamma(gamma_)
         return _np.concatenate((w_lambda, w_gamma))
+
 
     def _log_likelihood(self, working_params):
         '''Calculates the log-likelihood of a model given
@@ -156,18 +155,19 @@ class PoissonHmm(_HMM_Base):
             poisson_probs[_np.isnan(poisson_probs)] = 1
             poisson_probs[_np.where(poisson_probs <= 1e-30)] = 1e-30
 
-            # holds the likelihood
+            # init
             l_scaled = 0
+            psi = _delta
 
             # Calculate the likelihood
             # See Zucchini(2009), p. 46 for explanation
             for re in poisson_probs:
-                _delta = _np.multiply(_delta @ _gamma, re)
-                _dsum = _np.sum(_delta)
+                psi = _np.multiply(psi @ _gamma, re)
+                _dsum = _np.sum(psi)
                 if _dsum == 0.:
                     _dsum = 1
                 l_scaled += _np.log(_dsum)    # avoid underflow
-                _delta /= _dsum
+                psi /= _dsum
 
         if _np.isnan(l_scaled):
             raise ValueError('Bad likelihood.')
