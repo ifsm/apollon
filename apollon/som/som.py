@@ -142,7 +142,7 @@ class _som_base:
                 (AxesSubplot) axis, umatrix, bmu_xy
         '''
         ax, udm = self.plot_umatrix(interp=interp, **kwargs)
-        bmu = self.get_winners(data)
+        bmu, err = self.get_winners(data)
         x, y = _np.unravel_index(bmu, (self.shape[0], self.shape[1]))
 
         fd = {'color':'#cccccc'}
