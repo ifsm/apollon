@@ -145,7 +145,7 @@ def marginal_distr(x, lambda_, delta, figsize=(10, 4), bins=20, legend=True):
 
     Return:
         (fig, ax)   plot context.'''
-    fig, ax = _new_figure(figsize=figsize)
+    ax = _new_axis(figsize=figsize)
     n, bin_edges, patches = ax.hist(x, normed=True, alpha=.2, bins=bins)
 
     for i, (me, de) in enumerate(zip(lambda_, delta)):
@@ -159,14 +159,14 @@ def marginal_distr(x, lambda_, delta, figsize=(10, 4), bins=20, legend=True):
     if legend:
         # Place legend outside the axe
         ax.legend(bbox_to_anchor=(1.05, 1), loc=2)
-    return fig, ax
+    return ax
 
 
 @switch_interactive
 def onsets(sig, odx, figsize=(10, 4), **kwargs):
     fig, ax = signal(sig)
     ax.vlines(odx, -1, 1, **_plot_params.onset)
-    return fig, ax
+    return ax
 
 
 @switch_interactive
@@ -177,13 +177,13 @@ def onset_decoding(sig, ons, dec):
     colors = _np.linspace(0, 1, lc)
     ax.vlines(ons.odx, -1, 1, linewidths=3, linestyle='dashed',
               colors=_cm.viridis(colors[dec]))
-    return fig, ax
+    return ax
 
 
 @switch_interactive
 def signal(sig, xaxis='seconds', figsize=(10, 4), params=None):
     '''Plot a signal on fancy axes.'''
-    fig, ax = _new_figure(figsize=figsize)
+    ax = _new_axis(figsize=figsize)
 
     if params is None:
         params = _plot_params.signal
@@ -205,4 +205,4 @@ def signal(sig, xaxis='seconds', figsize=(10, 4), params=None):
         ax.plot(sig.get_data(), **params)
     else:
         ax.plot(sig, **params)
-    return fig, ax
+    return ax

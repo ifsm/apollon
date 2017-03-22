@@ -228,9 +228,9 @@ class PoissonHmm(_HMM_Base):
                 bins    (int) Number of bins in histogram.
             Return:
                 (fig, ax)    Plot context.'''
-        fig, ax = aplot.marginal_distr(self.x, self.lambda_,
-                                       self.delta_, bins=bins)
-        return fig, ax
+        ax = aplot.marginal_distr(self.x, self.lambda_,
+                                  self.delta_, bins=bins)
+        return ax
 
 
 if __name__ == '__main__':
