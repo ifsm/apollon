@@ -131,7 +131,7 @@ class _Spectrum(_Spectrum_Base):
         """Return phase spectrum."""
         return _np.angle(self.bins)
 
-    def plot(self, db=True, fmt='b-', logfreq=False):
+    def plot(self, db=True, fmt='-', logfreq=False):
         """Plot magnitude spectrum.
 
         Params:
