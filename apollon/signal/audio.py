@@ -9,7 +9,7 @@
 import numpy as _np
 import scipy.io.wavfile as spw
 
-from apollon.io.file_properties import _FileProperties
+from apollon.IO import FileAccessControl
 from apollon.tools import normalize
 #from apollon import aplot as _aplot
 
@@ -43,7 +43,7 @@ class _AudioChunks:
         :param _padding:       (bool)       True if the signal was zero-padded
         '''
         self._signal = _signal
-        self._nchunks = _nchunks
+        self._Nchunks = _nchunks
         self._lchunks = _lchunks
         self._limits = _limits
         self._sample_rate = _sample_rate
@@ -58,7 +58,7 @@ class _AudioChunks:
         return self._lchunks
 
     def iter_index(self):
-        for i in range(self._nchunks):
+        for i in range(self._Nchunks):
             yield i
 
     def iter_chunks(self):
@@ -77,15 +77,15 @@ class _AudioChunks:
     def __str__(self):
         if self._padding:
             return '<AudioChunks object, N: {}, Len of each: {}, zero padding of len {}>'. \
-                format(self._nchunks, self._lchunks, self._padding)
+                format(self._Nchunks, self._lchunks, self._padding)
         else:
-            return '<AudioChunks object, N: {}, Len of each: {}, No padding>'.format(self._nchunks, self._lchunks)
+            return '<AudioChunks object, N: {}, Len of each: {}, No padding>'.format(self._Nchunks, self._lchunks)
 
     def __repr__(self):
         return self.__str__()
 
     def __len__(self):
-        return self._nchunks
+        return self._Nchunks
 
     def __getitem__(self, item):
         if isinstance(item, int):
@@ -106,24 +106,29 @@ class _AudioChunks:
         return self.iter_chunks()
 
 
-class _AudioData(_FileProperties):
-    '''Representation of an audio file.
-    Holds sample rate, data, number of frames and normalization flag.
-    '''
-    def __init__(self, file_name, norm=True):
-        '''        :param file_name:   (str)   file name
-        :param norm:        (bool)  If True, signal will be normalized
+class _AudioData:
 
-        :return:            (AudioData) Object
+    # Descriptor attribute
+    file = FileAccessControl()
+
+    def __init__(self, file_name, norm=True):
+        '''Representation of an audio file.
+
+        Params:
+            file_name   (str)   Name of file.
+            norm        (bool)  If True, signal will be normalized.
+
+        Return:
+            (AudioData) Object
         '''
-        super().__init__(file_name)
+        self.file = file_name
 
         self._sample_rate, self._signal = spw.read(file_name)
-        self._n = len(self._signal)
+        self._N = len(self._signal)
 
         if self._signal.ndim != 1:
             if self._signal.shape[1] == 2:    # stereo ?
-                self._signal = _np.sum(self._signal, axis=1) / 2
+                self._signal = self._signal.sum(axis=1) / 2
             else:
                 raise ValueError('Audio files with max. 2 channels, only.')
 
@@ -150,15 +155,14 @@ class _AudioData(_FileProperties):
         self.normalized = True
 
     def __str__(self):
-        return "<AudioData object, Samples: {}, Sample rate: {}, Normalized: {}>" \
-            .format(self._n, self._sample_rate, self.normalized)
+        return "<{} , Samples: {}, Sample rate: {}, Normalized: {}>" \
+        .format(self.get_fname(),  self._N, self._sample_rate, self.normalized)
 
     def __repr__(self):
-        return "<AudioData object, Samples: {}, Sample rate: {}, Normalized: {}>" \
-            .format(self._n, self._sample_rate, self.normalized)
+        return self.__str__()
 
     def __len__(self):
-        return self._n
+        return self._N
 
     def __getitem__(self, item):
         return self._signal[item]
