@@ -32,6 +32,7 @@ def _new_figure(**kwargs):
     '''Return an empty figure.'''
     return _plt.figure(**kwargs)
 
+
 def _new_axis(spines='nice', xlim=None, ylim=None, dp=(10, 10),
               fig=None, sp_pos=(1,1,1), axison=True, **kwargs):
     '''Create a new figure with a single axis and fancy spines.
@@ -86,6 +87,22 @@ def _new_axis(spines='nice', xlim=None, ylim=None, dp=(10, 10),
     else:
         ax.axison=False
         return ax
+
+
+def _new_axis_3d(fig=None, **kwargs):
+    '''Create a new figure with one single 3d axis.
+
+    Params:
+        fig         (plt.figure) Existing figure.
+        ''kwargs    pass all keywords argumets to matplotlib.figure.
+
+    Returns
+        (tuple)     plt.figure and plt.axes._subplots.Axes3DSubplot
+    '''
+    fig = _new_figure(**kwargs) if fig is None else fig
+    ax_3d = fig.add_subplot(1, 1, 1, projection='3d')
+    return fig, ax_3d
+
 
 @switch_interactive
 def fourplot(data, lag=1, standardized=True):
