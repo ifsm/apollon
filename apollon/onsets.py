@@ -21,6 +21,7 @@ def detect(sig, theta=10, boxes=50, chunk_len=16, hop_size=8, order=15, hilb=Tru
     :param order:       (int) comparison area per side in samples
     :param hilb:        (bool) calculate the onsets from the hilbert transform of the signal
     :param hmm:         (bool) use HMM to correctliy idetify onsets
+
     :return:            (tuple) array of indices, list of entropy values
     '''
     chunks = segment.by_ms_with_hop(sig, chunk_len, hop_size)
@@ -59,8 +60,8 @@ class OnsetResult:
         self.rgy = rgy
 
     def plot(self, sig):
-        fig, ax = _aplot.onsets(sig, self.odx)
-        return fig, ax
+        ax = _aplot.onsets(sig, self.odx)
+        return ax
 
     def __repr__(self):
         return ''.join('{}: {}\n'.format(mem, self.__getattribute__(mem)) for mem in OnsetResult.__slots__)
