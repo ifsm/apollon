@@ -52,7 +52,6 @@ class FileAccessControl:
     def __delete__(self, obj):
         del self.__attribute[obj]
 
-        
 def files_in_folder(path, suffix='.wav'):
     """Iterate over all file names in a given folder.
 
