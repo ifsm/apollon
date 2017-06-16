@@ -11,7 +11,7 @@ from scipy.spatial import distance as _distance
 
 from apollon.som import utilities as _utilities
 from apollon.decorators import switch_interactive
-from apollon.aplot import _new_figure, _new_axis
+from apollon.aplot import _new_figure, _new_axis, _new_axis_3d
 
 
 class _som_base:
@@ -224,8 +224,25 @@ class _som_base:
             ax = _new_axis(xlim=(0, self.dx), ylim=(0, self.dy), **kwargs)
         udm = _utilities.umatrix(self.lattice, self.dx, self.dy, w=w)
         ax.imshow(udm, interpolation=interp)
-        return (ax, udm)
+        return ax, udm
 
+
+    @switch_interactive
+    def plot_umatrix3d(self, w=1, **kwargs):
+        '''Plot the umatrix in 3d. The color on each unit (x, y) represents its
+           mean distance to all direct neighbours.
+
+           Params:
+               w            (int) Neighbourhood width.
+               **kwargs     Pass keywors to _new_axis_3d.
+           Return:
+               (Axes3DSubplot, np.array) the axis, umatrix
+        '''
+        fig, ax = _new_axis_3d(**kwargs)
+        udm = _utilities.umatrix(self.lattice, self.dx, self.dy, w=w)
+        X, Y = _np.mgrid[:self.dx, :self.dy]
+        ax.plot_surface(X, Y, udm, cmap='viridis')
+        return ax, udm
 
 
 class SelfOrganizingMap(_som_base):

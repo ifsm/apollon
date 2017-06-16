@@ -32,6 +32,7 @@ def _new_figure(**kwargs):
     '''Return an empty figure.'''
     return _plt.figure(**kwargs)
 
+
 def _new_axis(spines='nice', xlim=None, ylim=None, dp=(10, 10),
               fig=None, sp_pos=(1,1,1), axison=True, **kwargs):
     '''Create a new figure with a single axis and fancy spines.
@@ -86,6 +87,22 @@ def _new_axis(spines='nice', xlim=None, ylim=None, dp=(10, 10),
     else:
         ax.axison=False
         return ax
+
+
+def _new_axis_3d(fig=None, **kwargs):
+    '''Create a new figure with one single 3d axis.
+
+    Params:
+        fig         (plt.figure) Existing figure.
+        ''kwargs    pass all keywords argumets to matplotlib.figure.
+
+    Returns
+        (tuple)     plt.figure and plt.axes._subplots.Axes3DSubplot
+    '''
+    fig = _new_figure(**kwargs) if fig is None else fig
+    ax_3d = fig.add_subplot(1, 1, 1, projection='3d')
+    return fig, ax_3d
+
 
 @switch_interactive
 def fourplot(data, lag=1, standardized=True):
@@ -164,7 +181,7 @@ def marginal_distr(x, lambda_, delta, figsize=(10, 4), bins=20, legend=True):
 
 @switch_interactive
 def onsets(sig, odx, figsize=(10, 4), **kwargs):
-    fig, ax = signal(sig)
+    ax = signal(sig)
     ax.vlines(odx, -1, 1, **_plot_params.onset)
     return ax
 
@@ -172,7 +189,7 @@ def onsets(sig, odx, figsize=(10, 4), **kwargs):
 @switch_interactive
 def onset_decoding(sig, ons, dec):
     '''Plot sig and and onsetes color coded regarding dec.'''
-    fig, ax = signal(sig, params=_plot_params.sig_ons)
+    ax = signal(sig, params=_plot_params.sig_ons)
     lc = max(dec) + 1
     colors = _np.linspace(0, 1, lc)
     ax.vlines(ons.odx, -1, 1, linewidths=3, linestyle='dashed',
@@ -193,8 +210,8 @@ def signal(sig, xaxis='seconds', figsize=(10, 4), params=None):
             ax.set_xlabel('Time [samples]')
         elif xaxis == 'seconds':
             # TODO: ticklabes for signals > 1 min
-            len_in_sec = sig._n / sig.get_sr()
-            ticks = _np.linspace(0, sig._n, _np.ceil(len_in_sec)*2)
+            len_in_sec = sig._N / sig.get_sr()
+            ticks = _np.linspace(0, sig._N, _np.ceil(len_in_sec)*2)
             ticklabels = _np.arange(0, len_in_sec, .5)
             ax.set_xticks(ticks)
             ax.set_xticklabels(ticklabels)
