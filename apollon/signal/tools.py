@@ -19,8 +19,10 @@ Functions:
 
 
 import numpy as _np
+from scipy import stats
 
 from apollon.signal.audio import _AudioData
+
 
 def amp2db(amp):
     """Transform amplitude to dB.
@@ -96,18 +98,17 @@ def minamp(sig):
     return _np.min(_np.absolute(sig))
 
 
-def noise(level, sr=9000, length=1):
+def noise(level, n=9000):
     """Generate withe noise.
 
     Params:
         level       (float) Noise level as standard deviation of a gaussian.
-        sr          (int) Sample rate.
-        length      (float) length of signal in  seconds.
+        n           (int) Length of noise signal in samples.
 
     Return:
         (ndarray)   White noise signal.
     """
-    return stats.norm.rvs(0, level, size=sr*length)
+    return stats.norm.rvs(0, level, size=n)
 
 
 def sinusoid(f, amps=1, sr=9000, length=1, plot=False, retcomps=False):
