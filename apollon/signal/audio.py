@@ -155,8 +155,8 @@ class _AudioData:
         self.normalized = True
 
     def __str__(self):
-        return "<{} , Samples: {}, Sample rate: {}, Normalized: {}>" \
-        .format(self.get_fname(),  self._N, self._sample_rate, self.normalized)
+        return "<{}, Samples: {}, Sample rate: {}, Normalized: {}>" \
+        .format(self.file.name,  self._N, self._sample_rate, self.normalized)
 
     def __repr__(self):
         return self.__str__()
