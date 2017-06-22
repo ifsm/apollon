@@ -6,15 +6,18 @@
 Signal processing tools
 
 Functions:
-    amp2db          Transform amplitude to dB.
-    freq2mel        Transform frequency to mel.
-    mel2freq        Transform mel to frequency.
-    loadwav         Load a .wav file.
-    maxamp          Maximal amplitude of signal.
-    minamp          Minimal amplitude of signal.
-    noise           Generate withe noise.
-    sinusoid        Generate sinusoidal signal.
-    zero_padding    Append array with zeros.
+    acf                 Normalized autocorrelation.
+    acf_pearson         Normalized Pearson acf.
+    amp2db              Transform amplitude to dB.
+    corr_coef_pearson   Correlation coefficient after Pearson.
+    freq2mel            Transform frequency to mel.
+    mel2freq            Transform mel to frequency.
+    loadwav             Load a .wav file.
+    maxamp              Maximal amplitude of signal.
+    minamp              Minimal amplitude of signal.
+    noise               Generate withe noise.
+    sinusoid            Generate sinusoidal signal.
+    zero_padding        Append array with zeros.
 """
 
 
@@ -22,6 +25,50 @@ import numpy as _np
 from scipy import stats
 
 from apollon.signal.audio import _AudioData
+
+
+def acf(inp_sig):
+    """Normalized estimate of the autocorrelation function of `inp_sig`
+       by means of cross correlation."""
+
+    N = len(inp_sig)
+    norm = inp_sig@inp_sig
+
+    out = np.empty(N)
+    out[0] = 1
+    for m in range(1, N):
+        a = inp_sig[:-m]
+        b = inp_sig[m:]
+        s = a @ b
+        if s == 0:
+            out[m] = 0
+        else:
+            out[m] = s / norm
+
+    return out
+
+
+def acf_pearson(inp_sig):
+    """Normalized estimate of the autocorrelation function of `inp_sig`
+       by means of pearson correlation coefficient."""
+
+    N = len(inp_sig)
+    out = np.empty(N-1)
+
+    out[0] = 1
+    for m in range(1, N-1):
+
+        a = inp_sig[:-m]
+        b = inp_sig[m:]
+
+        s = corr_coef_pearson(a, b)
+
+        if s == 0:
+            out[m] = 0
+        else:
+            out[m] = s
+
+    return out
 
 
 def amp2db(amp):
@@ -35,6 +82,20 @@ def amp2db(amp):
     """
     foo = _np.atleast_1d(amp)
     return 20 * _np.log10(foo / maxamp(foo))
+
+
+def corr_coef_pearson(x, y):
+    """Fast perason correlation coefficient."""
+    detr_x = x - mean(x)
+    detr_y = y - mean(y)
+
+    foo = (detr_x @ detr_y)
+    bar = np.sum(detr_x * detr_x) * np.sum(detr_y * detr_y)
+
+    if bar == 0:
+        return 0
+    else:
+        return foo / sqrt(bar)
 
 
 def freq2mel(freq):
