@@ -32,9 +32,9 @@ def acf(inp_sig):
        by means of cross correlation."""
 
     N = len(inp_sig)
-    norm = inp_sig@inp_sig
+    norm = inp_sig @ inp_sig
 
-    out = np.empty(N)
+    out = _np.empty(N)
     out[0] = 1
     for m in range(1, N):
         a = inp_sig[:-m]
@@ -53,7 +53,7 @@ def acf_pearson(inp_sig):
        by means of pearson correlation coefficient."""
 
     N = len(inp_sig)
-    out = np.empty(N-1)
+    out = _np.empty(N-1)
 
     out[0] = 1
     for m in range(1, N-1):
@@ -86,16 +86,16 @@ def amp2db(amp):
 
 def corr_coef_pearson(x, y):
     """Fast perason correlation coefficient."""
-    detr_x = x - mean(x)
-    detr_y = y - mean(y)
+    detr_x = x - _np.mean(x)
+    detr_y = y - _np.mean(y)
 
     foo = (detr_x @ detr_y)
-    bar = np.sum(detr_x * detr_x) * np.sum(detr_y * detr_y)
+    bar = (detr_x @ detr_x) * (detr_y @ detr_y)
 
     if bar == 0:
         return 0
     else:
-        return foo / sqrt(bar)
+        return foo / _np.sqrt(bar)
 
 
 def freq2mel(freq):
