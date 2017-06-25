@@ -148,13 +148,15 @@ def sinusoid(f, amps=1, sr=9000, length=1, plot=False, retcomps=False):
 
 
 def zero_padding(sig, n):
-    """Appends n zeros to signal.
+    """Append n zeros to signal. `sig` must be 1D array.
 
     Params:
-        sig    (numerical array-like) a list of data points.
+        sig    (np.ndarray) a list of data points.
         n      (int) number of zeros to be appended.
 
     Return:
         (array) zero-padded input signal.
     """
-    return _np.append(sig, [0] * n)
+    container = _np.zeros(sig.size+n)
+    container[:sig.size] = sig
+    return container
