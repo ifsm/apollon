@@ -12,6 +12,8 @@ Functions:
     loadwav         Load a .wav file.
     maxamp          Maximal amplitude of signal.
     minamp          Minimal amplitude of signal.
+    noise           Generate withe noise.
+    sinusoid        Generate sinusoidal signal.
     zero_padding    Append array with zeros.
 """
 
@@ -92,6 +94,57 @@ def minamp(sig):
         (scalar) Maximal amplitude.
     """
     return _np.min(_np.absolute(sig))
+
+
+def noise(level, sr=9000, length=1):
+    """Generate withe noise.
+
+    Params:
+        level       (float) Noise level as standard deviation of a gaussian.
+        sr          (int) Sample rate.
+        length      (float) length of signal in  seconds.
+
+    Return:
+        (ndarray)   White noise signal.
+    """
+    return stats.norm.rvs(0, level, size=sr*length)
+
+
+def sinusoid(f, amps=1, sr=9000, length=1, plot=False, retcomps=False):
+    """Generate sinusoidal signal.
+
+    Params:
+        f       (iterable) Component frequencies.
+        amps    (int or interable) Amplitude of each component in f.
+                    If `amps` is an integer each component of f will be
+                    scaled according to `amps`. If `amps` is an iterable
+                    each frequency will be scaled with the respective amplitude.
+        sr      (int) Sample rate.
+        length  (number) Length of signal in seconds.
+        plot    (bool) If True plot the signal.
+        retcomps(bool) If True return the components of the signal,
+                    otherwise return the sum.
+
+    Return:
+        (ndarray)   Sinusoidal signal.
+    """
+    f = _np.atleast_1d(f)
+    amps = _np.atleast_1d(amps)
+
+    if f.shape == amps.shape or amps.size == 1:
+        t = arange(sr*length)[:, None]
+        f = f / sr
+        sig = _np.sin(2*pi*f*t) * amps
+    else:
+        raise ValueError('Shapes of f and amps must be equal.')
+
+    if plot:
+        plt.plot(t/sr, sig)
+
+    if retcomps:
+        return sig
+    else:
+        return sig.sum(axis=1)
 
 
 def zero_padding(sig, n):
