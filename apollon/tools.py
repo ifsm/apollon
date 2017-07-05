@@ -46,22 +46,40 @@ def get_offdiag(mat):
     return offitems
 
 
-def normalize(arr):
-    """Normalizes an n-dim numpy array to [0, 1] regarding to the first axis.
-    Thus, in a 2-d array each row is _normalized with respect to the row
-    maximum.
+def normalize(arr, mode='array'):
+    """Normalize an arbitrary array_like.
 
-    Param
+    Params:
         arr   (numerical array-like) Input signal.
-
+        axis  (str) Normalization mode:
+                    'array' -> (default) Normalize whole array.
+                    'rows'  -> Normalize each row separately.
+                    'cols'  -> Normalize each col separately.
     Return:
-        (array) _normalized input signal.
+        (array) Normalized input.
     """
+
     arr = _np.atleast_1d(arr)
-    if arr.ndim <= 1:
-        return arr / _np.absolute(arr).max()
+
+    if mode == 'array':
+        return _normalize(arr)
+
+    elif mode == 'rows':
+        return _np.vstack(_normalize(row) for row in arr)
+
+    elif mode == 'cols':
+        return _np.hstack(_normalize(col[:, None]) for col in arr.T)
+
     else:
-        return _np.vstack(row / _np.absolute(row).max() for row in arr)
+        raise ValueError('Unknown normalization mode')
+
+
+def _normalize(arr):
+    """Normalize array."""
+    arr_min = arr.min()
+    arr_max = arr.max()
+    return (arr - arr_min) / (arr_max - arr_min)
+
 
 
 def rowdiag(v, k=0):
