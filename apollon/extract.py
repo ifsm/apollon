@@ -8,7 +8,6 @@ from collections import OrderedDict
 import numpy as _np
 
 from apollon.decorators import isAudioChunk
-from apollon.fractal.phasespace import PseudoPhaseSpace
 from apollon.signal.audio import _AudioChunks
 from apollon.signal.spectral import fft
 from apollon.tools import scale
