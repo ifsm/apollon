@@ -73,7 +73,7 @@ def normalize(arr, mode='array'):
     else:
         raise ValueError('Unknown normalization mode')
 
-
+# TODO: This normalizes in [0, 1]; for audio we need [-1, 1]
 def _normalize(arr):
     """Normalize array."""
     arr_min = arr.min()
