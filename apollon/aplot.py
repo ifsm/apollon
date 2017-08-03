@@ -102,7 +102,7 @@ def _new_axis_3d(fig=None, **kwargs):
     '''
     fig = _new_figure(**kwargs) if fig is None else fig
     ax_3d = fig.add_subplot(1, 1, 1, projection='3d')
-    return ax_3d
+    return fig, ax_3d
 
 
 @switch_interactive
