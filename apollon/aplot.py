@@ -20,6 +20,7 @@ Functions:
 
 import matplotlib.pyplot as _plt
 import matplotlib.cm as _cm
+from mpl_toolkits.mplot3d import Axes3D
 import numpy as _np
 from scipy import stats as _stats
 
