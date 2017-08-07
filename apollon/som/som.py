@@ -9,6 +9,7 @@ import numpy as _np
 from scipy import stats as _stats
 from scipy.spatial import distance as _distance
 
+from apollon.IO import save as _save
 from apollon.som import utilities as _utilities
 from apollon.som import defaults as _defaults
 from apollon.decorators import switch_interactive
@@ -181,7 +182,7 @@ class _som_base:
         fd = {'color':'#cccccc'}
         if marker:
             ax.scatter(y, x, s=40, marker='x', color='r')
-        
+
         for i, j, t in zip(x, y, targets):
             ax.text(j, i, t, fontdict=fd,
                     horizontalalignment='center',
@@ -281,6 +282,14 @@ class _som_base:
                   vmin=0, cmap='Greys', interpolation=interp)
         return ax
 
+
+    def save(self, path):
+        '''Save som object to file using pickle.
+
+        Params:
+            path    (str) Save SOM to this path.
+        '''
+        _save(self, path)
 
 
 class SelfOrganizingMap(_som_base):
