@@ -7,10 +7,12 @@
 Tools for estimating fractal dimensions.
 
 Function:
-    embdedding      pseudo-phase space embdedding.
+    embdedding      Pseudo-phase space embdedding.
+    pps_entropy     Entropy of pps embdedding.
 """
 
 import numpy as _np
+from scipy import stats as _stats
 
 
 def embedding(inp_sig, tau, m=2, mode='zero'):
@@ -60,3 +62,18 @@ def embedding(inp_sig, tau, m=2, mode='zero'):
         raise ValueError('Unknown mode `{}`.'.format(pad))
 
     return out
+
+
+def pps_entropy(emb, bins):
+    """Calculate entropy of given embedding unsing log_e.
+
+    Params:
+        emb    (ndarray) pps embedding.
+        bins   (int) Number of histogram bins per axis.""
+
+    Return:
+        (float) Entropy of pps.
+    """    
+    pps, _ = _np.histogramdd(emb.T, bins=bins)
+    H = _stats.entropy(pps.flat) / _np.log(pps.size)
+    return H
