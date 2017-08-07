@@ -151,7 +151,7 @@ class _AudioData:
         _aplot.signal(self, xaxis=tickunit)
 
     def normalize(self):
-        self._signal = normalize(self._signal)
+        self._signal = self._signal / _np.max(_np.absolute(self._signal))
         self.normalized = True
 
     def __str__(self):
