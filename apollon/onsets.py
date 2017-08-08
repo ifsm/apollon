@@ -6,7 +6,6 @@ import matplotlib.pyplot as _plt
 import numpy as _np
 import scipy.signal as _sps
 
-from apollon import aplot as _aplot
 from apollon import fractal as _fractal
 from apollon import segment as _segment
 
