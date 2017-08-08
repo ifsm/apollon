@@ -108,6 +108,8 @@ class _AudioChunks:
 
 class _AudioData:
 
+    __slots__ = [ '_sample_rate', '_signal', '_N', 'normalized']
+
     # Descriptor attribute
     file = FileAccessControl()
 
