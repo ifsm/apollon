@@ -12,6 +12,7 @@ Functions:
     files_in_folder         Iterate over all files in given folder.
     save                    Pickle some data.
     load                    Load pickled data.
+    loadwav                 Load wav file.
 """
 
 
@@ -118,6 +119,19 @@ def load(path):
     with open(path, 'rb') as fobj:
         data = _pickle.load(fobj)
     return data
+
+
+def loadwav(path, norm=True):
+    """Load a .wav file.
+
+    Params:
+        path    (str or fobject)
+        norm    (bool) True if data should be normalized.
+
+    Return:
+        (int, ndarray)    sample rate and data.
+    """
+    return _AudioData(path, norm)
 
 
 def save(data, path):

@@ -12,7 +12,6 @@ Functions:
     corr_coef_pearson   Correlation coefficient after Pearson.
     freq2mel            Transform frequency to mel.
     mel2freq            Transform mel to frequency.
-    loadwav             Load a .wav file.
     maxamp              Maximal amplitude of signal.
     minamp              Minimal amplitude of signal.
     noise               Generate withe noise.
@@ -108,19 +107,6 @@ def freq2mel(freq):
         (real number) Mel-Frequency
     """
     return 1127 * _np.log(1 + freq / 700)
-
-
-def loadwav(path, norm=True):
-    """Load a .wav file.
-
-    Params:
-        path    (str or fobject)
-        norm    (bool) True if data should be normalized.
-
-    Return:
-        (int, ndarray)    sample rate and data.
-    """
-    return _AudioData(path, norm)
 
 
 def mel2freq(mel):
