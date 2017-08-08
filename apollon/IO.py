@@ -121,19 +121,6 @@ def load(path):
     return data
 
 
-def loadwav(path, norm=True):
-    """Load a .wav file.
-
-    Params:
-        path    (str or fobject)
-        norm    (bool) True if data should be normalized.
-
-    Return:
-        (int, ndarray)    sample rate and data.
-    """
-    return _AudioData(path, norm)
-
-
 def save(data, path):
     """Pickles data to path.
 

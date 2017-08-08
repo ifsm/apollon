@@ -1,10 +1,15 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-'''Classes:
-    AudioChunks
-    AudioData
-'''
+"""
+Classes:
+    _AudioChunks
+    _AudioData
+
+Functions:
+    loadwav         Load .wav file.
+"""
+
 
 import numpy as _np
 import scipy.io.wavfile as spw
@@ -142,7 +147,7 @@ class _AudioData:
 
         self.onsets = _onsets.OnsetDetector()
 
-        
+
     def get_sr(self):
         '''Return sample rate.'''
         return self._sample_rate
@@ -173,3 +178,16 @@ class _AudioData:
 
     def __getitem__(self, item):
         return self._signal[item]
+
+
+def loadwav(path, norm=True):
+    """Load a .wav file.
+
+    Params:
+        path    (str or fobject)
+        norm    (bool) True if data should be normalized.
+
+    Return:
+        (int, ndarray)    sample rate and data.
+    """
+    return _AudioData(path, norm)
