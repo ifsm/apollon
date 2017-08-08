@@ -21,9 +21,7 @@ Functions:
 
 
 import numpy as _np
-from scipy import stats
-
-from apollon.signal.audio import _AudioData
+from scipy import stats as _stats
 
 
 def acf(inp_sig):
@@ -155,7 +153,7 @@ def noise(level, n=9000):
     Return:
         (ndarray)   White noise signal.
     """
-    return stats.norm.rvs(0, level, size=n)
+    return _stats.norm.rvs(0, level, size=n)
 
 
 def sinusoid(f, amps=1, sr=9000, length=1, plot=False, retcomps=False):
