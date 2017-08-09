@@ -17,7 +17,6 @@ import scipy.io.wavfile as spw
 from apollon.IO import FileAccessControl
 from apollon.tools import normalize
 #from apollon import aplot as _aplot
-from apollon import onsets as _onsets
 
 
 __author__ = 'Michael Blaß'
@@ -115,7 +114,7 @@ class _AudioChunks:
 
 class _AudioData:
 
-    __slots__ = ['onsests', '_sample_rate', '_signal', '_N', 'normalized']
+    __slots__ = ['_sample_rate', '_signal', '_N', 'normalized']
 
     # Descriptor attribute
     file = FileAccessControl()
@@ -143,9 +142,7 @@ class _AudioData:
 
         self.normalized = norm
         if norm:
-            self.normalize()
-
-        self.onsets = _onsets.OnsetDetector()
+            self._normalize()
 
 
     def get_sr(self):
