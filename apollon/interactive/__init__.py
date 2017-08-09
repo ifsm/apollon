@@ -16,7 +16,7 @@ from apollon import IO
 from apollon import onsets
 from apollon import som
 
-from apollon.signal.tools import loadwav
+from apollon.signal.audio import loadwav
 from apollon import segment
 from apollon import tools
 
