@@ -155,7 +155,6 @@ class _som_base:
         else:
             if ax is None:
                 ax = _new_axis(xlim=(0, self.dx), ylim=(0, self.dy), **kwargs)
-                print(type(ax))
             ax.imshow(self._cmap.reshape(self.dx, self.dy))
             #return ax
 
