@@ -153,7 +153,7 @@ def noise(level, n=9000):
     return _stats.norm.rvs(0, level, size=n)
 
 
-def sinusoid(f, amps=1, sr=9000, length=1, plot=False, retcomps=False):
+def sinusoid(f, amps=1, sr=9000, length=1, retcomps=False):
     """Generate sinusoidal signal.
 
     Params:
@@ -164,7 +164,6 @@ def sinusoid(f, amps=1, sr=9000, length=1, plot=False, retcomps=False):
                     each frequency will be scaled with the respective amplitude.
         sr      (int) Sample rate.
         length  (number) Length of signal in seconds.
-        plot    (bool) If True plot the signal.
         retcomps(bool) If True return the components of the signal,
                     otherwise return the sum.
 
@@ -179,9 +178,6 @@ def sinusoid(f, amps=1, sr=9000, length=1, plot=False, retcomps=False):
         sig = _np.sin(2*_np.pi*f*t) * amps
     else:
         raise ValueError('Shapes of f and amps must be equal.')
-
-    if plot:
-        plt.plot(t/sr, sig)
 
     if retcomps:
         return sig
