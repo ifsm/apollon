@@ -86,13 +86,10 @@ def corr_coef_pearson(x, y):
     detr_x = x - _np.mean(x)
     detr_y = y - _np.mean(y)
 
-    foo = (detr_x @ detr_y)
-    bar = (detr_x @ detr_x) * (detr_y @ detr_y)
+    r_xy = _np.convolve(detr_x, detr_y[::-1], mode='valid')
+    r_xx_yy = (detr_x @ detr_x) * (detr_y @ detr_y)
 
-    if bar == 0:
-        return 0
-    else:
-        return foo / _np.sqrt(bar)
+    return r_xy / r_xx_yy
 
 
 def freq2mel(freq):
