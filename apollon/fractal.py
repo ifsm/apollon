@@ -77,3 +77,45 @@ def pps_entropy(emb, bins):
     pps, _ = _np.histogramdd(emb.T, bins=bins)
     H = _stats.entropy(pps.flat) / _np.log(pps.size)
     return H
+    
+    
+def __lorenz_system(x, y, z, s, r, b):
+    """Compute the derivatives of the Lorenz system of coupled
+       different equations.
+    
+    Params:
+        x, y, z    (float) Current system state.
+        s, r, b    (float) System parameters.
+    
+    Return:
+        xyz_dot    (array) Derivatives of current system state.
+    """
+    xyz_dot = _np.array([s * (y - x),
+                          x * (r - z) - y,
+                          x * y - b * z])
+    return xyz_dot
+
+
+def lorenz_attractor(n, sigma=10, rho=28, beta=8/3,
+                     init_xyz=(0., 1., 1.05), dt=0.01):
+    """Simulate a Lorenz system.
+    
+    Params:
+        n        (int)   Number of data points to generate.
+        sigma    (float) System parameter.
+        rho      (rho)   System parameter.
+        beta     (beta)  System parameter.
+        init_xyz (tuple) Initial System state.
+        dt       (float) Step size.
+                     
+    Return:
+        xyz    (array) System states.
+    """
+    xyz = _np.empty((n, 3))
+    xyz[0] = init_xyz
+
+    for i in range(n-1):
+        xyz_prime = __lorenz_system(*xyz[i], sigma, rho, beta)
+        xyz[i+1] = xyz[i] + xyz_prime * dt
+        
+    return xyz
