@@ -175,8 +175,7 @@ def sinusoid(f, amps=1, sr=9000, length=1, plot=False, retcomps=False):
     amps = _np.atleast_1d(amps)
 
     if f.shape == amps.shape or amps.size == 1:
-        t = _np.arange(sr*length)[:, None]
-        f = f / sr
+        t = _np.arange(sr*length)[:, None] / sr
         sig = _np.sin(2*_np.pi*f*t) * amps
     else:
         raise ValueError('Shapes of f and amps must be equal.')
