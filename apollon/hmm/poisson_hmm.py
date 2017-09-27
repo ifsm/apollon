@@ -22,11 +22,11 @@ from numpy import linalg as _linalg
 from scipy import stats
 from scipy.optimize import minimize, fmin_powell, approx_fprime
 
+from apollon import _defaults
 from apollon.hmm.hmm_base import HMM_Base as _HMM_Base
 from apollon.hmm import utilities as _utils
 # from apollon.hmm import viterbi
 from apollon import aplot
-from apollon import apollon_globals
 from apollon import exceptions as _expect
 from apollon import tools as _tools
 
@@ -58,7 +58,7 @@ class PoissonHmm(_HMM_Base):
             self.x = _np.round(x).astype(int)
 
         # Initialize distriution parameter
-        if guess in apollon_globals._lambda_guess_methods:
+        if guess in _defaults.lambda_guess_methods:
             if guess == 'linear':
                 self._init_lambda = _utils.guess_linear(self.x, m) \
                     if init_lambda is None else init_lambda

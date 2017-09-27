@@ -12,6 +12,7 @@ Functions:
     files_in_folder         Iterate over all files in given folder.
     save                    Pickle some data.
     load                    Load pickled data.
+    loadwav                 Load wav file.
 """
 
 
@@ -33,7 +34,7 @@ class FileAccessControl:
     def __set__(self, obj, file_name):
         if obj not in self.__attribute.keys():
             if isinstance(file_name, str):
-                _path = pathlib.Path(file_name)
+                _path = pathlib.Path(file_name).resolve()
                 if _path.exists():
                     if _path.is_file():
                         if _path.suffix == '.wav':

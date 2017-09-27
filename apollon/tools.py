@@ -4,10 +4,8 @@
 """
 tools.py
 
-A collection of tools often used in audio signal processing.
+Every day tools.
 
-Clases:
-    PseudoPhaseSpace    A 2D pseudo-phase space
 
 Functions:
     get_offdiag         Return off-diag elements of square array.
@@ -18,11 +16,14 @@ Functions:
     set_offdiag         Set off-diag elements of square array.
     smooth_stat         Return smoothed input.
     standardize         Return standardized input.
+    time_stamp          Return time stamp
 """
 
 
 import numpy as _np
 import matplotlib.pyplot as _plt
+from datetime import datetime as _datetime
+from apollon import _defaults
 
 
 __author__ = 'Michael Blaß'
@@ -169,3 +170,7 @@ def set_offdiag(mat, values):
     else:
         raise IndexError("Number of off-diagonal elements must equal length  \
                          of values.")
+
+def time_stamp():
+    """Return default time stamp."""
+    return _datetime.now().strftime(_defaults.time_stamp_fmt)

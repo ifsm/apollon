@@ -4,67 +4,63 @@
 
 import matplotlib.pyplot as _plt
 import numpy as _np
-from scipy.signal import argrelmax, hilbert
+import scipy.signal as _sps
 
-from apollon import segment
-from apollon import extract
-from apollon import aplot as _aplot
-
-
-def detect(sig, theta=10, boxes=50, chunk_len=16, hop_size=8, order=15, hilb=True, lb=True):
-    '''Detects note onsets in percussive musical signals using weighted information entropy minimization.
-    :param sig:         (AudioData) audio signal
-    :param theta:       (int) order of delay in samples
-    :param boxes:       (int) number of boxes per axis
-    :param chunk_len:   (int) len of detection chunks in ms
-    :param hop_size:    (int) extraction window displacement in ms
-    :param order:       (int) comparison area per side in samples
-    :param hilb:        (bool) calculate the onsets from the hilbert transform of the signal
-    :param hmm:         (bool) use HMM to correctliy idetify onsets
-
-    :return:            (tuple) array of indices, list of entropy values
-    '''
-    chunks = segment.by_ms_with_hop(sig, chunk_len, hop_size)
-
-    H = _np.array([extract.entropy(i, theta, boxes) for i in chunks])
-    rgy = _np.array(extract.energy(chunks))
-    if hilb:
-        H = hilbert(H).imag *(-1)
-
-    w = abs(H) * rgy
-    odf = argrelmax(w, order=order)[0]
-    if lb:
-        onsets_idx = [i[0] for i in chunks.get_limits()[odf]]
-    else:
-        onsets_idx = [(i+j)//2 for (i, j) in chunks.get_limits()[odf]]
+from apollon import fractal as _fractal
+from apollon import segment as _segment
+from apollon import tools as _tools
 
 
-    return OnsetResult(theta, boxes, chunk_len, chunks.get_limits(), hop_size, order, w, onsets_idx, H, rgy)
+class OnsetDetector:
 
+    __slots__ = ['audio_file_name', 'bins', 'idx', 'm', 'odf', 'order', 'tau',
+                 'time_stamp', 'window_length', 'window_hop_size']
 
-class OnsetResult:
-    '''Encapsulate the results of an onset detection.'''
-    __slots__ = ['theta', 'boxes', 'chunk_len', 'limits', 'hop_size', 'order', 'odf', 'odx', 'H', 'rgy']
+    def __init__(self):
+        pass
 
-    def __init__(self, theta, boxes, chunk_len, chunk_limits, hop_size, order, odf, odx, H, rgy):
+    def detect(self, sig, tau=10, m=3, bins=50, wlen=16, whs=8, order=22):
+        """Detect note onsets in (percussive) music as local maxima of information
+        entropy.
 
-        self.theta = theta
-        self.boxes = boxes
-        self.chunk_len = chunk_len
-        self.limits = chunk_limits
-        self.hop_size = hop_size
+        Params:
+            sig      (array-like) Audio signal.
+            tau      (int) Phase-space: delay parameter in samples.
+            m        (int) Phase-space: number of dimensions.
+            bins     (int) Phase-space: number of boxes per axis.
+            wlen     (int) Segmentation: window length in ms.
+            whs      (int) Segmentation: window displacement in ms.
+            order    (int) Peak-picling: Order of filter in samples.
+
+        Return:
+            (tuple) array of indices, list of entropy values
+        """
+        # meta
+        self.audio_file_name = str(sig.file)
+        self.bins = bins
+        self.m = m
         self.order = order
-        self.odf = odf
-        self.odx = odx
-        self.H = H
-        self.rgy = rgy
+        self.tau = tau
+        self.time_stamp = _tools.time_stamp()
+        self.window_hop_size = whs
+        self.window_length = wlen
 
-    def plot(self, sig):
-        ax = _aplot.onsets(sig, self.odx)
-        return ax
 
-    def __repr__(self):
-        return ''.join('{}: {}\n'.format(mem, self.__getattribute__(mem)) for mem in OnsetResult.__slots__)
+        # segment audio
+        chunks = _segment.by_ms_with_hop(sig, self.window_length,
+                                         self.window_hop_size)
 
-    def __str__(self):
-        return '<OnsetDetectionResult>'
+        # calculate entropy for each chunk
+        H = _np.empty(len(chunks))
+        for i, ch in enumerate(chunks):
+            em = _fractal.embedding(ch, self.tau, m=self.m, mode='wrap')
+            H[i] = _fractal.pps_entropy(em, self.bins)
+
+        # Take imaginary part of the Hilbert transform of the enropy
+        self.odf = _np.absolute(_sps.hilbert(H).imag)
+
+        # pick the peaks
+        peaks, = _sps.argrelmax(self.odf, order=self.order)
+
+        # calculate onset position to be in the middle of chunks
+        self.idx = [(i+j)//2 for (i, j) in chunks.get_limits()[peaks]]

@@ -12,7 +12,6 @@ Functions:
     corr_coef_pearson   Correlation coefficient after Pearson.
     freq2mel            Transform frequency to mel.
     mel2freq            Transform mel to frequency.
-    loadwav             Load a .wav file.
     maxamp              Maximal amplitude of signal.
     minamp              Minimal amplitude of signal.
     noise               Generate withe noise.
@@ -22,9 +21,7 @@ Functions:
 
 
 import numpy as _np
-from scipy import stats
-
-from apollon.signal.audio import _AudioData
+from scipy import stats as _stats
 
 
 def acf(inp_sig):
@@ -110,19 +107,6 @@ def freq2mel(freq):
     return 1127 * _np.log(1 + freq / 700)
 
 
-def loadwav(path, norm=True):
-    """Load a .wav file.
-
-    Params:
-        path    (str or fobject)
-        norm    (bool) True if data should be normalized.
-
-    Return:
-        (int, ndarray)    sample rate and data.
-    """
-    return _AudioData(path, norm)
-
-
 def mel2freq(mel):
     """Transforms Mel-Frequencies to Hz.
 
@@ -169,7 +153,7 @@ def noise(level, n=9000):
     Return:
         (ndarray)   White noise signal.
     """
-    return stats.norm.rvs(0, level, size=n)
+    return _stats.norm.rvs(0, level, size=n)
 
 
 def sinusoid(f, amps=1, sr=9000, length=1, plot=False, retcomps=False):

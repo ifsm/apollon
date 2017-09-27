@@ -1,10 +1,15 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-'''Classes:
-    AudioChunks
-    AudioData
-'''
+"""
+Classes:
+    _AudioChunks
+    _AudioData
+
+Functions:
+    loadwav         Load .wav file.
+"""
+
 
 import numpy as _np
 import scipy.io.wavfile as spw
@@ -12,6 +17,7 @@ import scipy.io.wavfile as spw
 from apollon.IO import FileAccessControl
 from apollon.tools import normalize
 #from apollon import aplot as _aplot
+
 
 __author__ = 'Michael Blaß'
 
@@ -108,6 +114,8 @@ class _AudioChunks:
 
 class _AudioData:
 
+    __slots__ = ['_sample_rate', '_signal', '_N', 'normalized']
+
     # Descriptor attribute
     file = FileAccessControl()
 
@@ -134,7 +142,8 @@ class _AudioData:
 
         self.normalized = norm
         if norm:
-            self.normalize()
+            self._normalize()
+
 
     def get_sr(self):
         '''Return sample rate.'''
@@ -150,8 +159,8 @@ class _AudioData:
     def plot(self, tickunit='seconds'):
         _aplot.signal(self, xaxis=tickunit)
 
-    def normalize(self):
-        self._signal = normalize(self._signal)
+    def _normalize(self):
+        self._signal = self._signal / _np.max(_np.absolute(self._signal))
         self.normalized = True
 
     def __str__(self):
@@ -166,3 +175,16 @@ class _AudioData:
 
     def __getitem__(self, item):
         return self._signal[item]
+
+
+def loadwav(path, norm=True):
+    """Load a .wav file.
+
+    Params:
+        path    (str or fobject)
+        norm    (bool) True if data should be normalized.
+
+    Return:
+        (int, ndarray)    sample rate and data.
+    """
+    return _AudioData(path, norm)

@@ -24,8 +24,8 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as _np
 from scipy import stats as _stats
 
+from apollon import _defaults
 from apollon.signal.audio import _AudioData
-from apollon.apollon_globals import plot_params as _plot_params
 from apollon.decorators import switch_interactive
 
 
