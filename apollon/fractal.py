@@ -7,12 +7,74 @@
 Tools for estimating fractal dimensions.
 
 Function:
-    embdedding      Pseudo-phase space embdedding.
-    pps_entropy     Entropy of pps embdedding.
+    corr_dim           Estimate correlation dimension.
+    embdedding         Pseudo-phase space embdedding.
+    pps_entropy        Entropy of pps embdedding.
+
 """
 
 import numpy as _np
 from scipy import stats as _stats
+from scipy.spatial import distance
+
+
+def correlation_dimension(data, tau, m, r, mode='cut', fit_n_points=10):
+    """Compute an estimate of the correlation dimension D_2.
+
+    TODO:
+        - Implement algo for linear region detection
+        - Implement orbital delay parameter \gamma
+        - Implement multiprocessing
+        - Find a way use L_\inf norm with distance.pdist
+
+    Params:
+        data    (1d array)  Input time series.
+        tau     (int)       Reconstruction delay.
+        m       (iterable)  of embedding dimensions
+        r       (iterable)  of radii
+        mode    (str)       See doc of `embedding`.
+
+    Return:
+        lCrm    (array) Logarithm of correlation sums given r_i.
+        lr      (array) Logarithm of radii.
+        d2      (float) Estimate of correlation dimension.
+    """
+    N = data.size
+    sd = data.std()
+
+    M = len(m)
+
+    lr = _np.log(r)
+    Nr = len(r)
+
+    # output arrays
+    lCrm = _np.zeros((M, Nr))    # Log correlation sum given `r` at dimension `m`
+    D2m = _np.zeros(M)           # Corr-dim estimate at embdedding `m`
+
+    # iterate over each dimension dimensions
+    for i, mi in enumerate(m):
+
+        # compute embedding
+        emb = embedding(data, tau, mi, mode)
+
+        # compute distance matrix
+        # we should use L_\inf norm here
+        pairwise_distances = distance.squareform(
+            distance.pdist(emb.T, metric='euclidean'))
+
+        # compute correlation sums
+        Cr = _np.array([_np.sum(pairwise_distances < ri) for ri in r],
+                       dtype=float)
+        Cr *= 1 / (N * (N-1))
+
+        # transform sums to log domain
+        lCrm[i] = _np.log(Cr)
+
+        # fit 1d polynominal in the of range of s +- n
+        cde, inter = _np.polyfit(lr, lCrm[i], 1)
+        D2m[i] = cde
+
+    return lCrm, lr, D2m
 
 
 def embedding(inp_sig, tau, m=2, mode='zero'):
