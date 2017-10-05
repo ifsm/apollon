@@ -9,8 +9,8 @@ Tools for estimating fractal dimensions.
 Function:
     corr_dim           Estimate correlation dimension.
     embdedding         Pseudo-phase space embdedding.
+    lorenz_attractor   Simulate Lorenz system.
     pps_entropy        Entropy of pps embdedding.
-
 """
 
 import numpy as _np
@@ -25,7 +25,7 @@ def correlation_dimension(data, tau, m, r, mode='cut', fit_n_points=10):
         - Implement algo for linear region detection
         - Implement orbital delay parameter \gamma
         - Implement multiprocessing
-        - Find a way use L_\inf norm with distance.pdist
+        - Find a way to use L_\inf norm with distance.pdist
 
     Params:
         data    (1d array)  Input time series.
