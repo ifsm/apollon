@@ -31,9 +31,6 @@ class OnsetDetector:
             wlen     (int) Segmentation: window length in ms.
             whs      (int) Segmentation: window displacement in ms.
             order    (int) Peak-picling: Order of filter in samples.
-
-        Return:
-            (tuple) array of indices, list of entropy values
         """
         # meta
         self.audio_file_name = str(sig.file)
@@ -63,4 +60,5 @@ class OnsetDetector:
         peaks, = _sps.argrelmax(self.odf, order=self.order)
 
         # calculate onset position to be in the middle of chunks
-        self.idx = [(i+j)//2 for (i, j) in chunks.get_limits()[peaks]]
+        self.idx = _np.array( [(i+j)//2
+                              for (i, j) in chunks.get_limits()[peaks]])
