@@ -9,6 +9,7 @@ Every day tools.
 
 Functions:
     get_offdiag         Return off-diag elements of square array.
+    L1_Norm             Compute L1_Norm.
     normalize           Return _normalized version of input.
     offdiag             Access to off-diagonal elements of square array.
     rowdiag             kth array diagonal sorted by array's rows.
@@ -16,7 +17,9 @@ Functions:
     set_offdiag         Set off-diag elements of square array.
     smooth_stat         Return smoothed input.
     standardize         Return standardized input.
-    time_stamp          Return time stamp
+    time_stamp          Return time stamp.
+    within              Test wether val is in window.
+    within_any          Test wether val is in any of windows.
     ztrans              Return ztrans formed values.
 """
 
@@ -46,6 +49,14 @@ def get_offdiag(mat):
     offitems = mat[~mask]
 
     return offitems
+
+
+def L1_Norm(x):
+    """Compute the L_1 norm of input vector `x`.
+
+    This is implementation generally faster than np.norm(x, ord=1).
+    """
+    return _np.abs(x).sum(axis=0)
 
 
 def normalize(arr, mode='array'):
@@ -176,6 +187,19 @@ def time_stamp():
     """Return default time stamp."""
     return _datetime.now().strftime(_defaults.time_stamp_fmt)
 
+
+def within(x: float, window: Iterable) -> bool:
+    """Return True if x is in window."""
+    return window[0] <= x <= window[1]
+
+
+def within_any(x: float, windows: np.ndarray) -> bool:
+    """Return True if x is in any of the given windows"""
+    a = windows[:, 0] <= x
+    b = x <= windows[:, 1]
+    c = np.logical_and(a, b)
+
+    return np.any(c)
 
 def ztrans(x: _np.ndarray) -> _np.ndarray:
     """Retrun z-transformed values of x.
