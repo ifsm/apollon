@@ -17,6 +17,7 @@ Functions:
     smooth_stat         Return smoothed input.
     standardize         Return standardized input.
     time_stamp          Return time stamp
+    ztrans              Return ztrans formed values.
 """
 
 
@@ -174,3 +175,15 @@ def set_offdiag(mat, values):
 def time_stamp():
     """Return default time stamp."""
     return _datetime.now().strftime(_defaults.time_stamp_fmt)
+
+
+def ztrans(x: _np.ndarray) -> _np.ndarray:
+    """Retrun z-transformed values of x.
+
+    Params:
+        x    (array) Input values
+
+    Return:
+        (array) z-transformed values
+    """
+    return (x - x.mean(axis=0)) / x.std(axis=0)
