@@ -24,9 +24,11 @@ Functions:
 """
 
 
+from datetime import datetime as _datetime
 import numpy as _np
 import matplotlib.pyplot as _plt
-from datetime import datetime as _datetime
+from typing import Iterable
+
 from apollon import _defaults
 
 
@@ -193,11 +195,11 @@ def within(x: float, window: Iterable) -> bool:
     return window[0] <= x <= window[1]
 
 
-def within_any(x: float, windows: np.ndarray) -> bool:
+def within_any(x: float, windows: _np.ndarray) -> bool:
     """Return True if x is in any of the given windows"""
     a = windows[:, 0] <= x
     b = x <= windows[:, 1]
-    c = np.logical_and(a, b)
+    c = _np.logical_and(a, b)
 
     return np.any(c)
 
