@@ -86,13 +86,10 @@ def corr_coef_pearson(x, y):
     detr_x = x - _np.mean(x)
     detr_y = y - _np.mean(y)
 
-    foo = (detr_x @ detr_y)
-    bar = (detr_x @ detr_x) * (detr_y @ detr_y)
+    r_xy = _np.convolve(detr_x, detr_y[::-1], mode='valid')
+    r_xx_yy = (detr_x @ detr_x) * (detr_y @ detr_y)
 
-    if bar == 0:
-        return 0
-    else:
-        return foo / _np.sqrt(bar)
+    return r_xy / r_xx_yy
 
 
 def freq2mel(freq):
@@ -156,7 +153,7 @@ def noise(level, n=9000):
     return _stats.norm.rvs(0, level, size=n)
 
 
-def sinusoid(f, amps=1, sr=9000, length=1, plot=False, retcomps=False):
+def sinusoid(f, amps=1, sr=9000, length=1, retcomps=False):
     """Generate sinusoidal signal.
 
     Params:
@@ -167,7 +164,6 @@ def sinusoid(f, amps=1, sr=9000, length=1, plot=False, retcomps=False):
                     each frequency will be scaled with the respective amplitude.
         sr      (int) Sample rate.
         length  (number) Length of signal in seconds.
-        plot    (bool) If True plot the signal.
         retcomps(bool) If True return the components of the signal,
                     otherwise return the sum.
 
@@ -178,14 +174,10 @@ def sinusoid(f, amps=1, sr=9000, length=1, plot=False, retcomps=False):
     amps = _np.atleast_1d(amps)
 
     if f.shape == amps.shape or amps.size == 1:
-        t = _np.arange(sr*length)[:, None]
-        f = f / sr
+        t = _np.arange(sr*length)[:, None] / sr
         sig = _np.sin(2*_np.pi*f*t) * amps
     else:
         raise ValueError('Shapes of f and amps must be equal.')
-
-    if plot:
-        plt.plot(t/sr, sig)
 
     if retcomps:
         return sig

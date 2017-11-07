@@ -19,6 +19,7 @@ __author__ = 'Michael Blaß'
 
 import numpy as _np
 import matplotlib.pyplot as _plt
+from scipy.signal import stft
 
 from apollon.signal.tools import amp2db
 
@@ -195,3 +196,43 @@ def fft(signal, sr=None, n=None, window=None):
         bins = _np.fft.rfft(sig, n) / length * 2
 
     return _Spectrum(bins, sr, n, window)
+
+
+class STFT:
+    def __init__(self, sig, sr, window='hamming', nseg=256, nover=None, nfft=None):
+
+        res = stft(sig, fs=sr, window=window, nperseg=nseg,
+                   noverlap=nover, nfft=nfft)
+
+        self.freqs, self.t, self.bins = res
+        self.bins *= 2
+
+        self.shape = self.bins.shape
+
+    def plot(self, power=True):
+        if power:
+            XX = self.power()
+        else:
+            XX = self.abs()
+
+        # TODO: implement aplot integration
+        fig, ax = plt.subplots(1, figsize=(8, 4))
+        ax.pcolormesh(self.t, self.freqs, XX,
+                      cmap='nipy_spectral')
+        return fig, ax
+
+    def abs(self):
+        return self.__abs__()
+
+    def power(self):
+        return _np.square(self.abs())
+
+    def centroid(self,):
+        Xp = self.power()
+        return _np.sum(Xp.T * self.freqs, axis=1) / _np.sum(Xp, axis=0)
+
+    def flux(self, hr=True):
+        return _np.maximum(_np.diff(self.abs(), axis=1), 0)
+
+    def __abs__(self):
+        return _np.absolute(self.bins)
