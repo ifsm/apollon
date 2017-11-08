@@ -3,9 +3,10 @@
 
 
 import matplotlib.pyplot as _plt
+import mir_eval as _me
 import numpy as _np
 import scipy.signal as _sps
-import mir_eval as _me
+from typing import Dict, Tuple
 
 from apollon import fractal as _fractal
 from apollon import segment as _segment
@@ -104,9 +105,9 @@ class FluxOnsetDetector:
         #dX = np.gradient(X.abs(), 1/hop, axis=1)
         dX = _np.diff(X.abs())
 
-        odf = L1_Norm(np.maximum(dX, 0, dX))
+        odf = L1_Norm(_np.maximum(dX, 0, dX))
 
-        wh = np.hamming(10)
+        wh = _np.hamming(10)
         odf = convolve(odf, wh, mode='same')
 
         self.odf = ztrans(odf)
@@ -117,8 +118,9 @@ class FluxOnsetDetector:
 
 
 
-def evaluate_onsets(targets:   Dict[str, np.ndarray],
-                    estimates: Dict[str, np.ndarray]) -> Tuple[float, float, float]:
+def evaluate_onsets(targets:   Dict[str, _np.ndarray],
+                    estimates: Dict[str, _np.ndarray]) -> Tuple[float, float,
+                                                                float]:
     """Evaluate the performance of an onset detection.
 
     Params:
