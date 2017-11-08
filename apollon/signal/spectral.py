@@ -19,7 +19,7 @@ __author__ = 'Michael Blaß'
 
 import numpy as _np
 import matplotlib.pyplot as _plt
-from scipy.signal import stft
+from scipy.signal import stft, get_window
 
 from apollon.signal.tools import amp2db
 
@@ -120,13 +120,16 @@ class _Spectrum(_Spectrum_Base):
         powspc = self.power()
         return (self.freqs * powspc).sum() / powspc.sum()
 
-    def mag(self):
-        """Return magnitude spectrum."""
+    def __abs__(self):
         return _np.absolute(self.bins)
+
+    def abs(self):
+        """Return magnitude spectrum."""
+        return self.__abs__
 
     def power(self):
         """Retrun power spectrum."""
-        return _np.absolute(self.bins)**2
+        return _np.square(self.abs())
 
     def phase(self):
         """Return phase spectrum."""
@@ -170,7 +173,7 @@ def fft(signal, sr=None, n=None, window=None):
         signal      (array-like) input time domain signal
         sr          (int) sample rate
         n           (int) fft length
-        window      (function) a window function
+        window      (str) name of valid window
 
     Returns:
         (_spectrum._Spectrum)       Spectrum object
@@ -191,7 +194,8 @@ def fft(signal, sr=None, n=None, window=None):
         n = n
 
     if window:
-        bins = _np.fft.rfft(sig * window(length), n) / length * 2
+        w = get_window(window, length)
+        bins = _np.fft.rfft(sig * w, n) / length * 2
     else:
         bins = _np.fft.rfft(sig, n) / length * 2
 
