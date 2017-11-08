@@ -11,6 +11,7 @@ Functions:
     get_offdiag         Return off-diag elements of square array.
     L1_Norm             Compute L1_Norm.
     normalize           Return _normalized version of input.
+    in2out              Create a save from an input path.
     offdiag             Access to off-diagonal elements of square array.
     rowdiag             kth array diagonal sorted by array's rows.
     scale               Return scaled version of input.
@@ -27,6 +28,7 @@ Functions:
 from datetime import datetime as _datetime
 import numpy as _np
 import matplotlib.pyplot as _plt
+import pathlib as _pathlib
 from typing import Iterable
 
 from apollon import _defaults
@@ -51,6 +53,20 @@ def get_offdiag(mat):
     offitems = mat[~mask]
 
     return offitems
+
+
+def in2out(inp_path, out_path, ext=None):
+    '''Creat a save path from inp_path.'''
+
+    if isinstance(inp_path, str):
+        inp_path = _pathlib.Path(inp_path)
+
+    if isinstance(out_path, str):
+        out_path = _pathlib.Path(out_path)
+
+    _ext = ext if ext.startswith('.') else '.' + ext
+    fn = inp_path.stem if ext is None else inp_path.stem + _ext
+    return out_path.joinpath(fn)
 
 
 def L1_Norm(x):
