@@ -125,7 +125,7 @@ class _Spectrum(_Spectrum_Base):
 
     def abs(self):
         """Return magnitude spectrum."""
-        return self.__abs__
+        return self.__abs__()
 
     def power(self):
         """Retrun power spectrum."""
