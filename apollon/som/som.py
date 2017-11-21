@@ -296,8 +296,7 @@ class SelfOrganizingMap(_som_base):
                  metric='euclidean', init_distr='simplex'):
         super().__init__(dims, eta, nh, metric, init_distr)
 
-    # TODO:
-    # incremental updatae
+
     def _incremental_update(self, data_set, c_eta, c_nhr):
         total_qE = 0
         for fv in data_set:
@@ -382,3 +381,64 @@ class SelfOrganizingMap(_som_base):
 
             # always shuffle data
             self._incremental_update(_np.random.permutation(data), c_eta, c_nhr)
+
+
+from apollon.hmm.poisson_hmm import hmm_distance
+class PoissonHmmSom(_som_base):
+    def __init__(self, self, dims=(10, 10, 2), eta=.8, nh=5,
+                 metric=hmm_distance, init_distr='simplex'):
+        """
+        This SOM assumes a stationary PoissonHMM on each unit. The weight vector
+        represents the HMMs distribution parameters in the following order
+        [lambda1, ..., lambda_m, gamma_11, ... gamma_mm]
+        Params:
+            dims    (tuple) dx, dy, m
+        """
+        dx, dy, m = dims
+        dw = m * m + m
+        dims = dx, dy, dw
+        super().__init__(dims, eta, nh, metric, init_distr)
+
+
+    def get_winners(self, data, argax=1):
+        '''Get the best matching neurons for every vector in data.
+
+           Params:
+                data    (np.array) Input data set
+                argax   (int) Axis used for minimization 1=x, 0=y.
+
+            Return:
+                (np.array, np.ndarray) Indices of bmus and min dists.
+        '''
+        # TODO: if the distance between an input vector and more than one lattice
+        #       neuro is the same, choose winner randomly.
+
+        if data.ndim == 1:
+            d = _distance.cdist(data[None, :], self.weights, metric=self.metric)
+            return _np.argmin(d), _np.min(d)**2
+        elif data.ndim == 2:
+            ds = _distance.cdist(data, self.weights, metric=self.metric)
+            return _np.argmin(ds, axis=argax), _np.sum(_np.min(ds, axis=argax)**2)
+        else:
+            raise ValueError('Wrong dimension of input data: {}'.format(data.ndim))
+
+
+
+    def _incremental_update(self, data_set, c_eta, c_nhr):
+        total_qE = 0
+        for fv in data_set:
+            bm_units, c_qE = self.get_winners(fv)
+            total_qE += c_qE
+
+            # update activation map
+            self.whist[bm_units] += 1
+
+            # get bmu's multi index
+            bmu_midx = _np.unravel_index(bm_units, (self.shape[0], self.shape[1]))
+
+            # calculate neighbourhood over bmu given current radius
+            c_nh = self._neighbourhood(bmu_midx, c_nhr)
+
+            # update lattice
+            self.weights += c_eta * c_nh * (fv - self.weights)
+        self.quantization_error.append(total_qE)
