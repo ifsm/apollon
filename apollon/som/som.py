@@ -385,7 +385,7 @@ class SelfOrganizingMap(_som_base):
 
 from apollon.hmm.poisson_hmm import hmm_distance
 class PoissonHmmSom(_som_base):
-    def __init__(self, self, dims=(10, 10, 2), eta=.8, nh=5,
+    def __init__(self, dims=(10, 10, 2), eta=.8, nh=5,
                  metric=hmm_distance, init_distr='simplex'):
         """
         This SOM assumes a stationary PoissonHMM on each unit. The weight vector
