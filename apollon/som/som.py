@@ -296,8 +296,9 @@ class SelfOrganizingMap(_som_base):
                  metric='euclidean', init_distr='simplex'):
         super().__init__(dims, eta, nh, metric, init_distr)
 
-
-    def _basic_update(self, data_set, c_eta, c_nhr):
+    # TODO:
+    # incremental updatae
+    def _incremental_update(self, data_set, c_eta, c_nhr):
         total_qE = 0
         for fv in data_set:
             bm_units, c_qE = self.get_winners(fv)
@@ -380,4 +381,4 @@ class SelfOrganizingMap(_som_base):
                  .format(c_iter, _np.round(c_eta, 4), _np.round(c_nhr, 5)))
 
             # always shuffle data
-            self._basic_update(_np.random.permutation(data), c_eta, c_nhr)
+            self._incremental_update(_np.random.permutation(data), c_eta, c_nhr)
