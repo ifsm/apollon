@@ -220,7 +220,7 @@ class STFT:
             XX = self.abs()
 
         # TODO: implement aplot integration
-        fig, ax = plt.subplots(1, figsize=(8, 4))
+        fig, ax = _plt.subplots(1, figsize=(8, 4))
         ax.pcolormesh(self.t, self.freqs, XX,
                       cmap='nipy_spectral')
         return fig, ax
