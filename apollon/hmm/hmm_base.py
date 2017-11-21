@@ -13,7 +13,6 @@ Classes:
 """
 
 import abc as _abc
-
 import numpy as _np
 
 from . import utilities as _utils
@@ -64,4 +63,16 @@ class HMM_Base(metaclass=_abc.ABCMeta):
 
             Return:
                 (np.ndarray)    Working params.'''
+        pass
+
+    @_abc.abstractmethod
+    def sample(self, n: int) -> _np.ndarray :
+        '''Draw samples form HMM.
+
+        Params:
+            n    (int) Number of samples to draw.
+
+        Return:
+            (np.ndarray) of length n holding samples.
+        '''
         pass

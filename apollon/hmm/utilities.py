@@ -11,10 +11,12 @@ Utility functions for HMMs
 Functions:
     backt_trans_gamma   Back transform working params to tpm.
     calculate_delta     Compute stationary distribution of HMM.
+    earthquakes         Sample data: earthquake counts.
     guess_linear        Space guesses linearly within data range.
     guess_qunatile      Space guesses by equally sized quntiles.
     is_tpm              Test whether matrix is row-stoachastic.
     new_gamma           Guess an initial tpm.
+    sort_param
     transform_gamma     Transform tpm to working params.
 """
 
@@ -23,8 +25,10 @@ import numpy as _np
 from collections import deque
 
 from scipy import linalg as _linalg
+from scipy import stats as _stats
 
 from apollon import tools as _tools
+
 
 
 def back_trans_gamma(w_gamma, m):
@@ -114,6 +118,8 @@ def is_tpm(mat):
         raise _linalg.LinAlgError('Matrix must be two-dimensional.')
 
 
+# TODO: .rotate() does not make sense, since we want to have the bigger
+#       values next to the main diagonal
 def new_gamma(m):
     '''Compute an initial guess for the transition probability matrix.
 

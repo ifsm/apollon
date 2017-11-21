@@ -6,6 +6,7 @@ Implementation of the forward backward algorithm."""
 
 
 import numpy as _np
+from scipy import stats as _stats
 
 
 def forward_backward(x, m, _lambda, _gamma, _delta):
@@ -15,7 +16,7 @@ def forward_backward(x, m, _lambda, _gamma, _delta):
     alpha, beta = _np.zeros((2, n, m))
 
     # init forward
-    allprobs = stats.poisson.pmf(*_np.ix_(x, _lambda))
+    allprobs = _stats.poisson.pmf(*_np.ix_(x, _lambda))
     a_0 = _delta * allprobs[0]
 
     # normalize
