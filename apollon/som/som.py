@@ -17,9 +17,7 @@ from apollon.aplot import _new_figure, _new_axis, _new_axis_3d
 
 
 class _som_base:
-
-    def __init__(self, dims=(10, 10, 3), eta=.8, nhr=5,
-                 metric='euclidean', init_distr='simplex'):
+    def __init__(self, dims, eta, nhr, n_iter, metric, mode, init_distr):
 
         # check dimensions
         for d in dims:
@@ -31,6 +29,8 @@ class _som_base:
         self.dy = self.shape[1]
         self.dw = self.shape[2]
         self.n_N = self.dx * self.dy    # number of neurons
+        self.n_iter = n_iter
+        self.mode = mode
 
         self.center = self.dx // 2, self.dy // 2
 
@@ -147,7 +147,7 @@ class _som_base:
 
 
     @switch_interactive
-    def plot_calibration(self, lables=None, ax=None, **kwargs):
+    def plot_calibration(self, lables=None, ax=None, cmap='plasma', **kwargs):
         # TODO: add params to docstring
         '''Plot calibrated map.'''
         if not self.isCalibrated:
@@ -155,12 +155,17 @@ class _som_base:
         else:
             if ax is None:
                 ax = _new_axis(xlim=(0, self.dx), ylim=(0, self.dy), **kwargs)
-            ax.imshow(self._cmap.reshape(self.dx, self.dy))
+            ax.set_title('Calibration')
+            ax.set_xlabel('# units')
+            ax.set_ylabel('# units')
+            ax.imshow(self._cmap.reshape(self.dx, self.dy), origin='lower',
+                      cmap=cmap)
             #return ax
 
 
     @switch_interactive
-    def plot_datamap(self, data, targets, interp='None', marker=False, **kwargs):
+    def plot_datamap(self, data, targets, interp='None', marker=False,
+                     cmap='viridis', **kwargs):
         '''Represent the input data on the map by retrieving the best
            matching unit for every element in `data`. Mark each map unit
            with the corresponding target value.
@@ -174,7 +179,7 @@ class _som_base:
            Return:
                 (AxesSubplot) axis, umatrix, bmu_xy
         '''
-        ax, udm = self.plot_umatrix(interp=interp, **kwargs)
+        ax, udm = self.plot_umatrix(interp=interp, cmap=cmap, **kwargs)
         bmu, err = self.get_winners(data)
 
         x, y = _np.unravel_index(bmu, (self.dx, self.dy))
@@ -190,7 +195,24 @@ class _som_base:
 
 
     @switch_interactive
-    def plot_umatrix(self, w=1, interp='None', ax=None, **kwargs):
+    def plot_qerror(self, ax=None, **kwargs):
+        """Plot quantization error."""
+        if ax is None:
+            ax = _new_axis(**kwargs)
+
+        ax.set_title('Normalized Errors measure per iteration')
+        ax.set_xlabel('# interation')
+        ax.set_ylabel('Error')
+
+        q_err = _np.array(self.quantization_error)
+        q_err = q_err / q_err.max()
+
+        ax.plot(q_err, lw=3, alpha=.8, label='Quantization error')
+
+
+
+    @switch_interactive
+    def plot_umatrix(self, w=1, interp='None', cmap='viridis', ax=None, **kwargs):
         '''Plot the umatrix. The color on each unit (x, y) represents its
            mean distance to all direct neighbours.
 
@@ -205,12 +227,16 @@ class _som_base:
         if ax is None:
             ax = _new_axis(xlim=(0, self.dx), ylim=(0, self.dy), **kwargs)
         udm = _utilities.umatrix(self.weights, self.dx, self.dy, w=w)
-        ax.imshow(udm, interpolation=interp)
+
+        ax.set_title('Unified distance matrix')
+        ax.set_xlabel('# units')
+        ax.set_ylabel('# units')
+        ax.imshow(udm, interpolation=interp, cmap=cmap, origin='lower')
         return ax, udm
 
 
     @switch_interactive
-    def plot_umatrix3d(self, w=1, **kwargs):
+    def plot_umatrix3d(self, w=1, cmap='viridis', **kwargs):
         '''Plot the umatrix in 3d. The color on each unit (x, y) represents its
            mean distance to all direct neighbours.
 
@@ -223,7 +249,7 @@ class _som_base:
         fig, ax = _new_axis_3d(**kwargs)
         udm = _utilities.umatrix(self.weights, self.dx, self.dy, w=w)
         X, Y = _np.mgrid[:self.dx, :self.dy]
-        ax.plot_surface(X, Y, udm, cmap='viridis')
+        ax.plot_surface(X, Y, udm, cmap=cmap)
         return ax, udm
 
 
@@ -278,7 +304,7 @@ class _som_base:
         if ax is None:
             ax = _new_axis(xlim=(0, self.dx), ylim=(0, self.dy), **kwargs)
         ax.imshow(_np.log1p(self.whist.reshape(self.dx, self.dy)),
-                  vmin=0, cmap='Greys', interpolation=interp)
+                  vmin=0, cmap='Greys', interpolation=interp, origin='lower')
         return ax
 
 
@@ -291,11 +317,49 @@ class _som_base:
         _save(self, path)
 
 
-class SelfOrganizingMap(_som_base):
-    def __init__(self, dims=(10, 10, 3), eta=.8, nh=5,
-                 metric='euclidean', init_distr='simplex'):
-        super().__init__(dims, eta, nh, metric, init_distr)
+    def transform(self, data, flat=True):
+        """Transform input data to feature space.
 
+        Params:
+            data    (ndarray) 2d array of shape (N_vect, N_features).
+            flat    (bool) Return flat index of True else 2d multi index.
+
+        Return:
+            pos    (ndarray) Position of each data item in the feature space.
+        """
+        bmu, err = self.get_winners(data)
+
+        if flat:
+            return bmu
+
+        else:
+            midx = _np.unravel_index(bmu, (self.dx, self.dy))
+            return _np.array(midx)
+
+
+    def inspect(self):
+        fig = _new_figure(figsize=(12, 5))
+        ax1 = _new_axis(sp_pos=(1, 3, 1), fig=fig)
+        ax2 = _new_axis(sp_pos=(1, 3, 2), fig=fig)
+        ax3 = _new_axis(sp_pos=(1, 3, 3), fig=fig)
+
+        _, _ = self.plot_umatrix(ax=ax1)
+
+        if self.isCalibrated:
+            _ = self.plot_calibration(ax=ax2)
+        else:
+            _ = self.plot_whist(ax=ax2)
+
+        self.plot_qerror(ax=ax3)
+
+
+
+class SelfOrganizingMap(_som_base):
+
+    def __init__(self, dims=(10, 10, 3), eta=.8, nh=5, n_iter=100,
+                 metric='euclidean', mode='incremental', init_distr='simplex'):
+
+        super().__init__(dims, eta, nh, n_iter, metric, mode, init_distr)
 
     def _incremental_update(self, data_set, c_eta, c_nhr):
         total_qE = 0
@@ -337,19 +401,18 @@ class SelfOrganizingMap(_som_base):
         self.weights = w_lat / w_nh
 
 
-    def train_batch(self, data, N_iter, verbose=False):
-        '''Feed the whole data set to the network and update once
+    def train_batch(self, data, verbose=False):
+        """Feed the whole data set to the network and update once
            after each iteration.
-
 
            Params:
                data    (2d array) Input data set.
-               N_iter  (int) Number of iterations to perform.
-               verbose (bool) Print verbose messages if True.'''
+               verbose (bool) Print verbose messages if True.
+        """
         # main loop
         for (c_iter, c_nhr) in \
-            zip(range(N_iter),
-                _utilities.decrease_linear(self.init_nhr, N_iter)):
+            zip(range(self.n_iter),
+                _utilities.decrease_linear(self.init_nhr, self.n_iter)):
 
             if verbose:
                 print(c_iter, end=' ')
@@ -357,23 +420,22 @@ class SelfOrganizingMap(_som_base):
             self._batch_update(data, c_nhr)
 
 
-    def train_minibatch(self, data, N_iter, verbose=False):
+    def train_minibatch(self, data, verbose=False):
         raise NotImplementedError
 
-
-    def train_incremental(self, data, N_iter, verbose=False):
-        '''Randomly feed the data to the network and update after each
+    def train_incremental(self, data, verbose=False):
+        """Randomly feed the data to the network and update after each
            data item.
 
            Params:
                data    (2d array) Input data set.
-               N_iter  (int) Number of iterations to perform.
-               verbose (bool) Print verbose messages if True.'''
+               verbose (bool) Print verbose messages if True.
+        """
         # main loop
         for (c_iter, c_eta, c_nhr) in \
-            zip(range(N_iter),
-                _utilities.decrease_linear(self.init_eta, N_iter, _defaults.final_eta),
-                _utilities.decrease_linear(self.init_nhr, N_iter, self.final_nhr)):
+            zip(range(self.n_iter),
+                _utilities.decrease_linear(self.init_eta, self.n_iter, _defaults.final_eta),
+                _utilities.decrease_expo(self.init_nhr, self.n_iter, self.final_nhr)):
 
             if verbose:
                 print('iter: {:2} -- eta: {:<5} -- nh: {:<6}' \
@@ -381,6 +443,27 @@ class SelfOrganizingMap(_som_base):
 
             # always shuffle data
             self._incremental_update(_np.random.permutation(data), c_eta, c_nhr)
+
+
+    def fit(self, data, verbose=False):
+        """Train the SOM on the given data set."""
+
+        if self.mode == 'incremental':
+            self.train_incremental(data, verbose)
+
+        elif self.mode == 'batch':
+            self.train_batch(data, verbose)
+
+
+    def predict(self, data):
+        """Predict a class label for each item in input data. SOM needs to be
+        calibrated in order to predict class labels.
+        """
+        if self.isCalibrated:
+            midx = self.transform(data)
+            return self._cmap[midx]
+        else:
+            raise AttributeError('SOM is not calibrated.')
 
 
 from apollon.hmm.poisson_hmm import hmm_distance
