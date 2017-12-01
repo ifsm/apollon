@@ -17,24 +17,35 @@ from apollon.aplot import _new_figure, _new_axis, _new_axis_3d
 
 
 class _som_base:
-    def __init__(self, dims, eta, nhr, n_iter, metric, mode, init_distr):
+    def __init__(self, dims, eta, nhr, n_iter, metric, mode, init_distr, seed=None):
 
         # check dimensions
         for d in dims:
             if not isinstance(d, int) or not d >= 1:
                 raise ValueError('Dimensions must be integer > 0.')
 
+        # shape parameters
         self.shape = dims
         self.dx = self.shape[0]
         self.dy = self.shape[1]
         self.dw = self.shape[2]
-        self.n_N = self.dx * self.dy    # number of neurons
-        self.n_iter = n_iter
-        self.mode = mode
 
+        # total number of neuros on the map
+        self.n_N = self.dx * self.dy
+
+        # center index of the map
         self.center = self.dx // 2, self.dy // 2
 
-        # check parameters
+        # number of iterations to perform
+        self.n_iter = n_iter
+
+        # training mode
+        self.mode = mode
+
+        # metric for similarity ratings
+        self.metric = metric
+
+        # check training parameters
         if eta is None:
             self.init_eta = None
         else:
@@ -49,10 +60,9 @@ class _som_base:
         else:
             raise ValueError('Neighbourhood radius must be int > 0.')
 
-        self.metric = metric
-
-        # Init weights
-        _np.random.seed(1)
+        # Initialize the weights
+        if seed is not None:
+            _np.random.seed(seed)
 
         if init_distr == 'uniform':
             self.weights = _np.random.uniform(0, 1, size=(self.n_N, self.dw))
@@ -357,9 +367,10 @@ class _som_base:
 class SelfOrganizingMap(_som_base):
 
     def __init__(self, dims=(10, 10, 3), eta=.8, nh=5, n_iter=100,
-                 metric='euclidean', mode='incremental', init_distr='simplex'):
+                 metric='euclidean', mode='incremental', init_distr='simplex',
+                 seed=None):
 
-        super().__init__(dims, eta, nh, n_iter, metric, mode, init_distr)
+        super().__init__(dims, eta, nh, n_iter, metric, mode, init_distr, seed)
 
     def _incremental_update(self, data_set, c_eta, c_nhr):
         total_qE = 0
