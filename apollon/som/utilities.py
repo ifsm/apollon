@@ -60,7 +60,7 @@ def umatrix(lattice, dx, dy, metric='euclidean', w=1, isNormed=True):
         i_flat = _np.ravel_multi_index(i, dxy)
         out[i] = _distance.cdist(lattice[i_flat, None],
                                 lattice[~nb.mask.flatten()],
-                                metric=metric, p=2).sum()
+                                metric=metric).sum()
     if isNormed:
         return out / _np.max(out)
     else:

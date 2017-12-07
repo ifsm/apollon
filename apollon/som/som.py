@@ -64,6 +64,7 @@ class _som_base:
         if seed is not None:
             _np.random.seed(seed)
 
+        # TODO: init range should be in terms of data
         if init_distr == 'uniform':
             self.weights = _np.random.uniform(0, 1, size=(self.n_N, self.dw))
         elif init_distr == 'simplex':
@@ -236,7 +237,8 @@ class _som_base:
         '''
         if ax is None:
             ax = _new_axis(xlim=(0, self.dx), ylim=(0, self.dy), **kwargs)
-        udm = _utilities.umatrix(self.weights, self.dx, self.dy, w=w)
+        udm = _utilities.umatrix(self.weights, self.dx, self.dy,
+                                 metric=self.metric, w=w)
 
         ax.set_title('Unified distance matrix')
         ax.set_xlabel('# units')
@@ -257,7 +259,8 @@ class _som_base:
                (Axes3DSubplot, np.array) the axis, umatrix
         '''
         fig, ax = _new_axis_3d(**kwargs)
-        udm = _utilities.umatrix(self.weights, self.dx, self.dy, w=w)
+        udm = _utilities.umatrix(self.weights, self.dx, self.dy,
+                                 matric=self.metric, w=w)
         X, Y = _np.mgrid[:self.dx, :self.dy]
         ax.plot_surface(X, Y, udm, cmap=cmap)
         return ax, udm

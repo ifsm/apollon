@@ -24,7 +24,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as _np
 from scipy import stats as _stats
 
-from apollon import _defaults
+from apollon._defaults import plot_params as _plot_params
 from apollon.signal.audio import _AudioData
 from apollon.decorators import switch_interactive
 
@@ -188,12 +188,12 @@ def onsets(sig, odx, figsize=(10, 4), **kwargs):
 
 
 @switch_interactive
-def onset_decoding(sig, ons, dec):
+def onset_decoding(sig, odx, dec):
     '''Plot sig and and onsetes color coded regarding dec.'''
     ax = signal(sig, params=_plot_params.sig_ons)
     lc = max(dec) + 1
     colors = _np.linspace(0, 1, lc)
-    ax.vlines(ons.odx, -1, 1, linewidths=3, linestyle='dashed',
+    ax.vlines(odx, -1, 1, linewidths=3, linestyle='dashed',
               colors=_cm.viridis(colors[dec]))
     return ax
 
