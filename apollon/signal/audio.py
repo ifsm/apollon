@@ -191,6 +191,6 @@ def loadwav(path, norm=True):
     if isinstance(path, str):
         return _AudioData(path, norm)
     elif isinstance(path, pathlib.Path):
-        return _AudioData(path, str(path))
+        return _AudioData(str(path), norm)
     else:
         raise ValueError('`path` must be str or Path not {}'.format(type(path)))
