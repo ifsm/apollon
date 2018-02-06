@@ -24,6 +24,7 @@ class _som_base:
             if not isinstance(d, int) or not d >= 1:
                 raise ValueError('Dimensions must be integer > 0.')
 
+
         # shape parameters
         self.shape = dims
         self.dx = self.shape[0]
@@ -56,7 +57,7 @@ class _som_base:
 
         if isinstance(nhr, int) and nhr > 1:
             self.init_nhr = nhr
-            self.final_nhr = max(self.dx, self.dy) / _defaults.nhr_scale_factor
+            #self.final_nhr = max(self.dx, self.dy) / _defaults.nhr_scale_factor
         else:
             raise ValueError('Neighbourhood radius must be int > 0.')
 
@@ -75,7 +76,8 @@ class _som_base:
         self.whist = _np.zeros(self.n_N)
 
         # grid data for neighbourhood calculation
-        self._grid = _np.dstack(_np.mgrid[:self.dx, :self.dy])
+        self._grid = _np.mgrid[:self.dx, :self.dy]
+        self._grid = _np.dstack(self._grid).reshape(self.n_N, 2)
 
         # calibration
         self.isCalibrated = False
@@ -108,10 +110,14 @@ class _som_base:
             raise ValueError('Wrong dimension of input data: {}'.format(data.ndim))
 
 
-    def _neighbourhood(self, point, nhr):
-        var = _stats.multivariate_normal(mean=point, cov=((nhr, 0), (0, nhr)))
-        out = var.pdf(self._grid)
-        return (out / _np.max(out)).reshape(self.n_N, 1)
+    def nh_gaussian_L2(self, center, r):
+        """Compute 2D Gaussian neighbourhood around `center`. Distance between
+           center and m_i is calculate by Euclidean distance.
+        """
+        d = _distance.cdist(_np.array(center)[None, :], self._grid,
+                           metric='sqeuclidean')
+        ssq = 2 * r**2
+        return _np.exp(-d/ssq).reshape(-1, 1)
 
 
     def _init_st_mat(self):
@@ -120,9 +126,9 @@ class _som_base:
         The rows of each n by n stochastic matrix are sampes drawn from the
         Dirichlet distribution, where n is the number of rows and cols of the
         matrix. The diagonal elemets of the matrices are set to twice the
-        probability of the remainigne elements.
+        probability of the remaining elements.
         The square root n of the weight vectors' size must be element of the
-        natural numbers, so that the weight vector is reshapeable to a sqare
+        natural numbers, so that the weight vector is reshapeable to a square
         matrix.
         '''
         # check for square matrix
@@ -191,6 +197,10 @@ class _som_base:
                 (AxesSubplot) axis, umatrix, bmu_xy
         '''
         ax, udm = self.plot_umatrix(interp=interp, cmap=cmap, **kwargs)
+
+        #
+        # TODO: Use .transform() instead
+        #
         bmu, err = self.get_winners(data)
 
         x, y = _np.unravel_index(bmu, (self.dx, self.dy))
@@ -375,6 +385,11 @@ class SelfOrganizingMap(_som_base):
 
         super().__init__(dims, eta, nh, n_iter, metric, mode, init_distr, seed)
 
+        #
+        # TODO: Implement mechanism to choose nh_function
+        #
+        self._neighbourhood = self.nh_gaussian_L2
+
     def _incremental_update(self, data_set, c_eta, c_nhr):
         total_qE = 0
         for fv in data_set:
@@ -449,7 +464,7 @@ class SelfOrganizingMap(_som_base):
         for (c_iter, c_eta, c_nhr) in \
             zip(range(self.n_iter),
                 _utilities.decrease_linear(self.init_eta, self.n_iter, _defaults.final_eta),
-                _utilities.decrease_expo(self.init_nhr, self.n_iter, self.final_nhr)):
+                _utilities.decrease_expo(self.init_nhr, self.n_iter, _defaults.final_nhr)):
 
             if verbose:
                 print('iter: {:2} -- eta: {:<5} -- nh: {:<6}' \
@@ -481,9 +496,10 @@ class SelfOrganizingMap(_som_base):
 
 
 from apollon.hmm.poisson_hmm import hmm_distance
-class PoissonHmmSom(_som_base):
-    def __init__(self, dims=(10, 10, 2), eta=.8, nh=5,
-                 metric=hmm_distance, init_distr='simplex'):
+
+class DotSom(_som_base):
+    def __init__(self, dims=(10, 10, 3), eta=.8, nh=8, n_iter=10,
+                 metric='euclidean', mode=None, init_distr='uniform', seed=None):
         """
         This SOM assumes a stationary PoissonHMM on each unit. The weight vector
         represents the HMMs distribution parameters in the following order
@@ -491,11 +507,8 @@ class PoissonHmmSom(_som_base):
         Params:
             dims    (tuple) dx, dy, m
         """
-        dx, dy, m = dims
-        dw = m * m + m
-        dims = dx, dy, dw
-        super().__init__(dims, eta, nh, metric, init_distr)
-
+        super().__init__(dims, eta, nh, n_iter, metric, mode, init_distr, seed)
+        self._neighbourhood = self.nh_gaussian_L2
 
     def get_winners(self, data, argax=1):
         '''Get the best matching neurons for every vector in data.
@@ -510,15 +523,23 @@ class PoissonHmmSom(_som_base):
         # TODO: if the distance between an input vector and more than one lattice
         #       neuro is the same, choose winner randomly.
 
-        if data.ndim == 1:
-            d = _distance.cdist(data[None, :], self.weights, metric=self.metric)
-            return _np.argmin(d), _np.min(d)**2
-        elif data.ndim == 2:
-            ds = _distance.cdist(data, self.weights, metric=self.metric)
-            return _np.argmin(ds, axis=argax), _np.sum(_np.min(ds, axis=argax)**2)
-        else:
-            raise ValueError('Wrong dimension of input data: {}'.format(data.ndim))
+        d = _np.inner(data, self.weights)
+        return _np.argmax(d), 0
 
+
+
+    def fit(self, data, verbose=True):
+        for (c_iter, c_eta, c_nhr) in \
+            zip(range(self.n_iter),
+                _utilities.decrease_linear(self.init_eta, self.n_iter, _defaults.final_eta),
+                _utilities.decrease_expo(self.init_nhr, self.n_iter, _defaults.final_nhr)):
+
+            if verbose:
+                print('iter: {:2} -- eta: {:<5} -- nh: {:<6}' \
+                 .format(c_iter, _np.round(c_eta, 4), _np.round(c_nhr, 5)))
+
+            # always shuffle data
+            self._incremental_update(_np.random.permutation(data), c_eta, c_nhr)
 
 
     def _incremental_update(self, data_set, c_eta, c_nhr):
@@ -537,5 +558,7 @@ class PoissonHmmSom(_som_base):
             c_nh = self._neighbourhood(bmu_midx, c_nhr)
 
             # update lattice
-            self.weights += c_eta * c_nh * (fv - self.weights)
+            u = self.weights + c_eta * fv
+            self.weights = u / _distance.norm(u)
+
         self.quantization_error.append(total_qE)
