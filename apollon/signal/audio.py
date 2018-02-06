@@ -12,9 +12,10 @@ Functions:
 
 
 import numpy as _np
+import pathlib
 import scipy.io.wavfile as spw
 
-from apollon.IO import FileAccessControl
+from apollon.io import FileAccessControl
 from apollon.tools import normalize
 #from apollon import aplot as _aplot
 
@@ -187,4 +188,9 @@ def loadwav(path, norm=True):
     Return:
         (int, ndarray)    sample rate and data.
     """
-    return _AudioData(path, norm)
+    if isinstance(path, str):
+        return _AudioData(path, norm)
+    elif isinstance(path, pathlib.Path):
+        return _AudioData(path, str(path))
+    else:
+        raise ValueError('`path` must be str or Path not {}'.format(type(path)))
