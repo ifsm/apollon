@@ -9,7 +9,7 @@ import numpy as _np
 from scipy import stats as _stats
 from scipy.spatial import distance as _distance
 
-from apollon.IO import save as _save
+from apollon.io import save as _save
 from apollon.som import utilities as _utilities
 from apollon.som import defaults as _defaults
 from apollon.decorators import switch_interactive
