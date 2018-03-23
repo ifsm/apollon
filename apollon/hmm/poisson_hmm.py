@@ -16,7 +16,7 @@ Functions:
     hmm_distance        Calculate dissimilarity of two PoissonHmms.
     LL                  Calculate log-likelihood of PoissonHMM.
     sample              Sample from PoissonHMM.
-
+    viterbi             Global decoding.
 """
 
 
@@ -43,7 +43,8 @@ class PoissonHmm(_HMM_Base):
                  '_init_lambda', '_init_gamma', '_init_delta',
                  'lambda_', 'gamma_', 'delta_', 'theta',
                  'mllk', 'aic', 'bic',
-                 'distr_params', 'model_params']
+                 'distr_params', 'model_params',
+                 'local_decoding', 'global_decoding']
 
     # TODO: Add docstring
     def __init__(self, x, m, init_lambda=None, init_gamma=None,
@@ -75,6 +76,9 @@ class PoissonHmm(_HMM_Base):
                     if init_lambda is None else init_lambda
         else:
             raise ValueError('Method <{}> not supported.'.format(guess))
+            
+        self.local_decoding = None
+        self.global_decoding = None
 
 
     def __str__(self):
@@ -189,6 +193,7 @@ class PoissonHmm(_HMM_Base):
         else:
             return -l_scaled
 
+
     def train_MLLK(self):
         '''Estimate parameters of a PoissonHMM by direct minimization of
            the negative log likelihood.'''
@@ -230,7 +235,7 @@ class PoissonHmm(_HMM_Base):
         self.success = ml.success
         self.aic = 2 * (self.mllk + n_param)
         self.bic = 2 * self.mllk + n_param * _np.log(sum_param)
-        # self.decoding = viterbi(self, self.x)
+        self.global_decoding = viterbi(self, self.x)
         self.trained = True
         self.theta = (self.lambda_, self.gamma_, self.delta_)
 
@@ -239,6 +244,7 @@ class PoissonHmm(_HMM_Base):
 
     def nice(self):
         print(self.__str__())
+
 
     def plot(self, bins=25):
         '''Plot the marginal distributions of the PoissonHMM.
@@ -394,6 +400,58 @@ def sample(theta: tuple, n: int, iota=None) -> _np.ndarray:
     return x
 
 
+def viterbi(mod: PoissonHmm, x: _np.ndarray) -> _np.ndarray:
+    """Calculate the Viterbi path (global decoding) of a PoissonHMM
+       given some data x.
+
+       Params:
+            x       (array-like) observations
+            mod     (HMM-Object)
+
+        Return:
+            (np.ndarray) Most probable sequence of hidden states given x.
+    """
+    n = len(x)
+
+    # Make sure that x is an array
+    x = _np.atleast_1d(x)
+
+    # calculate the probability mass for each x_i and for each mean
+    pmf_x = _stats.poisson.pmf(x[:, None], mod.lambda_)
+
+    #
+    # Forward pass
+    #
+    
+    # allocate forward pass array
+    xi = _np.zeros((n, mod.m))
+
+    # Probabilities of oberseving x_0 give each state
+    probs = mod.delta_ * pmf_x[0]
+    xi[0] = probs / probs.sum()
+
+    # Interate over the remaining observations
+    for i in range(1, n):
+        foo = _np.max(xi[i-1] * mod.gamma_, axis=1) * pmf_x[i]   
+        xi[i] = foo / foo.sum()
+
+    #
+    # Backward pass
+    #
+    
+    # allocate backward pass array
+    phi = _np.zeros(n, dtype=int)
+    
+    # calculate most probable state on last time step
+    phi[-1] = _np.argmax(xi[-1])
+    
+    # backtrack to first time step
+    for i in range(n-2, -1, -1):
+        phi[i] = _np.argmax(mod.gamma_[phi[i+1]] * xi[i])
+        
+    return phi
+    
+    
 if __name__ == '__main__':
     a = _stats.poisson.rvs(10, size=50)
     b = _stats.poisson.rvs(25, size=50)
