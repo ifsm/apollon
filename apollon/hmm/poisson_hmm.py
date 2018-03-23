@@ -27,13 +27,13 @@ import numpy as _np
 from numpy import linalg as _linalg
 from scipy import stats as _stats
 from scipy.optimize import minimize, fmin_powell, approx_fprime
+import warnings as _warnings
 
+from apollon import aplot
 from apollon import _defaults
+from apollon import exceptions as _except
 from apollon.hmm.hmm_base import HMM_Base as _HMM_Base
 from apollon.hmm import utilities as _utils
-# from apollon.hmm import viterbi
-from apollon import aplot
-from apollon import exceptions as _expect
 from apollon import tools as _tools
 
 
@@ -44,27 +44,27 @@ class PoissonHmm(_HMM_Base):
                  'lambda_', 'gamma_', 'delta_', 'theta',
                  'mllk', 'aic', 'bic',
                  'distr_params', 'model_params',
-                 'local_decoding', 'global_decoding']
+                 'local_decoding', 'global_decoding',
+                 '_support']
 
     # TODO: Add docstring
     def __init__(self, x, m, init_lambda=None, init_gamma=None,
                  init_delta=None, guess='quantile', verbose=True):
 
-        super().__init__(x, m, init_gamma, init_delta,
-                         guess='quantile', verbose=verbose)
+        # Poisson distribution is for integer data only
+        if x.dtype.type is _np.int_:
+            __x = x
+        else:
+            _warnings.warn('Input data has been cast to int.')
+            __x = _np.round(x).astype(int)
 
+        super().__init__(__x, m, init_gamma, init_delta,
+                         guess='quantile', verbose=verbose)
+        self._support = _np.arange(0, self.x.max(), dtype=int)
+        
         # TODO: Params should be NamedTuple
         self.distr_params = ['lambda_']
         self.model_params = ['m', 'gamma_', 'delta_']
-
-        # Poisson distribution is for integer data only
-        if x.dtype.type is _np.int_:
-            self.x = x
-        else:
-            if self.verbose:
-                print('Warning! PoissonHMM is defined for integer time series',
-                      ', only. Input has been cast to int.')
-            self.x = _np.round(x).astype(int)
 
         # Initialize distriution parameter
         if guess in _defaults.lambda_guess_methods:
@@ -87,7 +87,7 @@ class PoissonHmm(_HMM_Base):
                        '{:15}{:15}{:15}\n{:<15}{:<15}{:<15}')
 
             out_params = (self.lambda_.round(2), self.delta_.round(2),
-                          self.gamma_.round(2), 'Mllk', 'AIC', 'BIC',
+                          self.gamma_.round(3), 'Mllk', 'AIC', 'BIC',
                           self.mllk.round(3), self.aic.round(3),
                           self.bic.round(3))
         else:
@@ -103,9 +103,11 @@ class PoissonHmm(_HMM_Base):
         return self.__str__()
 
 
-    # TODO: implement marginal distribution
-    def marginal_distr(self):
-        raise NotImplementedError
+    def marginals(self) -> _np.ndarray:
+        """Compute the marginal distribution of the parameter process."""
+        pmf_x = _stats.poisson.pmf(self._support[:, None], self.lambda_)
+        marginal_distrs = self.delta_ * pmf_x
+        return marginal_distrs
 
 
     def get_inti_params(self):
@@ -194,7 +196,7 @@ class PoissonHmm(_HMM_Base):
             return -l_scaled
 
 
-    def train_MLLK(self):
+    def fit(self, method='direct'):
         '''Estimate parameters of a PoissonHMM by direct minimization of
            the negative log likelihood.'''
 
@@ -208,7 +210,7 @@ class PoissonHmm(_HMM_Base):
                                                  self._init_gamma),
                           method='Powell', options=opt)
         except ValueError:
-            raise _expect.ModelFailedError
+            raise _except.ModelFailedError
 
         # transform back the parameters
         ml.x = self.natural_params(ml.x)
@@ -235,6 +237,7 @@ class PoissonHmm(_HMM_Base):
         self.success = ml.success
         self.aic = 2 * (self.mllk + n_param)
         self.bic = 2 * self.mllk + n_param * _np.log(sum_param)
+        
         self.global_decoding = viterbi(self, self.x)
         self.trained = True
         self.theta = (self.lambda_, self.gamma_, self.delta_)
