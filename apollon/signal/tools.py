@@ -92,28 +92,30 @@ def corr_coef_pearson(x, y):
     return r_xy / r_xx_yy
 
 
-def freq2mel(freq):
+def freq2mel(f):
     """Transforms Hz to Mel-Frequencies.
 
     Params:
-        freq:    (real number) Frequency in Hz
+        f:    (real number) Frequency in Hz
 
     Return:
         (real number) Mel-Frequency
     """
-    return 1125 * _np.log(1 + freq / 700)
+    f = _np.atleast_1d(f)
+    return 1125 * _np.log(1 + f / 700)
 
 
-def mel2freq(mel):
+def mel2freq(z):
     """Transforms Mel-Frequencies to Hz.
 
     Params:
-        mel:     (real number) Mel-Frequency.
+        z:     (real number) Mel-Frequency.
 
     Return:
         (real number) Frequency in Hz.
     """
-    return 700 * (_np.exp(mel / 1125) - 1)
+    z = _np.atleast_1d(z)
+    return 700 * (_np.exp(z / 1125) - 1)
 
 
 def maxamp(sig):
