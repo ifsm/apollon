@@ -113,7 +113,7 @@ def mel2freq(mel):
     Return:
         (real number) Frequency in Hz.
     """
-    return 700 * (_np.exp(mel / 1127) - 1)
+    return 700 * (_np.exp(mel / 1125) - 1)
 
 
 def maxamp(sig):
