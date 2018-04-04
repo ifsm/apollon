@@ -117,7 +117,7 @@ class _AudioData:
     __slots__ = ['_fs', '_data']
 
     # Descriptor attribute
-    file = FileAccessControl()
+    file = WaveFileAccessControl()
 
     def __init__(self, file_name, norm=True):
         """Representation of an audio file.

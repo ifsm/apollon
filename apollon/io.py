@@ -24,7 +24,7 @@ import pathlib
 import pickle as _pickle
 
 
-class FileAccessControl:
+class WaveFileAccessControl:
     def __init__(self):
         self.__attribute = {}
 
@@ -33,25 +33,25 @@ class FileAccessControl:
 
     def __set__(self, obj, file_name):
         if obj not in self.__attribute.keys():
-            if isinstance(file_name, str):
-                _path = pathlib.Path(file_name).resolve()
-                if _path.exists():
-                    if _path.is_file():
-                        if _path.suffix == '.wav':
-                            self.__attribute[obj] = _path
-                        else:
-                            raise IOError('{} is not a .wav file.'.format(file_name))
+            _path = pathlib.Path(file_name).resolve()
+            if _path.exists():
+                if _path.is_file():
+                    if _path.suffix == '.wav':
+                        self.__attribute[obj] = _path
                     else:
-                        raise IOError('{} is not a file.'.format(file_name))
+                        raise IOError('`{}` is not a .wav file.'
+                                      .format(file_name))
                 else:
-                    raise FileNotFoundError('{} does not exists.'.format(file_name))
+                    raise IOError('`{}` is not a file.'.format(file_name))
             else:
-                raise ValueError('File name must be str.')
+                raise FileNotFoundError('`{}` does not exists.'
+                                        .format(file_name))
         else:
             raise AttributeError('File name cannot be changed.')
 
     def __delete__(self, obj):
         del self.__attribute[obj]
+
 
 def files_in_folder(path, suffix='.wav'):
     """Iterate over all file names in a given folder.
