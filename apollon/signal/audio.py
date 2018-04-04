@@ -15,7 +15,7 @@ import numpy as _np
 import pathlib
 import soundfile as sf
 
-from apollon.io import FileAccessControl
+from apollon.io import WavFileAccessControl
 from apollon.signal.tools import normalize
 
 
@@ -117,7 +117,7 @@ class _AudioData:
     __slots__ = ['_fs', '_data']
 
     # Descriptor attribute
-    file = WaveFileAccessControl()
+    file = WavFileAccessControl()
 
     def __init__(self, file_name, norm=True):
         """Representation of an audio file.

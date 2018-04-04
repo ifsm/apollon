@@ -4,11 +4,11 @@
 from pathlib import Path
 import unittest
 
-from apollon.io import WaveFileAccessControl
+from apollon.io import WavFileAccessControl
 
 
 class Foo:
-    file = WaveFileAccessControl()
+    file = WavFileAccessControl()
     def __init__(self, fname):
         self.file = fname
 

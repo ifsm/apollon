@@ -24,7 +24,7 @@ import pathlib
 import pickle as _pickle
 
 
-class WaveFileAccessControl:
+class WavFileAccessControl:
     def __init__(self):
         self.__attribute = {}
 
