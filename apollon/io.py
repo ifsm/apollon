@@ -10,9 +10,9 @@ Classes:
 
 Functions:
     files_in_folder         Iterate over all files in given folder.
-    save                    Pickle some data.
     load                    Load pickled data.
-    loadwav                 Load wav file.
+    repath                  Change path but keep file name.
+    save                    Pickle some data.
 """
 
 
@@ -119,6 +119,19 @@ def load(path):
     with open(path, 'rb') as fobj:
         data = _pickle.load(fobj)
     return data
+
+
+def repath(current_path, new_path, ext=None):
+    """Change the path but keep the file name. Optinally chnage the
+       extension, too.
+    """
+    current_path = _pathlib.Path(current_path)
+    new_path = _pathlib.Path(new_path)
+
+    if not ext.startswith('.'):
+        ext = '.' + ext
+    fn = current_path.stem if ext is None else current_path.stem + ext
+    return new_path.joinpath(fn)
 
 
 def save(data, path):
