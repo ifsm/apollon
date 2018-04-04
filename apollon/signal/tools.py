@@ -14,6 +14,7 @@ Functions:
     mel2freq            Transform mel to frequency.
     maxamp              Maximal amplitude of signal.
     minamp              Minimal amplitude of signal.
+    normalize           Scale data betwee -1.0 and 1.0.
     noise               Generate withe noise.
     sinusoid            Generate sinusoidal signal.
     zero_padding        Append array with zeros.
@@ -155,6 +156,18 @@ def noise(level, n=9000):
     return _stats.norm.rvs(0, level, size=n)
 
 
+def normalize(sig):
+    """Normlize a signal to [-1.0, 1.0].
+
+    Params:
+        sig (np.nadarray)    Signal to normalize.
+
+    Return:
+        (np.ndarray) Normalized signal.
+    """
+    return sig / _np.max(_np.absolute(sig), axis=0)
+
+    
 def sinusoid(f, amps=1, sr=9000, length=1, retcomps=False):
     """Generate sinusoidal signal.
 
