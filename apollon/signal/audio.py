@@ -13,11 +13,10 @@ Functions:
 
 import numpy as _np
 import pathlib
-import scipy.io.wavfile as spw
+import soundfile as sf
 
 from apollon.io import FileAccessControl
-from apollon.tools import normalize
-#from apollon import aplot as _aplot
+from apollon.signal.tools import normalize
 
 
 __author__ = 'Michael Blaß'
@@ -115,13 +114,13 @@ class _AudioChunks:
 
 class _AudioData:
 
-    __slots__ = ['_sample_rate', '_signal', '_N', 'normalized']
+    __slots__ = ['_fs', '_data']
 
     # Descriptor attribute
     file = FileAccessControl()
 
     def __init__(self, file_name, norm=True):
-        '''Representation of an audio file.
+        """Representation of an audio file.
 
         Params:
             file_name   (str)   Name of file.
@@ -129,53 +128,49 @@ class _AudioData:
 
         Return:
             (AudioData) Object
-        '''
+        """
         self.file = file_name
 
-        self._sample_rate, self._signal = spw.read(file_name)
-        self._N = len(self._signal)
+        self._data, self._fs = sf.read(file_name, dtype='float64')
 
-        if self._signal.ndim != 1:
-            if self._signal.shape[1] == 2:    # stereo ?
-                self._signal = self._signal.sum(axis=1) / 2
-            else:
-                raise ValueError('Audio files with max. 2 channels, only.')
+        if self._data.ndim == 2:
+            self._data = self._data.sum(axis=1) / 2
 
-        self.normalized = norm
         if norm:
-            self._normalize()
+            self._data = normalize(self._data)
 
+    @property
+    def fs(self):
+        """Return sample rate."""
+        return self._fs
 
-    def get_sr(self):
-        '''Return sample rate.'''
-        return self._sample_rate
+    @property
+    def data(self, n=None):
+        """Return the audio frames as ints.
 
-    def get_data(self, n=None):
-        '''Return the audio frames as ints.
-        :param n:   (int) return only the first n frames (default = None)
-        :return:    (array) frames
-        '''
-        return self._signal[:n]
+        Params:
+            n: (int)    Return only the first n frames (default = None)
+
+        Return:
+            (np.ndarray) frames
+        """
+        return self._data[:n]
 
     def plot(self, tickunit='seconds'):
         _aplot.signal(self, xaxis=tickunit)
 
-    def _normalize(self):
-        self._signal = self._signal / _np.max(_np.absolute(self._signal))
-        self.normalized = True
-
     def __str__(self):
-        return "<{}, Samples: {}, Sample rate: {}, Normalized: {}>" \
-        .format(self.file.name,  self._N, self._sample_rate, self.normalized)
+        return "<{}, fs: {}, N: {}>" \
+        .format(self.file.name,  self.fs, len(self))
 
     def __repr__(self):
         return self.__str__()
 
     def __len__(self):
-        return self._N
+        return self.data.size
 
     def __getitem__(self, item):
-        return self._signal[item]
+        return self._data[item]
 
 
 def loadwav(path, norm=True):
@@ -186,11 +181,6 @@ def loadwav(path, norm=True):
         norm    (bool) True if data should be normalized.
 
     Return:
-        (int, ndarray)    sample rate and data.
+        (_AudioData) object.
     """
-    if isinstance(path, str):
-        return _AudioData(path, norm)
-    elif isinstance(path, pathlib.Path):
-        return _AudioData(str(path), norm)
-    else:
-        raise ValueError('`path` must be str or Path not {}'.format(type(path)))
+    return _AudioData(path, norm)
