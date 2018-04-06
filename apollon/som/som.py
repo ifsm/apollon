@@ -26,10 +26,11 @@ class _som_base:
 
 
         # shape parameters
-        self.shape = dims
-        self.dx = self.shape[0]
-        self.dy = self.shape[1]
-        self.dw = self.shape[2]
+        self.dims = dims
+        self.dx = self.dims[0]
+        self.dy = self.dims[1]
+        self.dw = self.dims[2]
+        self.shape = (self.dx, self.dy)
 
         # total number of neuros on the map
         self.n_N = self.dx * self.dy
@@ -233,22 +234,23 @@ class _som_base:
 
 
     @switch_interactive
-    def plot_umatrix(self, w=1, interp='None', cmap='viridis', ax=None, **kwargs):
-        '''Plot the umatrix. The color on each unit (x, y) represents its
-           mean distance to all direct neighbours.
+    def plot_umatrix(self, interp='None', cmap='viridis', ax=None, **kwargs):
+        """ Plot unified distance matrix.
 
-           Params:
-               w        (int) Neighbourhood width.
-               interp   (str) matplotlib interpolation method name.
-               ax       (plt.Axis) Provide custom axis object.
+        The unified distance matrix (udm) allows to visualize weight matrices of
+        high dimensional weight vectors. The entries (x, y) of the udm correspond to the arithmetic mean of the distances between weight vector (x, y) and its 4-neighbourhood.
 
-           Return:
-               (AxesSubplot, np.array) the axis, umatrix
-        '''
+       Params:
+           w        (int) Neighbourhood width.
+           interp   (str) matplotlib interpolation method name.
+           ax       (plt.Axis) Provide custom axis object.
+
+       Return:
+           (AxesSubplot, np.array) the axis, umatrix
+        """
         if ax is None:
             ax = _new_axis(xlim=(0, self.dx), ylim=(0, self.dy), **kwargs)
-        udm = _utilities.umatrix(self.weights, self.dx, self.dy,
-                                 metric=self.metric, w=w)
+        udm = _utilities.umatrix(self.weights, self.shape, metric=self.metric)
 
         ax.set_title('Unified distance matrix')
         ax.set_xlabel('# units')
@@ -269,8 +271,7 @@ class _som_base:
                (Axes3DSubplot, np.array) the axis, umatrix
         '''
         fig, ax = _new_axis_3d(**kwargs)
-        udm = _utilities.umatrix(self.weights, self.dx, self.dy,
-                                 matric=self.metric, w=w)
+        udm = _utilities.umatrix(self.weights, self.shape, matric=self.metric)
         X, Y = _np.mgrid[:self.dx, :self.dy]
         ax.plot_surface(X, Y, udm, cmap=cmap)
         return ax, udm
@@ -400,7 +401,7 @@ class SelfOrganizingMap(_som_base):
             self.whist[bm_units] += 1
 
             # get bmu's multi index
-            bmu_midx = _np.unravel_index(bm_units, (self.shape[0], self.shape[1]))
+            bmu_midx = _np.unravel_index(bm_units, self.shape)
 
             # calculate neighbourhood over bmu given current radius
             c_nh = self._neighbourhood(bmu_midx, c_nhr)
@@ -416,7 +417,7 @@ class SelfOrganizingMap(_som_base):
         self.quantization_error.append(total_qE)
 
         # get bmu's multi index
-        bmu_midx = _np.unravel_index(bm_units, (self.shape[0], self.shape[1]))
+        bmu_midx = _np.unravel_index(bm_units, self.shape)
 
         w_nh = _np.zeros((self.n_N, 1))
         w_lat = _np.zeros((self.n_N, self.dw))
@@ -552,7 +553,7 @@ class DotSom(_som_base):
             self.whist[bm_units] += 1
 
             # get bmu's multi index
-            bmu_midx = _np.unravel_index(bm_units, (self.shape[0], self.shape[1]))
+            bmu_midx = _np.unravel_index(bm_units, self.shape)
 
             # calculate neighbourhood over bmu given current radius
             c_nh = self._neighbourhood(bmu_midx, c_nhr)

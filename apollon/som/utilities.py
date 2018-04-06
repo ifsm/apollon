@@ -51,17 +51,23 @@ def decrease_expo(start, step, stop=1):
             yield start * _np.exp(b*x)
 
 
-def umatrix(lattice, dx, dy, metric='euclidean', w=1, isNormed=True):
-    dxy = dx, dy
-    out = _np.zeros(dxy)
+def umatrix(weights, dxy, metric='euclidean'):
+    """ Compute unified distance matrix.
 
-    for i in _np.ndindex(dxy):
-        nb = _topologies.rect_neighbourhood(dxy, i, w=1)
-        i_flat = _np.ravel_multi_index(i, dxy)
-        out[i] = _distance.cdist(lattice[i_flat, None],
-                                lattice[~nb.mask.flatten()],
-                                metric=metric).sum()
-    if isNormed:
-        return out / _np.max(out)
-    else:
-        return out
+    Params:
+        weights (ndarray)    SOM weights matrix.
+        dxy (tuple)
+        metric (str)         Metric to use.
+
+    Return:
+        (ndarray)    unified distance matrix.
+    """
+    out = _np.empty(dxy, dtype='float64')
+
+    for i, mi in enumerate(_np.ndindex(dxy)):
+        nh_flat_idx = _topologies.vn_neighbourhood(*mi, *dxy, flat=True)
+        p = weights[i][None]
+        nh = weights[nh_flat_idx]
+        out[mi] = _distance.cdist(p, nh).sum() / len(nh)
+
+    return out / out.max()
