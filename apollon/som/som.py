@@ -220,14 +220,12 @@ class _som_base:
         if ax is None:
             ax = _new_axis(**kwargs)
 
-        ax.set_title('Normalized Errors measure per iteration')
+        ax.set_title('Quantization Errors per iteration')
         ax.set_xlabel('# interation')
         ax.set_ylabel('Error')
 
-        q_err = _np.array(self.quantization_error)
-        q_err = q_err / q_err.max()
-
-        ax.plot(q_err, lw=3, alpha=.8, label='Quantization error')
+        ax.plot(self.quantization_error, lw=3, alpha=.8,
+                label='Quantizationerror')
 
 
     def plot_umatrix(self, interp='None', cmap='viridis', ax=None, **kwargs):
