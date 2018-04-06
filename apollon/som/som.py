@@ -6,6 +6,7 @@
 #
 
 import numpy as _np
+import matplotlib.pyplot as _plt
 from scipy import stats as _stats
 from scipy.spatial import distance as _distance
 
@@ -164,7 +165,6 @@ class _som_base:
         self.isCalibrated = True
 
 
-    @switch_interactive
     def plot_calibration(self, lables=None, ax=None, cmap='plasma', **kwargs):
         # TODO: add params to docstring
         '''Plot calibrated map.'''
@@ -181,7 +181,6 @@ class _som_base:
             #return ax
 
 
-    @switch_interactive
     def plot_datamap(self, data, targets, interp='None', marker=False,
                      cmap='viridis', **kwargs):
         '''Represent the input data on the map by retrieving the best
@@ -216,7 +215,6 @@ class _som_base:
         return (ax, udm, (x, y))
 
 
-    @switch_interactive
     def plot_qerror(self, ax=None, **kwargs):
         """Plot quantization error."""
         if ax is None:
@@ -232,8 +230,6 @@ class _som_base:
         ax.plot(q_err, lw=3, alpha=.8, label='Quantization error')
 
 
-
-    @switch_interactive
     def plot_umatrix(self, interp='None', cmap='viridis', ax=None, **kwargs):
         """ Plot unified distance matrix.
 
@@ -259,7 +255,6 @@ class _som_base:
         return ax, udm
 
 
-    @switch_interactive
     def plot_umatrix3d(self, w=1, cmap='viridis', **kwargs):
         '''Plot the umatrix in 3d. The color on each unit (x, y) represents its
            mean distance to all direct neighbours.
@@ -277,39 +272,23 @@ class _som_base:
         return ax, udm
 
 
-    @switch_interactive
-    def plot_variables(self, interp='None', titles=True, axison=False, **kwargs):
-        '''Represent the influence of each variable of the input data on the
-        som lattice as heat map.
+    def plot_features(self, figsize=(8, 8)):
+        """ Values of each feature of the weight matrix per map unit.
+
+        This works currently ony for feature vectors of len dw**2.
 
         Params:
-            interp     (str) matplotlib interpolation method name.
-            titles     (bool) Print variable above each heatmap.
-            axison     (bool) Plot spines if True.
-        '''
-        _z = _np.sqrt(self.dw)
-        _iz = int(_z)
+            figsize (tuple)    Size of figure.
+        """
+        d = _np.sqrt(self.dw).astype(int)
+        rweigths = self.weights.reshape(self.dims)
 
-        if _z % 2 == 0:
-            if _z == 1:
-                x = _iz
-                y = self.dw
-            else:
-                x = y = _iz
-        else:
-            x = _iz
-            y = self.dw - x**2
-
-        fig = _new_figure(**kwargs)
-        for i in range(1, self.dw+1):
-            ax = _new_axis(fig=fig, sp_pos=(x, y, i), axison=axison)
-            ax.imshow(self.weights[:,i-1].reshape(self.dx, self.dy),
-                      interpolation=interp)
-            if titles:
-                ax.set_title(str(i))
+        fig, _ = _plt.subplots(d, d, figsize=figsize, sharex=True, sharey=True)
+        for i, ax in enumerate(fig.axes):
+            ax.axison=False
+            ax.imshow(rweigths[..., i], origin='lower')
 
 
-    @switch_interactive
     def plot_whist(self, interp='None', ax=None, **kwargs):
         '''Plot the winner histogram.
 

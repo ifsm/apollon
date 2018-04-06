@@ -30,7 +30,7 @@ from apollon.decorators import switch_interactive
 
 
 def _new_figure(**kwargs):
-    '''Return an empty figure.'''
+    """Return an empty figure."""
     return _plt.figure(**kwargs)
 
 
