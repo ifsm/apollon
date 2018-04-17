@@ -99,20 +99,29 @@ def peak_picking(odf, w=3, m=3, alpha=.1, delta=.1):
 
 
 class FluxOnsetDetector:
-    def __init__(self, sig, fs, nseg=2048, hop=441):
+    def __init__(self, sig, fs, nseg=2048, hop=441, scale=True, smooth=True):
 
         self.fs = fs
         self.nseg = nseg
         self.hop = hop
 
         X = STFT(sig, fs, nseg=nseg, nover=nseg-hop)
-
-        #dX = np.gradient(X.abs(), 1/hop, axis=1)
-        dX = _np.diff(X.abs())
-        odf = _tools.L1_Norm(_np.maximum(dX, 0, dX))
-
-        wh = _np.hamming(10)
-        odf = _np.convolve(odf, wh, mode='same')
+        
+        rgy = _np.absolute(X).sum(axis=0)
+        odf = _np.diff(rgy)
+        if scale:
+            fval = _np.finfo('float64').eps
+            devi = _np.where(rgy[:-1]==0., fval, rgy[:-1])
+            odf /= devi
+        odf = _np.maximum(odf, 0)
+        
+        if smooth:
+            if isinstance(smooth, int) and smooth > 0:
+                k = smooth
+            else:
+                k = 5
+            wh = _np.hamming(k)
+            odf = _np.convolve(odf, wh, mode='same')
 
         self.odf = _tools.ztrans(odf)
         self.peaks = peak_picking(odf)
@@ -122,7 +131,6 @@ class FluxOnsetDetector:
 
     def get_times(self):
         return self.peaks * self.hop / self.fs
-
 
 
 

@@ -20,7 +20,7 @@ __author__ = 'Michael Blaß'
 
 
 import os as _os
-import pathlib
+import pathlib as _pathlib
 import pickle as _pickle
 
 
@@ -33,7 +33,7 @@ class WavFileAccessControl:
 
     def __set__(self, obj, file_name):
         if obj not in self.__attribute.keys():
-            _path = pathlib.Path(file_name).resolve()
+            _path = _pathlib.Path(file_name).resolve()
             if _path.exists():
                 if _path.is_file():
                     if _path.suffix == '.wav':
