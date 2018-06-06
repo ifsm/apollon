@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/ufs/bin/python3
 # -*- coding: utf-8 -*-
 
 """apollon/signal/tools.py    (c) Michael Blaß 2016
@@ -168,7 +168,7 @@ def normalize(sig):
     return sig / _np.max(_np.absolute(sig), axis=0)
 
     
-def sinusoid(f, amps=1, sr=9000, length=1, retcomps=False):
+def sinusoid(f, amps=1, fs=9000, length=1, retcomps=False):
     """Generate sinusoidal signal.
 
     Params:
@@ -177,7 +177,7 @@ def sinusoid(f, amps=1, sr=9000, length=1, retcomps=False):
                     If `amps` is an integer each component of f will be
                     scaled according to `amps`. If `amps` is an iterable
                     each frequency will be scaled with the respective amplitude.
-        sr      (int) Sample rate.
+        fs      (int) Sample rate.
         length  (number) Length of signal in seconds.
         retcomps(bool) If True return the components of the signal,
                     otherwise return the sum.
@@ -189,7 +189,7 @@ def sinusoid(f, amps=1, sr=9000, length=1, retcomps=False):
     amps = _np.atleast_1d(amps)
 
     if f.shape == amps.shape or amps.size == 1:
-        t = _np.arange(sr*length)[:, None] / sr
+        t = _np.arange(fs*length)[:, None] / fs
         sig = _np.sin(2*_np.pi*f*t) * amps
     else:
         raise ValueError('Shapes of f and amps must be equal.')
