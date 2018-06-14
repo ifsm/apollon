@@ -153,7 +153,7 @@ def from_onsets(signal_obj, odx, clen, energy=False):
 
     :return:                (AudioChunks)
     '''
-    data, sr = signal_obj.get_data(), signal_obj.get_sr()
+    data, sr = signal_obj.data, signal_obj.fs
     bounds = [(i, i+clen) for i in odx]
 
     padding = False
@@ -174,7 +174,7 @@ def from_onsets_shift_back(signal_obj, odx, clen, energy=False):
 
     :return:                (AudioChunks)
     '''
-    data, sr = signal_obj.get_data(), signal_obj.get_sr()
+    data, sr = signal_obj.data, signal_obj.fs
     shift = signal_obj.get_sr() // 100
     bounds = [(i-shift, i+(clen-shift)) for i in odx]
 
@@ -195,8 +195,8 @@ def _get_audio_data(signal_obj):
         :return:             (array) signal, (int) samplerate
     '''
     if isinstance(signal_obj, _AudioData):
-        data = signal_obj.get_data()
-        sr = signal_obj.get_sr()
+        data = signal_obj.data
+        sr = signal_obj.fs
     else:
         if signal_obj.dtype.type is _np.str_:
             raise NotAudioDataError('Data contains elements of type {}'

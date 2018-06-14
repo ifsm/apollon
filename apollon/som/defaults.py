@@ -4,7 +4,7 @@
 # apollon/som/defaults.py
 
 # finale learning rate
-final_eta = .01
+final_eta = .0
 
 # final neighbourhood radius
-final_nhr = .01
+final_nhr = 1

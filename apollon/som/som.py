@@ -88,6 +88,8 @@ class _som_base:
         # measures
         self.quantization_error = []
 
+        # winner trajectories on Map
+        self.trajectories = []
 
     def get_winners(self, data, argax=1):
         '''Get the best matching neurons for every vector in data.
@@ -104,7 +106,7 @@ class _som_base:
 
         if data.ndim == 1:
             d = _distance.cdist(data[None, :], self.weights, metric=self.metric)
-            return _np.argmin(d), _np.min(d)**2
+            return _np.argmin(d), _np.min(d**2, axis=1)
         elif data.ndim == 2:
             ds = _distance.cdist(data, self.weights, metric=self.metric)
             return _np.argmin(ds, axis=argax), _np.sum(_np.min(ds, axis=argax)**2)
@@ -264,7 +266,7 @@ class _som_base:
                (Axes3DSubplot, np.array) the axis, umatrix
         '''
         fig, ax = _new_axis_3d(**kwargs)
-        udm = _utilities.umatrix(self.weights, self.shape, matric=self.metric)
+        udm = _utilities.umatrix(self.weights, self.shape, metric=self.metric)
         X, Y = _np.mgrid[:self.dx, :self.dy]
         ax.plot_surface(X, Y, udm, cmap=cmap)
         return ax, udm
@@ -376,7 +378,8 @@ class SelfOrganizingMap(_som_base):
 
             # update activation map
             self.whist[bm_units] += 1
-
+            self.trajectories.append(bm_units)
+            
             # get bmu's multi index
             bmu_midx = _np.unravel_index(bm_units, self.shape)
 

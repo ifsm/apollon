@@ -12,6 +12,7 @@ from apollon import fractal as _fractal
 from apollon import segment as _segment
 from apollon import tools as _tools
 from apollon.signal.spectral import STFT
+from apollon.tools import ztrans as _ztrans
 
 
 class EnrtopyOnsetDetector:
@@ -125,15 +126,41 @@ class FluxOnsetDetector:
 
         self.odf = _tools.ztrans(odf)
         self.peaks = peak_picking(odf)
+        self.index = self.peaks * self.hop
+        self.times = self.index / self.fs
+        
 
-    def get_idx(self):
-        return self.peaks * self.hop
+class FluxOnsetDetector2:
+    def __init__(self, sig, fs, nseg=2048, hop=441, scale=True, smooth=10):
+        fval = _np.finfo('float64').eps    # TODO move definition to apollon.constants
+        self.fs = fs
+        self.nseg = nseg
+        self.hop = hop
 
-    def get_times(self):
-        return self.peaks * self.hop / self.fs
+        f, t, X = _sps.stft(sig, fs, nperseg=nseg, noverlap=nseg-hop,
+                            detrend='constant')
+        
+        mag_X = _np.absolute(X)
+        stdevi = mag_X.std(axis=0)
+        stdevi = _np.where(stdevi==0., fval, stdevi)
+        d_mag_X = _np.diff(mag_X)
+        self.odf = _np.maximum(d_mag_X, 0).sum(axis=0)
+    
+        if scale:
+            sm_X = mag_X[:, :-1].sum(axis=0)
 
+            scale_fact = _np.where(sm_X==0., fval, sm_X)
+            self.odf /= scale_fact
+        
+        if smooth:
+            wh = _np.repeat([0., 1., 0.], smooth)
+            self.odf = _np.convolve(self.odf, wh, mode='same')
 
-
+        self.peaks = peak_picking(self.odf)
+        self.index = self.peaks * self.hop
+        self.times = self.index / self.fs
+        
+        
 def evaluate_onsets(targets:   Dict[str, _np.ndarray],
                     estimates: Dict[str, _np.ndarray]) -> Tuple[float, float,
                                                                 float]:
