@@ -3,7 +3,7 @@
 
 """spectral.py    (c) Michael Blaß 2016
 
-Class providing easy access to frequency spectra obtained by the DFT.
+Provide easy access to frequency spectra obtained by the DFT.
 
 Classes:
     _Spectrum_Base      Utility class
@@ -19,7 +19,7 @@ __author__ = 'Michael Blaß'
 
 import numpy as _np
 import matplotlib.pyplot as _plt
-from scipy.signal import stft, get_window
+from scipy.signal import _stft, get_window
 
 from apollon.signal.tools import amp2db
 
@@ -203,17 +203,31 @@ def fft(signal, sr=None, n=None, window=None):
 
 
 class STFT:
-    def __init__(self, sig, sr, window='hamming', nseg=256, nover=None, nfft=None):
+    def __init__(self, sig, sr:int, window:str ='hamming', n_perseg:int=256,
+                       n_overlap:int=None, n_fft:int=None):
+        """Short time Fourier Transform of one-dimensional input `sig`.
 
-        res = stft(sig, fs=sr, window=window, nperseg=nseg,
-                   noverlap=nover, nfft=nfft)
+        Params:
+            sr          Sample rate.
+            window      Window function name.
+            n_perseg    Number of samples per window.
+            n_overlap   Number of overlaping samples.
+            n_fft       FFT length.
+        """
+        res = _stft(sig, fs=sr, window=window, nperseg=n_perseg,
+                   noverlap=n_overlap, nfft=n_fft)
 
         self.freqs, self.t, self.bins = res
         self.bins *= 2
-
         self.shape = self.bins.shape
 
-    def plot(self, power=True):
+
+    def plot(self, power:bool = True):
+        """Plot the spectrogram of the STFT.
+        
+        Params:
+            power   Plot power spectrum if True.
+        """
         if power:
             XX = self.power()
         else:
@@ -229,9 +243,9 @@ class STFT:
         return self.__abs__()
 
     def power(self):
-        return _np.square(self.abs())
+        return _np.square(self.__abs__())
 
-    def centroid(self,):
+    def centroid(self):
         Xp = self.power()
         return _np.sum(Xp.T * self.freqs, axis=1) / _np.sum(Xp, axis=0)
 

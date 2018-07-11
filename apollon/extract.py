@@ -9,7 +9,7 @@ import numpy as _np
 
 from apollon.decorators import isAudioChunk
 from apollon.signal.audio import _AudioChunks
-from apollon.signal.spectral import fft
+from apollon.signal.spectral import _fft
 from apollon.tools import scale
 
 
@@ -69,12 +69,12 @@ def spectral_centroid(chunks, window=None, sr=None, **kwargs):
         out = _np.zeros(len(chunks))
 
         for i, chunk in enumerate(chunks):
-            X = fft(chunk, sr=sr, window=window)
+            X = _fft(chunk, sr=sr, window=window)
             out[i] = X.centroid()
         return out
 
     else:
-        spc = fft(chunks, sr=sr, window=window)
+        spc = _fft(chunks, sr=sr, window=window)
         return spc.centroid()
 
 
