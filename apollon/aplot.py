@@ -26,7 +26,6 @@ from scipy import stats as _stats
 
 from apollon._defaults import plot_params as _plot_params
 from apollon.signal.audio import _AudioData
-from apollon.decorators import switch_interactive
 
 
 def _new_figure(**kwargs):
@@ -105,7 +104,7 @@ def _new_axis_3d(fig=None, **kwargs):
     return fig, ax_3d
 
 
-@switch_interactive
+
 def fourplot(data, lag=1, standardized=True):
     # preprocess data
     if standardized is True:
@@ -153,7 +152,7 @@ def fourplot(data, lag=1, standardized=True):
     return osm, osr, slope, intercept, r
 
 
-@switch_interactive
+
 def marginal_distr(x, lambda_, delta, figsize=(10, 4), bins=20, legend=True):
     '''Plot the marginal distribution of a PoissonHMM.
     Params:
@@ -180,14 +179,14 @@ def marginal_distr(x, lambda_, delta, figsize=(10, 4), bins=20, legend=True):
     return ax
 
 
-@switch_interactive
+
 def onsets(sig, odx, figsize=(10, 4), **kwargs):
     ax = signal(sig)
     ax.vlines(odx, -1, 1, **_plot_params.onset)
     return ax
 
 
-@switch_interactive
+
 def onset_decoding(sig, odx, dec):
     '''Plot sig and and onsetes color coded regarding dec.'''
     ax = signal(sig, params=_plot_params.sig_ons)
@@ -198,7 +197,7 @@ def onset_decoding(sig, odx, dec):
     return ax
 
 
-@switch_interactive
+
 def signal(sig, xaxis='seconds', figsize=(10, 4), params=None):
     '''Plot a signal on fancy axes.'''
     ax = _new_axis(figsize=figsize)

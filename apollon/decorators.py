@@ -24,17 +24,6 @@ def isAudioChunkSPC(func):
             return func(inp)
     return wrapper
 
-def switch_interactive(func):
-    def wrapper(*args, **kwargs):
-        ret = func(*args, **kwargs)
-        if not _plt.isinteractive:
-            _plt.show()
-        return ret
-    #wrapper.__name__ = func.__name__
-    wrapper.__doc__ = func.__doc__
-    return wrapper
-
-
 def timing(func):
     # TODO: implement timing function
     raise NotImplementedError
