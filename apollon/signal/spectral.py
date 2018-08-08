@@ -19,7 +19,8 @@ __author__ = 'Michael Blaß'
 
 import numpy as _np
 import matplotlib.pyplot as _plt
-from scipy.signal import _stft, get_window
+from scipy.signal import stft as _stft
+from scipy.signal import get_window as _get_window
 
 from apollon.signal.tools import amp2db
 
@@ -194,7 +195,7 @@ def fft(signal, sr=None, n=None, window=None):
         n = n
 
     if window:
-        w = get_window(window, length)
+        w = _get_window(window, length)
         bins = _np.fft.rfft(sig * w, n) / length * 2
     else:
         bins = _np.fft.rfft(sig, n) / length * 2

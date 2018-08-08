@@ -21,4 +21,4 @@ from apollon import segment
 from apollon import tools
 
 from apollon.hmm.poisson_hmm import PoissonHmm
-from apollon.hmm.viterbi import viterbi
+from apollon.hmm.poisson_hmm import viterbi
