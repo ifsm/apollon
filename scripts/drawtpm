@@ -1,0 +1,61 @@
+#! python3
+
+import numpy as np
+from optparse import OptionParser
+from pathlib import Path
+import sys
+
+from apollon.hmm import graph
+from apollon.io import load
+
+
+def main(argv=None):
+    """Draw the tpm of a HMM as directed graph.
+    """
+    if argv is None:
+        argv = sys.argv
+
+    opts, args = _parse_cmd(argfile 
+    in_file = Path(args[0])
+    if opts.out_file is None:
+        nf = '.'.join([in_file.stem, opts.file_type])
+        opts.out_file = in_file.with_name(nf)
+
+    phmm = load(in_file)
+    fig, ax = graph.draw(phmm.gamma_, np.round(phmm.lambda_, 3))
+    graph.save_hmmfig(fig, str(opts.out_file))
+
+    return 0
+
+
+def _parse_cmd(argv):
+    usage = 'Usage: %prog [OPTIONS] path_to_hmm'
+    parser = OptionParser(usage=usage)
+
+    parser.add_option('-v', '--verbose', action='store_true',
+                      dest='verbose', default=False,
+                      help='Be a little more verbose.')
+
+    parser.add_option('-o', '--out', action='store',
+                      dest='out_file', type='string',
+                      help='Specify an output destination.')
+
+    parser.add_option('-t', '--type', action='store',
+                      dest='file_type', type='string', default='png',
+                      help='Outfile type. [pdf, png, jpg]')
+
+    opts, args = parser.parse_args()
+
+    if len(args) != 1:
+        print('Wrong number of arguments.')
+        parser.print_help(sys.stderr)
+        sys.exit(1)
+
+    return opts, args
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+
+
