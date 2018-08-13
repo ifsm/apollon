@@ -53,61 +53,44 @@ class WavFileAccessControl:
         del self.__attribute[obj]
 
 
-def files_in_folder(path, suffix='.wav'):
-    """Iterate over all file names in a given folder.
+def files_in_path(path:path_t, file_type:str = '.wav', recursive:bool = False) -> path_iter_t:
+    """Generate all files with suffix `file_type` in `path`.
 
-    Parameters:
-        path        (str)  A path to a folder.
-        file_type   (str)  Get only files with the given extension.
-        abs_path    (bool) If True, yield absolute path of file.
+    If `path` points to a file, it is yielded. 
+    If `path` points to a directory, all files with suffix `file_type`
+    are yielded.
 
-    yield:    name of file.
+    Params:
+        path        (str or Path)   Path to audio file or folder of audio files.
+        file_type   (str)           The file type.
+        recursive   (bool)          If True, recursively visite all subdirs of
+                                    `path`.
+        
+    Yield:
+        (genrator)
     """
-    wf = pathlib.Path(path)
+    path = _Path(path)
 
-    if wf.exists():
-        wf_name = str(wf)
-
-        if wf.is_dir():
-            #verbose_msg('Accessing directory <{}> ...'.format(wf_name))
-            for f in wf.iterdir():
-                if f.is_file():
-                    if not f.stem.startswith('.') and f.suffix == suffix:
-                        yield f
-        else:
-            raise NotADirectoryError('<{}> is not a directory.\n'.format(wf_name))
-    else:
-        raise FileNotFoundError('File <{}> could not be found.\n'
-                                .format(wf_name))
-
-
-def files_in_folder_list(path, file_type='', abs_path=False):
-
-    if not _os.path.exists(path):
-        raise FileNotFoundError('Path {} does not exist.'.format(path))
-
-    if not _os.path.isdir(path):
-        raise NotADirectoryError('Path {} is not a directory.'.format(path))
-
-    file_list = []
-    for fname in _os.listdir(path):
-        full_path = _os.path.join(path, fname)
-
-        if fname.startswith('.'):
-            continue
-
-        if not _os.path.isfile(full_path):
-            continue
-
-        if fname.endswith(file_type):
-            if abs_path:
-                file_list.append(full_path)
+    if path.exists():
+        if path.is_file():
+            if path.suffix == file_type:
+                yield path.resolve()
             else:
-                file_list.append(fname)
-
-    return file_list
-
-
+                raise FileNotFoundError('File "{}" is not a "{}" file.\n'
+                                        .format(path, file_type))
+                
+        else:              
+            ft = '*' + file_type
+            if recursive:
+                for p in path.rglob(ft):
+                    yield p.resolve()
+            else:
+                for p in path.glob(ft):
+                    yield p.resolve()
+    else:
+        raise FileNotFoundError('Path "{}" could not be found.\n'.format(path))
+        
+        
 def load(path):
     """Load a pickled file.
 
