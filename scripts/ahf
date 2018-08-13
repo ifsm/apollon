@@ -1,20 +1,59 @@
 #! python3
 
+from optparse import OptionParser
+from pathlib import Path
 import sys
 
-from apollon.hmm_factory import build
-from apollon.hmm_factory import utilities
+from apollon import io
+from apollon.hmm import factory
+from apollon.types import path_t
+from apollon.types import parser_t
 
 
-def main():
+
+def main(argv=None) -> int:
     """Insert doc string.
-    """    
-    opts, args = utilities.__parse_cml()
-    path = utilities.__validate_input_path(args[0])
+    """   
+    if argv is None:
+        argv = sys.argv
+
+    opts, args = _parse_cmd(argv)
+    path = io.files_in_path(args[0], '.wav', opts.recursive)
     
-    for afp in path:
-        build.PoissonHMM(afp)
+    for p in path:
+        print(p)
+        #factory.build.PoissonHmm(p)
+
+    return 0
+
+
+def _parse_cmd(argv) -> parser_t:
+    """Parse the command line.
+
+    Return:
+        (parser_t) Dict of options and their values and List of arguments.
+    """
+    usage = 'usage: %prog [OPTIONS] path_to_wav'
+    parser = OptionParser(usage=usage)
+
+    parser.add_option('-v', '--verbose', action='store_true',
+                      dest='verbose', default=False,
+                      help='enable verbose mode')
+
+    parser.add_option('-r', '--recursive', action='store_true',
+                      dest='recursive', default=False,
+                      help='recursively visit subdirs')
+
+    opts, args =  parser.parse_args()
+    
+    if len(args) != 1:
+        print('Wrong number of arguments.')
+        parser.print_help(sys.stderr)
+        sys.exit(1)
+
+    return opts, args
 
 
 if __name__ == "__main__":
     sys.exit(main())
+
