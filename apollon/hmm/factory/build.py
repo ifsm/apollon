@@ -1,9 +1,8 @@
 #! python3
 
-from . import utilities
-from .. hmm.poisson_hmm import PoissonHmm as _PoissonHmm
-from .. signal.audio import loadwav
-from .. onsets import FluxOnsetDetector2
+from .. poisson_hmm import PoissonHmm as _PoissonHmm
+from ... signal.audio import loadwav
+from ... onsets import FluxOnsetDetector2
 
 
 def PoissonHmm(path: str, params: dict = None):

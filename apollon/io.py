@@ -23,6 +23,9 @@ import os as _os
 import pathlib as _pathlib
 import pickle as _pickle
 
+from . types import path_t
+from . types import path_generator_t
+
 
 class WavFileAccessControl:
     def __init__(self):
@@ -53,7 +56,7 @@ class WavFileAccessControl:
         del self.__attribute[obj]
 
 
-def files_in_path(path:path_t, file_type:str = '.wav', recursive:bool = False) -> path_iter_t:
+def files_in_path(path:path_t, file_type:str = '.wav', recursive:bool = False) -> path_generator_t:
     """Generate all files with suffix `file_type` in `path`.
 
     If `path` points to a file, it is yielded. 
@@ -61,15 +64,14 @@ def files_in_path(path:path_t, file_type:str = '.wav', recursive:bool = False) -
     are yielded.
 
     Params:
-        path        (str or Path)   Path to audio file or folder of audio files.
-        file_type   (str)           The file type.
-        recursive   (bool)          If True, recursively visite all subdirs of
-                                    `path`.
+        path        (path_t)   Path to audio file or folder of audio files.
+        file_type   (str)      The file type.
+        recursive   (bool)     If True, recursively visite all subdirs of `path`.
         
     Yield:
-        (genrator)
+        (Path_Genrator_t)
     """
-    path = _Path(path)
+    path = _pathlib.Path(path)
 
     if path.exists():
         if path.is_file():
