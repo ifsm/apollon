@@ -15,7 +15,7 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    opts, args = _parse_cmd(argfile)
+    opts, args = _parse_cmd(argv)
     in_file = Path(args[0])
     if opts.out_file is None:
         nf = '.'.join([in_file.stem, opts.file_type])
