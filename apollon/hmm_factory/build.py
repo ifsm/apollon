@@ -1,14 +1,18 @@
 #! python3
 
 from . import utilities
+from .. hmm.poisson_hmm import PoissonHmm as _PoissonHmm
+from .. signal.audio import loadwav
+from .. onsets import FluxOnsetDetector2
+
 
 def PoissonHmm(path: str, params: dict = None):
     """Train HMM on single audio file.
 
     Params:
-        path    Path to audio file.
-        params  dict of modelling parameters.
+        path    (str)   Path to audio file.
+        params  (dict)  dict of modelling parameters.
     """
-     
-
-
+    x = loadwav(path)
+    ons = FluxOnsetDetector2()
+    
