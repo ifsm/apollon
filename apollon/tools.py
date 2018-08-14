@@ -129,22 +129,24 @@ def rowdiag(v, k=0):
     return _np.diag(v, k)[:, None]
 
 
-def scale(x, new_min=0, new_max=1):
+def scale(x, new_min=0, new_max=1, axis=-1):
     """Scale `x` between `new_min` and `new_max`.
     
     Parmas:
-        x        (np.array)          One-dimensional array of values to be scales.
-        newmin   (real numerical)    Lower bound.
-        newmax   (real numerical)    Upper bound.
+        x         (np.array)          Array to be scaled.
+        new_min   (real numerical)    Lower bound.
+        new_max   (real numerical)    Upper bound.
         
     Return:
         (np.ndarray)    One-dimensional array of transformed values.
     """
-    xm = x.max()
-    a = (new_max - new_min) / (xm - x.min())
-    b = new_max - a * xm
+    xmax = x.max(axis=axis, keepdims=True)
+    xmin = x.min(axis=axis, keepdims=True)
     
-    return a*x + b
+    a = (x-xmin) / (xmax - xmin)
+    y = a * (new_max - new_min) + new_min
+
+    return y
 
 
 def smooth_stat(sig):
