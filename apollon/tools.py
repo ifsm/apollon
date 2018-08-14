@@ -14,14 +14,13 @@ Functions:
     in2out              Create a save from an input path.
     offdiag             Access to off-diagonal elements of square array.
     rowdiag             kth array diagonal sorted by array's rows.
-    scale               Return scaled version of input.
+    scale               Scale array between bounds.
     set_offdiag         Set off-diag elements of square array.
     smooth_stat         Return smoothed input.
-    standardize         Return standardized input.
+    standardize         Scale to zero mean and unit standard deviation.
     time_stamp          Return time stamp.
     within              Test wether val is in window.
     within_any          Test wether val is in any of windows.
-    ztrans              Return ztrans formed values.
 """
 
 
@@ -130,18 +129,22 @@ def rowdiag(v, k=0):
     return _np.diag(v, k)[:, None]
 
 
-def scale(a, end):
-    """Scale a between 0 and end.
-
-    Params:
-        a    (iterable) Values to scale.
-        end    (real number) Maximum value.
-
+def scale(x, new_min=0, new_max=1):
+    """Scale `x` between `new_min` and `new_max`.
+    
+    Parmas:
+        x        (np.array)          One-dimensional array of values to be scales.
+        newmin   (real numerical)    Lower bound.
+        newmax   (real numerical)    Upper bound.
+        
     Return:
-        (ndarray) Scale values.
+        (np.ndarray)    One-dimensional array of transformed values.
     """
-    new_a = _np.atleast_1d(a) / max(a) * end
-    return new_a
+    xm = x.max()
+    a = (new_max - new_min) / (xm - x.min())
+    b = new_max - a * xm
+    
+    return a*x + b
 
 
 def smooth_stat(sig):
@@ -165,16 +168,17 @@ def smooth_stat(sig):
     return _np.array(out)
 
 
-def standardize(sig):
-    """Return centered and scaled version of the input.
+def standardize(x: _np.ndarray) -> _np.ndarray:
+    """Retrun z-transformed values of x.
 
-    Params
-        sig    (array-like) Input signal
+    Params:
+        x    (array) Input values
 
     Return:
-        (array) standardized input signal
+        (array) z-transformed values
     """
-    return (sig - _np.mean(sig)) / _np.std(sig)
+    return (x - x.mean(axis=0)) / x.std(axis=0)
+
 
 
 def set_offdiag(mat, values):
@@ -219,13 +223,3 @@ def within_any(x: float, windows: _np.ndarray) -> bool:
 
     return np.any(c)
 
-def ztrans(x: _np.ndarray) -> _np.ndarray:
-    """Retrun z-transformed values of x.
-
-    Params:
-        x    (array) Input values
-
-    Return:
-        (array) z-transformed values
-    """
-    return (x - x.mean(axis=0)) / x.std(axis=0)
