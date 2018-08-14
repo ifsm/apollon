@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-hmm_network -- Plot graphs from HMMs.
+grapher.py -- Plot graphs from HMMs.
 
 Copyright (C) 2017 Michael Blaß
 
@@ -31,6 +31,8 @@ import numpy as np
 import networkx as nx
 from scipy.spatial import distance
 
+from apollon import tools
+
 
 def _prepare_fig(pos):    
     """Prepare a figure with the correct size.
@@ -47,7 +49,8 @@ def _prepare_fig(pos):
     
     fig = plt.figure(figsize=(7, 7), frameon=False)
     ax = fig.add_subplot(111)
-    ax.axis([-dd, dd, -dd, dd])
+    r = 1.5
+    ax.axis([-(dd+r), (dd+r), -(dd+r), (dd+r)])
     ax.set_axis_off()
 
     return fig, ax
@@ -64,12 +67,8 @@ def _draw_nodes(G, pos, ax):
     Return:
         (dict) of Circle patches.
     """
-    indegree = np.array([deg for node, deg in G.in_degree], dtype=float)
-    indegree /= indegree.sum()
-
-    outdegree = np.array([deg for node, deg in G.out_degree], dtype=float)
-    outdegree /= outdegree.sum()
-
+    #degree = np.array([deg for node, deg in G.degree], dtype=float)
+    #degree /= degree.sum()
     
     flare_kwargs = {'alpha'    : 0.2,
                     'edgecolor': (0, 0, 0, 1),
@@ -80,18 +79,19 @@ def _draw_nodes(G, pos, ax):
                    'facecolor': None}
     
     nodes = {}
-    node_params = zip(pos.items(), indegree, outdegree)
+    node_params = zip(pos.items())
     
-    for i, ((label, xy), d_in, d_out) in enumerate(node_params):
-        
+    for i, (label, xy) in enumerate(pos.items()):
+        size = G.nodes[label]['size']
+        fsize = G.nodes[label]['fsize']
         flare_kwargs['facecolor'] = 'C{}'.format(i)
-        flare = Circle(xy, d_in + d_out, **flare_kwargs)
-        
+        flare = Circle(xy, size+fsize, **flare_kwargs)
+
         node_kwargs['facecolor'] = 'C{}'.format(i)
-        node = Circle(xy, d_in, **node_kwargs)
-        
+        node = Circle(xy, size, **node_kwargs)
+
         ax.add_patch(flare)
-        ax.add_patch(node)        
+        ax.add_patch(node)    
 
         font_style = {'size':15, 'weight':'bold'}
         text_kwargs = {'color': (0, 0, 0, .8),
@@ -99,7 +99,7 @@ def _draw_nodes(G, pos, ax):
                        'horizontalalignment': 'center',
                        'fontdict': font_style}
         ax.text(*xy, i+1, **text_kwargs)
-        
+
         nodes[label] = node
 
     return nodes
@@ -113,28 +113,30 @@ def _draw_edges(G, pos, nodes, ax):
         pos     (dict)          returned by nx.layout methods.
         nodes   (dict)          of Circle patches.
         ax      (AxesSubplot)   mpl axe.
-    
+
     Return:
         (dict) of Circle patches.
     """
-    pointer = ArrowStyle.Simple(head_width=15, head_length=20)
+    pointer = ArrowStyle.Fancy(head_width=10, head_length=25)
     curved_edge = ConnectionStyle('arc3', rad=.2)
-    
+
     arrow_kwargs = {'arrowstyle': pointer,
+                    'antialiased': True,
                     'connectionstyle': curved_edge,
-                    'facecolor': (0., 0., 0., .7),
-                    'facecolor': (0., 0., 0., .7)}
-    
-    weights = np.array([w['weight'] for w in G.edges.values()])
-    weights = np.exp(weights)
-   
-    cn = ((a, b, w) for ((a, b, attr), w) in zip(G.edges.data(), weights))
-    
-    edges = {} 
-    for i, (a, b, w) in enumerate(cn):
+                    'edgecolor': None,
+                    'facecolor': None,
+                    'linewidth': None}
+
+    edges = {}
+    for i, (a, b, attr) in enumerate(G.edges.data()):
+        arrow_kwargs['edgecolor'] = attr['color']
+        arrow_kwargs['facecolor'] = attr['color']
+        arrow_kwargs['linewidth'] = np.exp(attr['weight'])
+        
         edge = FancyArrowPatch(pos[a], pos[b], 
                                patchA=nodes[a], patchB=nodes[b],
-                               alpha=.7, linewidth=w, **arrow_kwargs)
+                               shrinkA=5, shrinkB=5,
+                               **arrow_kwargs)
         ax.add_patch(edge)
         edges[(a, b)] = edge
         
@@ -156,38 +158,47 @@ def _legend(G, nodes, ax):
                      'fontsize': 14,
                      'bbox_to_anchor': (1.02, 1.0)}
                     
-    labels = [r'$f_c = {}$ Hz'.format(k) for k in G.nodes.keys()]
+    labels = [r'$f_c = {:>9.3f}$ Hz'.format(k) for k in G.nodes.keys()]
     legend = ax.legend(nodes.values(), labels, **legend_kwargs, borderaxespad=0)
 
     return legend
     
 
-def draw(tpm, labels):
+def draw(labels, tpm, delta):
     """Draw the graph of a HMM's transition probability matrix.
 
     Params:
-        tpm     (np.ndarray)    A two-dimensional (row) stochastic matrix.
         lables  (iterable)      Labels for each state.
+        tpm     (np.ndarray)    A two-dimensional (row) stochastic matrix.
+        delta   (iterable)
 
     Return:
         (Figure, AxesSubplot)
     """
     G = nx.MultiDiGraph()
+    #scaled_tpm = np.exp(tools.scale(tpm, 0, 1.5))
     
     for i, from_state in enumerate(labels):
-        G.add_node(from_state)
+        G.add_node(from_state, fsize=np.exp(delta[i]))
+        
         for j, to_state in enumerate(labels):
             if tpm[i, j] != 0:
-                G.add_edge(from_state, to_state, weight=tpm[i,j])
-            
-    pos = nx.layout.circular_layout(G, center=(0., 0.), scale=1.5)
+                G.add_edge(from_state, to_state, 
+                           weight=tpm[i,j],
+                           color='C{}'.format(i))
+
+    n = G.number_of_nodes()
+    for node, degree in G.degree():
+        G.node[node]['size'] = np.log(degree / n)
+        
+    pos = nx.layout.circular_layout(G, center=(0., 0.), scale=4)
 
     fig, ax = _prepare_fig(pos)
     nodes = _draw_nodes(G, pos, ax)
     edges = _draw_edges(G, pos, nodes, ax)
     legend = _legend(G, nodes, ax)
     
-    return fig, ax 
+    return fig, ax, G
 
 
 def save_hmmfig(fig, path, **kwargs):
