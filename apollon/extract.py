@@ -10,7 +10,6 @@ import numpy as _np
 from apollon.decorators import isAudioChunk
 from apollon.signal.audio import _AudioChunks
 from apollon.signal.spectral import fft as _fft
-from apollon.tools import scale
 
 
 __author__ = 'Michael Blaß'
