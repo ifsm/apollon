@@ -7,11 +7,13 @@ Generic implementation of the Expectation Maximization algorithm.
 """
 
 import numpy as _np
+from scipy import stats
+from apollon.hmm.fwbw import forward_backward
 
 __author__ = "Michael Blaß"
 
 
-def EM(x, phmm, maxiter=1000, tol=1e-6):
+def EM(x, m, theta, maxiter=1000, tol=1e-6):
     '''    Estimate the parameters of an m-state PoissonHMM.
 
     Params:
@@ -21,30 +23,29 @@ def EM(x, phmm, maxiter=1000, tol=1e-6):
             tol    (float) break the loop if the difference between
                            to consecutive iterations is < tol
     '''
-    m = phmm.m
+    
     n = len(x)
 
-    m_lambda = phmm._lambda.copy()
-    m_gamma = phmm._gamma.copy()
-    m_delta = phmm._delta.copy()
+    m_lambda = theta[0].copy()
+    m_gamma = theta[1].copy()
+    m_delta = theta[2].copy()
 
-    next_lambda = phmm._lambda.copy()
-    next_gamma = phmm._gamma.copy()
-    next_delta = phmm._delta.copy()
+    next_lambda = theta[0].copy()
+    next_gamma = theta[1].copy()
+    next_delta = theta[2].copy()
 
     for i in range(maxiter):
-        allprobs = _np.log(stats.poisson.pmf(*_np.ix_(x, m_lambda)))
-        alpha, beta = forward_backward(x, m, m_lambda, m_gamma, m_delta)
+        alpha, beta, allprobs = forward_backward(x, m, m_lambda, m_gamma, m_delta)
 
         c = max(alpha[-1])
         log_likelihood = c + _np.log(_np.sum(_np.exp(alpha[-1] - c)))
 
         for j in range(m):
             for k in range(m):
-                next_gamma[j, k] *= _np.sum(_np.exp(alpha[:n - 1, j]) +
+                next_gamma[j, k] *= _np.sum(_np.exp(alpha[:n - 1, j] +
                                             beta[1:n, k] +
                                             allprobs[1:n, k] -
-                                            log_likelihood)
+                                            log_likelihood))
 
             rab = _np.exp(alpha[:, j] + beta[:, j] - log_likelihood)
             next_lambda[j] = _np.sum(rab * x) / _np.sum(rab)

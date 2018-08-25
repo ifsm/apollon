@@ -12,7 +12,6 @@ from apollon import fractal as _fractal
 from apollon import segment as _segment
 from apollon import tools as _tools
 from apollon.signal.spectral import STFT
-from apollon.tools import ztrans as _ztrans
 
 
 class EnrtopyOnsetDetector:
@@ -107,7 +106,7 @@ class FluxOnsetDetector:
         self.hop = hop
 
         X = STFT(sig, fs, nseg=nseg, nover=nseg-hop)
-        
+
         rgy = _np.absolute(X).sum(axis=0)
         odf = _np.diff(rgy)
         if scale:
@@ -115,7 +114,7 @@ class FluxOnsetDetector:
             devi = _np.where(rgy[:-1]==0., fval, rgy[:-1])
             odf /= devi
         odf = _np.maximum(odf, 0)
-        
+
         if smooth:
             if isinstance(smooth, int) and smooth > 0:
                 k = smooth
@@ -128,7 +127,7 @@ class FluxOnsetDetector:
         self.peaks = peak_picking(odf)
         self.index = self.peaks * self.hop
         self.times = self.index / self.fs
-        
+
 
 class FluxOnsetDetector2:
     def __init__(self, sig, fs, nseg=2048, hop=441, scale=True, smooth=10):
@@ -139,19 +138,19 @@ class FluxOnsetDetector2:
 
         f, t, X = _sps.stft(sig, fs, nperseg=nseg, noverlap=nseg-hop,
                             detrend='constant')
-        
+
         mag_X = _np.absolute(X)
         stdevi = mag_X.std(axis=0)
         stdevi = _np.where(stdevi==0., fval, stdevi)
         d_mag_X = _np.diff(mag_X)
         self.odf = _np.maximum(d_mag_X, 0).sum(axis=0)
-    
+
         if scale:
             sm_X = mag_X[:, :-1].sum(axis=0)
 
             scale_fact = _np.where(sm_X==0., fval, sm_X)
             self.odf /= scale_fact
-        
+
         if smooth:
             wh = _np.repeat([0., 1., 0.], smooth)
             self.odf = _np.convolve(self.odf, wh, mode='same')
@@ -159,8 +158,8 @@ class FluxOnsetDetector2:
         self.peaks = peak_picking(self.odf)
         self.index = self.peaks * self.hop
         self.times = self.index / self.fs
-        
-        
+
+
 def evaluate_onsets(targets:   Dict[str, _np.ndarray],
                     estimates: Dict[str, _np.ndarray]) -> Tuple[float, float,
                                                                 float]:

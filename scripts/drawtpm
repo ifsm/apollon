@@ -22,7 +22,8 @@ def main(argv=None):
         opts.out_file = in_file.with_name(nf)
 
     phmm = load(in_file)
-    fig, ax = graph.draw(phmm.gamma_, np.round(phmm.lambda_, 3))
+    print(len(phmm.theta))
+    fig, ax = graph.draw(*phmm.theta)
     graph.save_hmmfig(fig, str(opts.out_file))
 
     return 0

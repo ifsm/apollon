@@ -13,7 +13,6 @@ from scipy.spatial import distance as _distance
 from apollon.io import save as _save
 from apollon.som import utilities as _utilities
 from apollon.som import defaults as _defaults
-from apollon.decorators import switch_interactive
 from apollon.aplot import _new_figure, _new_axis, _new_axis_3d
 
 

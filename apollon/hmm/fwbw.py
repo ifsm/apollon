@@ -5,15 +5,15 @@
 Implementation of the forward backward algorithm."""
 
 
-import numpy as _np
-from scipy import stats as _stats
+import numpy as np
+from scipy import stats as stats
 
 
 # CORRECT 20.06.2016
 def forward_backward(x, m, _lambda, _gamma, _delta):
     """Fails if _delta has zeros."""
     n = len(x)
-    alpha, beta = zeros((2, n, m))
+    alpha, beta = np.zeros((2, n, m))
     
     # init forward
     allprobs = stats.poisson.pmf(x[:, None], _lambda)
