@@ -45,11 +45,13 @@ def main():
         raise FileNotFoundError('File {} not found or is no valid SOM.'
                                 .format(args[0]))
 
-    foo = som.get_winners(hmm.reshape(1, 16))[0]
+    foo = som.get_winners(hmm.reshape(16))[0]
     if opts.flat:
         print(foo)
     else:
-        print(unravel_index(foo, som.shape[:2]))
+        x, y = unravel_index(foo, som.shape[:2])
+        print("{},{}".format(x, y))
 
 if __name__ == "__main__":
     sys.exit(main())
+

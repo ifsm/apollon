@@ -67,7 +67,7 @@ def main():
     # hmm
     verbose_msg('training hmm ...')
     mod = PoissonHmm(feat, 4, verbose=False)
-    mod.fit()
+    mod.fit_EM()
 
     # saving
     ofile = wfile.stem + '.hmm'

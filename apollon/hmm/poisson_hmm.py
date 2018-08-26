@@ -16,7 +16,6 @@ Functions:
     hmm_distance        Calculate dissimilarity of two PoissonHmms.
     LL                  Calculate log-likelihood of PoissonHMM.
     sample              Sample from PoissonHMM.
-    viterbi             Global decoding.
 """
 
 
@@ -35,6 +34,7 @@ from apollon import exceptions as _except
 from apollon.hmm.hmm_base import HMM_Base as _HMM_Base
 from apollon.hmm import utilities as _utils
 from apollon import tools as _tools
+from . import poisson_core as _poisson_core
 
 
 class PoissonHmm(_HMM_Base):
@@ -42,7 +42,7 @@ class PoissonHmm(_HMM_Base):
     __slots__ = ['x', 'm', 'params',
                  '_init_lambda', '_init_gamma', '_init_delta',
                  'lambda_', 'gamma_', 'delta_', 'theta',
-                 'mllk', 'aic', 'bic',
+                 'llk', 'aic', 'bic',
                  'distr_params', 'model_params',
                  'local_decoding', 'global_decoding',
                  '_support']
@@ -51,17 +51,10 @@ class PoissonHmm(_HMM_Base):
     def __init__(self, x, m, init_lambda=None, init_gamma=None,
                  init_delta=None, guess='quantile', verbose=True):
 
-        # Poisson distribution is for integer data only
-        if x.dtype.type is _np.int_:
-            __x = x
-        else:
-            _warnings.warn('Input data has been cast to int.')
-            __x = _np.round(x).astype(int)
-
-        super().__init__(__x, m, init_gamma, init_delta,
+        super().__init__(x, m, init_gamma, init_delta,
                          guess='quantile', verbose=verbose)
         self._support = _np.arange(0, self.x.max(), dtype=int)
-        
+
         # TODO: Params should be NamedTuple
         self.distr_params = ['lambda_']
         self.model_params = ['m', 'gamma_', 'delta_']
@@ -76,7 +69,7 @@ class PoissonHmm(_HMM_Base):
                     if init_lambda is None else init_lambda
         else:
             raise ValueError('Method <{}> not supported.'.format(guess))
-            
+
         self.local_decoding = None
         self.global_decoding = None
 
@@ -86,10 +79,10 @@ class PoissonHmm(_HMM_Base):
             out_str = ('Lambda\n{}\n\nDelta\n{}\n\nGamma\n{}\n\n' +
                        '{:15}{:15}{:15}\n{:<15}{:<15}{:<15}')
 
-            out_params = (self.lambda_.round(2), self.delta_.round(2),
-                          self.gamma_.round(3), 'Mllk', 'AIC', 'BIC',
-                          self.mllk.round(3), self.aic.round(3),
-                          self.bic.round(3))
+            out_params = (self.lambda_.round(4), self.delta_.round(4),
+                          self.gamma_.round(4), 'Mllk', 'AIC', 'BIC',
+                          self.llk.round(4), self.aic.round(4),
+                          self.bic.round(4))
         else:
             out_str = 'init_Lambda\n{}\n\ninit_Delta\n{}\n\ninit_Gamma\n{}'
             out_params = (self._init_lambda.round(2),
@@ -232,18 +225,32 @@ class PoissonHmm(_HMM_Base):
             self.delta_ = ml.x[2]
 
         self.nit = ml.nit
-        self.mllk = ml.fun
+        self.llk = ml.fun
         self.status = ml.status
         self.success = ml.success
-        self.aic = 2 * (self.mllk + n_param)
-        self.bic = 2 * self.mllk + n_param * _np.log(sum_param)
-        
+        self.aic = 2 * (self.llk + n_param)
+        self.bic = 2 * self.llk + n_param * _np.log(sum_param)
+
         self.global_decoding = viterbi(self, self.x)
         self.trained = True
         self.theta = (self.lambda_, self.gamma_, self.delta_)
 
         return self.success
 
+    def fit_EM(self):
+        theta = (self._init_lambda, self._init_gamma, self._init_delta)
+        self.lambda_, self.gamma_, self.delta_, self.llk, self.success = _poisson_core.poisson_EM(self.x, self.m, theta)
+        if self.success:
+            self.delta_ = _utils.calculate_delta(self.gamma_)
+            self.theta = (self.lambda_, self.gamma_, self.delta_)
+
+        n_params = self.m * self.m + 2 * self.m
+        sum_param = _np.nansum(self.x)
+
+        self.aic = -2 * self.llk + 2 * n_params
+        self.bic = -2 * self.llk + n_params * _np.log(self.x.size)
+        self.global_decoding = _poisson_core.poisson_viterbi(self, self.x)
+        self.trained = True
 
     def nice(self):
         print(self.__str__())
@@ -403,64 +410,3 @@ def sample(theta: tuple, n: int, iota=None) -> _np.ndarray:
     return x
 
 
-def viterbi(mod: PoissonHmm, x: _np.ndarray) -> _np.ndarray:
-    """Calculate the Viterbi path (global decoding) of a PoissonHMM
-       given some data x.
-
-       Params:
-            x       (array-like) observations
-            mod     (HMM-Object)
-
-        Return:
-            (np.ndarray) Most probable sequence of hidden states given x.
-    """
-    n = len(x)
-
-    # Make sure that x is an array
-    x = _np.atleast_1d(x)
-
-    # calculate the probability mass for each x_i and for each mean
-    pmf_x = _stats.poisson.pmf(x[:, None], mod.lambda_)
-
-    #
-    # Forward pass
-    #
-    
-    # allocate forward pass array
-    xi = _np.zeros((n, mod.m))
-
-    # Probabilities of oberseving x_0 give each state
-    probs = mod.delta_ * pmf_x[0]
-    xi[0] = probs / probs.sum()
-
-    # Interate over the remaining observations
-    for i in range(1, n):
-        foo = _np.max(xi[i-1] * mod.gamma_, axis=1) * pmf_x[i]   
-        xi[i] = foo / foo.sum()
-
-    #
-    # Backward pass
-    #
-    
-    # allocate backward pass array
-    phi = _np.zeros(n, dtype=int)
-    
-    # calculate most probable state on last time step
-    phi[-1] = _np.argmax(xi[-1])
-    
-    # backtrack to first time step
-    for i in range(n-2, -1, -1):
-        phi[i] = _np.argmax(mod.gamma_[phi[i+1]] * xi[i])
-        
-    return phi
-    
-    
-if __name__ == '__main__':
-    a = _stats.poisson.rvs(10, size=50)
-    b = _stats.poisson.rvs(25, size=50)
-    x = _np.concatenate((a, b))
-    mod = PoissonHMM(x, 2)
-    print(mod)
-    mod.train_MLLK()
-    print('\n\n')
-    print(mod)
