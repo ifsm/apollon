@@ -3,7 +3,6 @@
 
 
 import matplotlib.pyplot as _plt
-import mir_eval as _me
 import numpy as _np
 import scipy.signal as _sps
 from typing import Dict, Tuple
