@@ -15,8 +15,8 @@ def load_earthquakes() -> _namedtuple:
     """
 
     # set file paths
-    eq_data_path = APOLLON_PATH + '//datasets/earthquakes.data'
-    eq_descr_path = APOLLON_PATH + '//datasets/earthquakes.md'
+    eq_data_path = APOLLON_PATH + '/datasets/earthquakes.data'
+    eq_descr_path = APOLLON_PATH + '/datasets/earthquakes.md'
 
     # load data
     data = _np.fromfile(eq_data_path, dtype='uint8', sep=',')
