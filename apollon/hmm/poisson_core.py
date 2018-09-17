@@ -84,7 +84,8 @@ def poisson_EM(x, m, theta, maxiter=1000, tol=1e-6):
     next_delta = theta[2].copy()
 
     for i in range(maxiter):
-        lalpha, lbeta, prob = log_poisson_fwbw(x, m, this_lambda, this_gamma, this_delta)
+
+        lalpha, lbeta, lpprob = log_poisson_fwbw(x, m, this_lambda, this_gamma, this_delta)
 
         c = max(lalpha[-1])
         log_likelihood = c + _logsumexp(lalpha[-1] - c)
@@ -93,10 +94,9 @@ def poisson_EM(x, m, theta, maxiter=1000, tol=1e-6):
             for k in range(m):
                 next_gamma[j, k] *= _np.sum(_np.exp(lalpha[:n-1, j] +
                                             lbeta[1:n, k] +
-                                            prob[1:n, k] -
+                                            lpprob[1:n, k] -
                                             log_likelihood))
         next_gamma /= _np.sum(next_gamma, axis=1, keepdims=True)
-
         rab = _np.exp(lalpha + lbeta - log_likelihood)
         next_lambda = (rab * x[:, None]).sum(axis=0) / rab.sum(axis=0)
 
@@ -112,7 +112,6 @@ def poisson_EM(x, m, theta, maxiter=1000, tol=1e-6):
             this_lambda = next_lambda.copy()
             this_gamma = next_gamma.copy()
             this_delta = next_delta.copy()
-
     return next_lambda, next_gamma, next_delta, log_likelihood, False
 
 
