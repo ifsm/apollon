@@ -8,9 +8,10 @@
 Train a PoissonHmm of one single .wav file.
 """
 
-import sys
-from optparse import OptionParser
+import json
 import pathlib
+from optparse import OptionParser
+import sys
 
 from numpy import hamming
 from numpy import round as _round
@@ -69,10 +70,12 @@ def main():
     mod = PoissonHmm(feat, 4, verbose=False)
     mod.fit_EM()
 
-    # saving
+    # save model
     ofile = wfile.stem + '.hmm'
     verbose_msg('saving to <{}>'.format(ofile))
     save(mod.gamma_, ofile)
+
+    # export as json
 
     verbose_msg('DONE.\n')
 
