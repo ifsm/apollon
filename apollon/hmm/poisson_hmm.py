@@ -42,7 +42,7 @@ class PoissonHmm(_HMM_Base):
     __slots__ = ['x', 'm', 'params',
                  '_init_lambda', '_init_gamma', '_init_delta',
                  'lambda_', 'gamma_', 'delta_', 'theta',
-                 'llk', 'aic', 'bic',
+                 'nll', 'aic', 'bic',
                  'distr_params', 'model_params',
                  'local_decoding', 'global_decoding',
                  '_support']
@@ -81,7 +81,7 @@ class PoissonHmm(_HMM_Base):
 
             out_params = (self.lambda_.round(4), self.delta_.round(4),
                           self.gamma_.round(4), 'Mllk', 'AIC', 'BIC',
-                          self.llk.round(4), self.aic.round(4),
+                          self.nll.round(4), self.aic.round(4),
                           self.bic.round(4))
         else:
             out_str = 'init_Lambda\n{}\n\ninit_Delta\n{}\n\ninit_Gamma\n{}'
@@ -225,11 +225,11 @@ class PoissonHmm(_HMM_Base):
             self.delta_ = ml.x[2]
 
         self.nit = ml.nit
-        self.llk = ml.fun
+        self.nll = ml.fun
         self.status = ml.status
         self.success = ml.success
-        self.aic = 2 * (self.llk + n_param)
-        self.bic = 2 * self.llk + n_param * _np.log(sum_param)
+        self.aic = 2 * (self.nll + n_param)
+        self.bic = 2 * self.nll + n_param * _np.log(sum_param)
 
         self.global_decoding = viterbi(self, self.x)
         self.trained = True
@@ -239,7 +239,7 @@ class PoissonHmm(_HMM_Base):
 
     def fit_EM(self):
         theta = (self._init_lambda, self._init_gamma, self._init_delta)
-        self.lambda_, self.gamma_, self.delta_, self.llk, self.success = _poisson_core.poisson_EM(self.x, self.m, theta)
+        self.lambda_, self.gamma_, self.delta_, self.nll, self.success = _poisson_core.poisson_EM(self.x, self.m, theta)
         if self.success:
             self.delta_ = _utils.calculate_delta(self.gamma_)
             self.theta = (self.lambda_, self.gamma_, self.delta_)
@@ -247,8 +247,8 @@ class PoissonHmm(_HMM_Base):
         n_params = self.m * self.m + 2 * self.m
         sum_param = _np.nansum(self.x)
 
-        self.aic = -2 * self.llk + 2 * n_params
-        self.bic = -2 * self.llk + n_params * _np.log(self.x.size)
+        self.aic = -2 * self.nll + 2 * n_params
+        self.bic = -2 * self.nll + n_params * _np.log(self.x.size)
         self.global_decoding = _poisson_core.poisson_viterbi(self, self.x)
         self.trained = True
 
