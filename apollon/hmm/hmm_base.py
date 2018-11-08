@@ -15,6 +15,7 @@ Classes:
 import abc as _abc
 import numpy as _np
 
+import apollon
 from . import utilities as _utils
 
 
@@ -33,6 +34,9 @@ class HMM_Base(metaclass=_abc.ABCMeta):
             self.m = m
         else:
             raise ValueError('Number of states must be integer.')
+
+        self.training_date = apollon.tools.time_stamp()
+        self.apollon_version = apollon.__version__
 
         # set initial transition probability matrix
         self._init_gamma = _utils.new_gamma(m) \
