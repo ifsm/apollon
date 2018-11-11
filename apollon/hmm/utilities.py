@@ -1,6 +1,4 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
-
+#!/usr/bin/env python3
 
 """utilities.py
 
@@ -9,80 +7,60 @@
 Utility functions for HMMs
 
 Functions:
-    backt_trans_gamma   Back transform working params to tpm.
-    calculate_delta     Compute stationary distribution of HMM.
-    earthquakes         Sample data: earthquake counts.
-    guess_linear        Space guesses linearly within data range.
-    guess_qunatile      Space guesses by equally sized quntiles.
-    is_tpm              Test whether matrix is row-stoachastic.
-    new_gamma           Guess an initial tpm.
-    sort_param
-    transform_gamma     Transform tpm to working params.
+    init_lambda_linear      Init linearly between min and max.
+    init_lambda_quantile    Init regarding data quantiles.
+    init_lambda_random      Init with random samples from data range.
+    init_gamma_dirichlet    Init using Dirichlet distribution.
+    init_gamma_softmax      Init with softmax of random floats.
+    init_gamma_uniform      Init with uniform distr over the main diag.
+    init_delta_dirichlet    Init using Dirichlet distribution.
+    init_delta_softmax      Init with softmax of random floats.
+    init_delta_stationary   Init with stationary distribution.
+    init_delta_uniform      Init with uniform distribution.
+    stationary_distr        Compute stationary distribution of tpm.
+    to_txt                  Serializes model to text file.
+    to_json                 JSON serialization.
+
+    Deprecated:
+        is_tpm              Test whether matrix is row-stoachastic.
+        sort_param
+        transform_gamma     Transform tpm to working params.
+        backt_trans_gamma       Back transform working params to tpm.
 """
 
 
 import numpy as _np
-from collections import deque
-
 from scipy import linalg as _linalg
 from scipy import stats as _stats
+from typing import Iterable
 
 from apollon import tools as _tools
 
 
 
-def back_trans_gamma(w_gamma, m):
-    '''Back transform working params to a tpm.
+def init_lambda_linear(x, m:int):
+    """Linearily space m initial guesses in [min(data), max(data)].
 
         Params:
-            w_gamma    (np.ndarray) of working params.
-            m          (int) Number of states.
+            x    (np.ndarray)   Input data.
+            m    (int)          Number of states.
 
         Return:
-            (np.ndarray)    Transition probability matrix.'''
-    vals = _np.exp(w_gamma)
-    bt_gamma = _np.eye(m)
-    _tools.set_offdiag(bt_gamma, vals)
-    bt_gamma /= bt_gamma.sum(axis=1, keepdims=True)
-    return bt_gamma
-
-
-def calculate_delta(_gamma):
-    '''Calculate the stationary distribution of the HMM.
-
-        Params:
-            _gamma      (np.ndarray) Transition probability matrix.
-
-        Return:
-            (np.ndarray)    stationary distribution of HMM.'''
-    if is_tpm(_gamma):
-        m = _gamma.shape[0]
-    else:
-        raise ValueError('Matrix is not a true tpm.')
-    return _linalg.solve((_np.eye(m) - _gamma + 1).T, [1] * m)
-
-
-def guess_linear(x, m):
-    '''Linearily space m guesses in [min(data), max(data)].
-
-        Params:
-            x    (np.ndarray) Input data.
-            m    (int) Number of states.
-
-        Return:
-            (np.ndarray)    m equidistant guesses.'''
+            (np.ndarray)    m equidistant guesses.
+    """
     return _np.linspace(min(x), max(x), m)
 
 
-def guess_qunatile(x, m):
-    '''Compute m equally spaced percentiles from data.
+def init_lambda_quantile(x, m:int):
+    """Compute m equally spaced percentiles from data.
 
-        params:
-            x    (np.ndarray) data from which to compute the percentiles.
-            m    (int) number of HMM states.
+        Params:
+            x    (np.ndarray) Input data.
+            m    (int)        Number of HMM states.
 
         Return:
-            (np.ndarray)    m equally spaced percentiles.'''
+            (np.ndarray)    m equally spaced percentiles.
+    """
     if 3 <= m <= 100:
         pc = _np.linspace(100 / (m + 1), 100, m + 1)[:-1]
         return _np.percentile(x, pc)
@@ -93,6 +71,213 @@ def guess_qunatile(x, m):
     else:
         raise ValueError('Wrong input: m={}. 1 < m <= 100.'.format(m))
 
+
+def init_lambda_random(x, m:int):
+    """Init `_lambda` with random integers from [min(x), max(x)[.
+
+    Params:
+        x   (iterable)  Data set.
+        m   (int)       Number of states.
+
+    Retruns:
+        (np.ndarray)    Initial guesses of shape (m, ).
+    """
+    return _np.random.randint(x.min(), x.max(), m).astype(float)
+
+
+def init_gamma_dirichlet(m:int, alpha:Iterable):
+    """
+    Params:
+        m       (int)       Number of states.
+        alpha   (iterable)  Dirichlet distribution parameters.
+                            Iterable of size m. Each entry controls
+                            the probability mass that is put on the
+                            respective transition.
+    Returns:
+        (np.ndarray)    Transition probability matrix of shape (m, m).
+    """
+    alpha = _np.atleast_1d(alpha)
+
+    if alpha.ndim != 1:
+        raise ValueError(('Wrong shape of param `alpha`. '
+                         'Expected 1, got {}\n')
+                         .format(alpha.ndim))
+
+    if alpha.size != m:
+        raise ValueError(('Wrong size of param `alpha`. '
+                          'Expected {}, got {}\n')
+                          .format(m, alpha.size))
+
+    dv = (_stats.dirichlet(_np.roll(alpha, i)).rvs() for i in range(m))
+    return _np.vstack(dv)
+
+
+def init_gamma_softmax(m:int):
+    """Initialize `_gamma` by applying softmax to a sample of random floats.
+
+    Params:
+        m   (int)   Number of states.
+
+    Returns:
+        (np.ndarray)    Transition probability matrix of shape (m, m).
+    """
+    _gamma = _np.random.rand(m, m)
+    return _np.exp(_gamma) / _np.exp(_gamma).sum(axis=1, keepdims=True)
+
+
+def init_gamma_uniform(m:int, diag:float):
+    """Fill the main diagonal of `_gamma` with `diag`. Set the
+       off-diagoanl elements to the proportion of the remaining
+       probability mass and the remaining number of elements per row.
+
+        Params:
+           m        (int)   Number of states.
+           diag     (float) Value on main diagonal in [0, 1].
+
+        Returns:
+            (np.ndarray)    Transition probability matrix of shape (m, m).
+    """
+    if not isinstance(diag, float):
+        raise TypeError(('Wrong type for param `diag`. '
+                         'Expected <float>, got {}.\n')
+                        .format(type(diag)))
+
+    _gamma = _np.empty((m, m))
+    _gamma.fill( (1-diag) / (m-1) )
+    _np.fill_diagonal(_gamma, diag)
+
+    return _gamma
+
+
+def init_delta_dirichlet(m:int, alpha:Iterable):
+    """
+    Params:
+        m       (int)       Number of states.
+        alpha   (iterable)  Dirichlet distribution params.
+
+    Returns:
+        (np.ndarray)    Stochastic vector of shape (m, ).
+    """
+    alpha = _np.atleast_1d(alpha)
+
+    if alpha.ndim != 1:
+        raise ValueError(('Wrong shape of param `alpha`. '
+                         'Expected 1, got {}\n')
+                         .format(alpha.ndim))
+
+    if alpha.size != m:
+        raise ValueError(('Wrong size of param `alpha`. '
+                          'Expected {}, got {}\n')
+                          .format(m, alpha.size))
+
+    return _stats.dirichlet(alpha).rvs()
+
+
+def init_delta_softmax(m:int):
+    """Initialize `_delta` by applying softmax to a sample of random floats.
+
+    Params:
+        m   (int)   Number of states.
+
+    Returns:
+        (np.ndarray)    Stochastic vector of shape (m, ).
+    """
+    v = _np.random.rand(m)
+    return _np.exp(v) / _np.exp(v).sum()
+
+
+def init_delta_stationary(_gamma):
+    """Initialize `_delta` with the stationary distribution of `_gamma`.
+
+    Params:
+        _gamma  (np.ndarray)    Initial transition probability matrix.
+
+    Returns:
+        (np.ndarray)    Stochastic vector of shape (m, ).
+    """
+    return stationary_distr(_gamma)
+
+
+def init_delta_uniform(m:int):
+    """Initialize `_delta` with a uniform distribution.
+    The initial values are set to the inverse of the number of states.
+
+    Params:
+        m   (int)   Number of states.
+
+    Returns:
+        (np.ndarray)    Stochastic vector of shape (m, ).
+    """
+    return _np.full(m, 1/m)
+
+
+def stationary_distr(_gamma):
+    """Calculate the stationary distribution of the transition probability
+    matrix `_gamma`.
+
+    Params:
+        _gamma  (np.ndarray)    Transition probability matrix.
+
+    Return:
+        (np.ndarray)    Stationary distribution of shape (m, ).
+    """
+    if is_tpm(_gamma):
+        m = _gamma.shape[0]
+    else:
+        raise ValueError('Matrix is not stochastic.')
+    return _linalg.solve((_np.eye(m) - _gamma + 1).T, [1] * m)
+
+
+def to_txt(model, path):
+    path = pathlib.Path(path)
+    out_str = ('Name\n{}\n\n'
+                + 'Training date\n{}\n\n'
+                + 'Apollon version\n{}\n\n'
+                + 'Initial Lambda\n{}\n\n'
+                + 'Initial Delta\n{}\n\n'
+                + 'Initial Gamma\n{}\n\n'
+                + '\n------------------------------------------\n'
+                + '\nLambda\n{}\n\n'
+                + 'Delta\n{}\n\n'
+                + 'Gamma\n{}\n\n'
+                + '{:20}{:20}{:20}\n{:<20}{:<20}{:<20}\n')
+
+    out_params = (path.stem,
+                  model.training_date,
+                  model.apollon_version,
+                  model._init_lambda,
+                  model._init_delta,
+                  model._init_gamma,
+                  model.lambda_,
+                  model.delta_,
+                  model.gamma_,
+                  'nll', 'aic', 'aic',
+                  model.nll, model.aic, model.bic)
+
+    with path.open('w') as file:
+        file.write(out_str.format(*out_params))
+
+def to_json(model, path):
+    path = pathlib.Path(path)
+    data = {'name': path.stem,
+            'training_date': model.training_date,
+            'apollon_version': model.apollon_version,
+            '_init_lambda': model._init_lambda.tolist(),
+            '_init_delta':  model._init_delta.tolist(),
+            '_init_gamma':  model._init_gamma.tolist(),
+            'lambda_': model.lambda_.tolist(),
+            'delta_':  model.delta_.tolist(),
+            'gamma_':  model.gamma_.tolist(),
+            'nll': model.nll,
+            'aic': model.aic,
+            'bic': model.bic}
+
+    with path.open('w') as file:
+        json.dump(data, file)
+
+"""
+----------------- Deprecated API ---------------------------------
+"""
 
 def is_tpm(mat):
     '''Test whether `mat` is a transition probability matrix.
@@ -118,23 +303,6 @@ def is_tpm(mat):
         raise _linalg.LinAlgError('Matrix must be two-dimensional.')
 
 
-# TODO: .rotate() does not make sense, since we want to have the bigger
-#       values next to the main diagonal
-def new_gamma(m):
-    '''Compute an initial guess for the transition probability matrix.
-
-        Params:
-            x    (int) number of states.
-
-        Return:
-            (np.ndarray)    m X m transition probability matrix.'''
-    coef = _np.array([m * j for j in range(1, m + 1)])
-    values = deque((sum(1 / coef[i:]) for i in range(0, m)), m)
-    out = _np.zeros((m, m))
-    for i in range(m):
-        out[i] = values
-        values.rotate()
-    return out
 
 
 def sort_param(m_key, m_param):
@@ -180,3 +348,18 @@ def transform_gamma(_gamma):
     foo = _np.log(_gamma / _gamma.diagonal()[:, None])
     w_gamma = _tools.get_offdiag(foo)
     return w_gamma
+
+def back_trans_gamma(w_gamma, m):
+    '''Back transform working params to a tpm.
+
+        Params:
+            w_gamma    (np.ndarray) of working params.
+            m          (int) Number of states.
+
+        Return:
+            (np.ndarray)    Transition probability matrix.'''
+    vals = _np.exp(w_gamma)
+    bt_gamma = _np.eye(m)
+    _tools.set_offdiag(bt_gamma, vals)
+    bt_gamma /= bt_gamma.sum(axis=1, keepdims=True)
+    return bt_gamma
