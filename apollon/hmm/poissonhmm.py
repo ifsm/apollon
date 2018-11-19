@@ -41,7 +41,6 @@ Classes:
     PoissonHMM              HMM with univariat Poisson-distributed states.
 """
 
-
 from typing import Iterable
 
 import numpy as _np
@@ -49,12 +48,12 @@ from scipy import linalg as _linalg
 from scipy import stats as _stats
 
 from . hmm_base import HMM_Base
-
+from . import poisson_core as core
 
 class PoissonHMM(HMM_Base):
 
-    __slots__ = ['m', '_init_params', 'apollon_version'
-                 'lambda_', 'gamma_', 'delta_',
+    __slots__ = ['m', '_init_args', 'apollon_version'
+                 'lambda_', 'gamma_', 'delta_', 'theta',
                  'local_decoding', 'global_decoding',
                  'nll', 'aic', 'bic', 'training_date']
 
@@ -81,20 +80,16 @@ class PoissonHMM(HMM_Base):
         """
         super().__init__(m, verbose=verbose)
 
-        self._init_params = {
-                '_lambda'   = _lambda
-                '_gamma'    = _gamma
-                '_delta'    = _delta
-                'g_distr'   = g_distr
-                'd_distr'   = d_distr
-                'diag'      = diag
+        self._init_args = {
+                '_lambda': _lambda,
+                '_gamma' : _gamma,
+                '_delta' : _delta,
+                'g_distr': g_distr,
+                'd_distr': d_distr,
+                'diag'   : diag
             }
 
-        self.lambda_ = None
-        self.gamma_ = None
-        self.delta_ = None
 
-        self.theta = Non
         # ---- initialize _lambda ----
         if isinstance(_lambda, str):
             if _lambda == 'linear':
@@ -188,7 +183,6 @@ class PoissonHMM(HMM_Base):
             if not _np.isclose(_delta.sum(), 1.):
                 raise ValueError(('Argument for parameter `_delta` '
                                   'is not a valid stochastic vector.'))
-
             self._delta = _delta
 
         else:
@@ -196,9 +190,14 @@ class PoissonHMM(HMM_Base):
                             'Expected `str` or `numpy.ndarray`, '
                             'got {}.\n').format(type(_delta)))
 
+        self._theta = (self._lambda, self._gamma, self._delta)
+        self.lambda_ = None
+        self.gamma_ = None
+        self.delta_ = None
+        self.theta_ = None
 
     def fit(self, X):
-        _check_poission_input(X)
+        _check_poisson_input(X)
 
 
     def to_json(self, path):
