@@ -208,6 +208,9 @@ class PoissonHMM(HMM_Base):
         """Serialize HMM as text."""
         to_txt(self, path)
 
+    def to_pickle(self, path):
+        to_pickle(self, path):
+
 
 def _check_poisson_input(X):
     """Check wheter data is a one-dimensional array of integer values.
@@ -459,6 +462,12 @@ def to_json(model, path):
 
     with path.open('w') as file:
         json.dump(data, file)
+
+
+def to_pickle(model, path):
+    path = pathlib.Path(path)
+    with path.open('w') as file:
+        file.dump(data, file)
 
 
 def is_tpm(arr):
