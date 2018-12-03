@@ -44,3 +44,7 @@ class HMM_Base:
         self.training_date      = ''
         self.apollon_version    = apollon.__version__
 
+        self.nll = 0
+        self.aic = 0
+        self.bic = 0
+
