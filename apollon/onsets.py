@@ -66,28 +66,37 @@ class EnrtopyOnsetDetector:
                               for (i, j) in chunks.get_limits()[peaks]])
 
 
-def peak_picking(odf, w=3, m=3, alpha=.1, delta=.1):
-
+def peak_picking(odf, post_window=3, pre_window=3, alpha=.1, delta=.1):
+    """Pick local maxima from a numerical time series.
+    
+    Pick local maxima from the onset detection function `odf`, which is assumed
+    to be an one-dimensional array. Typically, `odf` is the Spectral Flux per 
+    time step.
+    
+    Params:
+        odf         (np.ndarray)    Onset detection function,
+                                    e.g., Spectral Flux.
+        post_window (int)           Window lenght to consider after now.
+        pre_window  (int)           Window lenght to consider before now.
+        alpha       (float)         Smoothing factor. Must be in ]0, 1[.
+        delta       (float)         Difference to the mean.
+    
+    Return:
+        (np.ndarray)    Peak indices.
+    """
     g = [0]
     out = []
 
     for n, val in enumerate(odf):
 
         # set local window
-        idx = _np.arange(n-m*w, n+w, 1)
+        idx = _np.arange(n-pre_window, n+post_window+1, 1)
         window = _np.take(odf, idx, mode='clip')
 
-        # check three onset conditions
-        #
-
-        # First condition: val must be the biggest value within the local window
         cond1 = _np.all(val >= window)
-
-        # Second condition: val must be bigger then the local windows's mean plus delta
         cond2 = val >= (_np.mean(window) + delta)
-
-        # Third condition: val must be bigger then an adaptive threshold g(n, alpha)
-        foo = max(val, alpha*g[n] + (1-alpha)*val)    # ATTENTION: This MUST be built-in max()
+        
+        foo = max(val, alpha*g[n] + (1-alpha)*val)
         g.append(foo)
         cond3 = val >= foo
 
