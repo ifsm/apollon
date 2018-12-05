@@ -48,3 +48,20 @@ class HMM_Base:
         self.aic = 0
         self.bic = 0
 
+    def compute_aic(self) -> float:
+        """Compute the Akaike Information Criterion (AIC) of the current model.
+
+        Returns:
+            (float) AIC
+        """
+        return 2*self.nll + 2*(self.m * self.m + self.m)
+
+    def compute_bic(self, n: int) -> float:
+        """Compute the Bayesian Information Criterion (BIC) of the current model.
+
+        Params:
+            n   (int)   Number of training observations.
+        Returns:
+            (flaot) BIC
+        """
+        return 2*self.nll + (self.m * self.m + self.m) * _np.log(n)

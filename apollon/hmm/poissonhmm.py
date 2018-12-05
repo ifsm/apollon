@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 poissonhmm.py -- HMM with Poisson-distributed state dependend process.
 Copyright (C) 2018  Michael Blaß <michael.blass@uni-hamburg.de>
@@ -16,9 +14,8 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
-"""
 
-"""
+
 Functions:
     init_lambda_linear      Init linearly between min and max.
     init_lambda_quantile    Init regarding data quantiles.
@@ -34,23 +31,33 @@ Functions:
     to_txt                  Serializes model to text file.
     to_json                 JSON serialization.
 
-    _is_tpm                 Check wheter array is stochastic matrix.
+    is_tpm                 Check wheter array is stochastic matrix.
     _check_poisson_intput   Check wheter input is suitable for PoissonHMM.
 
 Classes:
     PoissonHMM              HMM with univariat Poisson-distributed states.
 """
 
-from typing import Iterable
+import json
+from dataclasses import dataclass
+import pathlib
+import typing
+import warnings
 
 import numpy as _np
 from scipy import linalg as _linalg
 from scipy import stats as _stats
 
-from . hmm_base import HMM_Base
-from . import poisson_core as core
+from apollon.types import path_t
+from apollon.hmm.hmm_base import HMM_Base
+import apollon.hmm.poisson_core as _core
+
 
 class PoissonHMM(HMM_Base):
+    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-statements
+
+    """Hidden-Markov Model with univariate Poisson-distributed states."""
 
     __slots__ = ['m', '_init_args', 'apollon_version'
                  'lambda_', 'gamma_', 'delta_', 'theta',
@@ -58,147 +65,169 @@ class PoissonHMM(HMM_Base):
                  'nll', 'aic', 'bic', 'training_date']
 
     def __init__(self, X, m,
-                 _lambda='quantile', _gamma='uniform', _delta='stationary',
+                 init_lambda='quantile', init_gamma='uniform', init_delta='stationary',
                  g_distr=None, d_distr=None, diag=.8, verbose=True):
         """Initialize PoissonHMM
 
         Args:
-            x       (iterable of ints)      Data set.
-            m       (int)                   Number of states.
-            _lambda (str or np.ndarray)     Initializer name of init values.
-            _gamma  (str or np.ndarray)     Initializer name or init values.
-            _delta  (str or np.ndarray)     Initializer name or init values.
+            x            (iterable of ints)      Data set.
+            m            (int)                   Number of states.
+            init_lambda (str or np.ndarray)     Initializer name of init values.
+            init_gamma  (str or np.ndarray)     Initializer name or init values.
+            init_delta       (str or np.ndarray)     Initializer name or init values.
 
             g_distr (iterable)  Dirichlet distribution params of len `m`.
-                                Mandatory if `_gamma` == 'dirichlet'.
+                                Mandatory if `init_gamma` == 'dirichlet'.
 
             d_distr (iterable)  Dirichlet distribution params of len `m`.
                                 Mandatory if `delta` == 'dirichlet'.
 
             diag    (float)     Value on main diagonal of trans. prob matrix.
-                                Mandatory if `_gamma`=='uniform'.
+                                Mandatory if `init_gamma`=='uniform'.
         """
         super().__init__(m, verbose=verbose)
 
-        self._init_args = {
-                '_lambda': _lambda,
-                '_gamma' : _gamma,
-                '_delta' : _delta,
-                'g_distr': g_distr,
-                'd_distr': d_distr,
-                'diag'   : diag
-            }
+        self._hyper_params = {
+            'm': m,
+            'init_lambda_meth': init_lambda,
+            'init_gamma_meth' : init_gamma,
+            'init_delta_meth' : init_delta,
+            'g_distr': g_distr,
+            'd_distr': d_distr,
+            'diag'   : diag
+        }
 
+        # TODO Check shape of `g_distr` and `d_distr` here.
 
-        # ---- initialize _lambda ----
-        if isinstance(_lambda, str):
-            if _lambda == 'linear':
-                self._gamma = init_lambda_linear(X, self.m)
-            elif _lambda == 'quantile':
-                self._lambda = init_lambda_quantile(X, self.m)
+        # ---- initialize init_lambda ----
+        if isinstance(init_lambda, str):
+            if init_lambda == 'linear':
+                self.init_lambda = init_lambda_linear(X, self.m)
+            elif init_lambda == 'quantile':
+                self.init_lambda = init_lambda_quantile(X, self.m)
             else:
                 raise KeyError(('Unknown initialization method `{}` '
-                                'for param `_lambda`.').format(_lambda))
+                                'for param `init_lambda`.').format(init_lambda))
 
-        elif isinstance(_lambda, _np.ndarray):
-            if _lambda.ndim != 1:
-                raise ValueError(('Shape of param vector for `_lambda` does '
+        elif isinstance(init_lambda, _np.ndarray):
+            if init_lambda.ndim != 1:
+                raise ValueError(('Shape of param vector for `init_lambda` does '
                                   'not match HMM. Expected 1, got {}.\n')
-                                  .format(_lambda.ndim))
+                                 .format(init_lambda.ndim))
 
-            if _lambda.size != self.m:
-                raise ValueError(('Number of params for `_lambda` does not '
+            if init_lambda.size != self.m:
+                raise ValueError(('Number of params for `init_lambda` does not '
                                   'match number of HMM states. Expected, '
-                                  '{}, got {}.\n').format(self.m, _lambda.size))
+                                  '{}, got {}.\n').format(self.m, init_lambda.size))
 
-            if _np.any(_lambda < 0.):
-                raise ValueError(('Arguments for param `_lambda` must '
+            if _np.any(init_lambda < 0.):
+                raise ValueError(('Arguments for param `init_lambda` must '
                                   'be positive.'))
 
-            self._lambda = _lambda
+            self.init_lambda = init_lambda
 
         else:
-            raise TypeError(('Unrecognized type in param `_lambda`. '
-                            'Expected `str` or `numpy.ndarray`, '
-                            'got {}.\n').format(type(_lambda)))
+            raise TypeError(('Unrecognized type in param `init_lambda`. '
+                             'Expected `str` or `numpy.ndarray`, '
+                             'got {}.\n').format(type(init_lambda)))
 
-        # ---- initialize _gamma ---- 
-        if isinstance(_gamma, str):
-            if _gamma == 'dirichlet' and g_distr is not None:
-                self._gamma = init_gamma_dirichlet(m, g_distr)
-            elif _gamma == 'softmax':
-                self._gamma = init_gamma_softmax(m)
-            elif _gamma == 'uniform':
-                self._gamma = init_gamma_uniform(m, diag)
+        # ---- initialize init_gamma ----
+        if isinstance(init_gamma, str):
+            if init_gamma == 'dirichlet' and g_distr is not None:
+                self.init_gamma = init_gamma_dirichlet(m, g_distr)
+            elif init_gamma == 'softmax':
+                self.init_gamma = init_gamma_softmax(m)
+            elif init_gamma == 'uniform':
+                self.init_gamma = init_gamma_uniform(m, diag)
             else:
                 raise KeyError(('Unknown initialization method `{}` '
-                                'for param `_gamma`.').format(_gamma))
+                                'for param `init_gamma`.').format(init_gamma))
 
-        elif isinstance(_gamma, _np.ndarray):
-            if _gamma.ndim != 2:
-                raise ValueError(('Shape of param vector for `_gamma` does '
+        elif isinstance(init_gamma, _np.ndarray):
+            if init_gamma.ndim != 2:
+                raise ValueError(('Shape of param vector for `init_gamma` does '
                                   'not match HMM. Expected 2, got {}.\n')
-                                  .format(_gamma.ndim))
+                                 .format(init_gamma.ndim))
 
-            if _gamma.size != (self.m * self.m):
-                raise ValueError(('Number of params for `_gamma` does not '
+            if init_gamma.size != (self.m * self.m):
+                raise ValueError(('Number of params for `init_gamma` does not '
                                   'match number of HMM states. Expected, '
-                                  '{}, got {}.\n').format(self.m, _gamma.size))
+                                  '{}, got {}.\n').format(self.m, init_gamma.size))
 
-            if not _np.all(_np.isclose(_gamma.sum(axis=1), 1.)):
-                raise ValueError(('Argument of paramter `_gamma` is not '
+            if not _np.all(_np.isclose(init_gamma.sum(axis=1), 1.)):
+                raise ValueError(('Argument of paramter `init_gamma` is not '
                                   'a valid stochastic matrix.'))
-            self._gamma = _gamma
+            self.init_gamma = init_gamma
 
         else:
-            raise TypeError(('Unrecognized type in param `_gamma`. '
-                            'Expected `str` or `numpy.ndarray`, '
-                            'got {}.\n').format(type(_gamma)))
+            raise TypeError(('Unrecognized type in param `init_gamma`. '
+                             'Expected `str` or `numpy.ndarray`, '
+                             'got {}.\n').format(type(init_gamma)))
 
-        # ---- initialize _delta ----
-        if isinstance(_delta, str):
-            if _delta == 'dirichlet' and d_distr is not None:
-                self._delta = init_delta_dirichlet(self.m, d_distr)
-            elif _delta == 'softmax':
-                self._delta = init_delta_softmax(self.m)
-            elif _delta == 'stationary':
-                self._delta = init_delta_stationary(self._gamma)
-            elif _delta == 'uniform':
-                self._delta = init_delta_uniform(self.m)
+        # ---- initialize init_delta ----
+        if isinstance(init_delta, str):
+            if init_delta == 'dirichlet' and d_distr is not None:
+                self.init_delta = init_delta_dirichlet(self.m, d_distr)
+            elif init_delta == 'softmax':
+                self.init_delta = init_delta_softmax(self.m)
+            elif init_delta == 'stationary':
+                self.init_delta = init_delta_stationary(self.init_gamma)
+            elif init_delta == 'uniform':
+                self.init_delta = init_delta_uniform(self.m)
             else:
                 raise KeyError(('Unknown initialization method `{}` '
-                                'for param `_delta`.').format(_delta))
+                                'for param `init_delta`.').format(init_delta))
 
-        elif isinstance(_delta, _np.ndarray):
-            if _delta.ndim != 1:
-                raise ValueError(('Shape of param vector for `_delta` does '
+        elif isinstance(init_delta, _np.ndarray):
+            if init_delta.ndim != 1:
+                raise ValueError(('Shape of param vector for `init_delta` does '
                                   'not match HMM. Expected 1, got {}.\n')
-                                  .format(_delta.ndim))
+                                 .format(init_delta.ndim))
 
-            if _delta.size != self.m:
-                raise ValueError(('Number of params for `_delta` does not '
+            if init_delta.size != self.m:
+                raise ValueError(('Number of params for `init_delta` does not '
                                   'match number of HMM states. Expected, '
-                                  '{}, got {}.\n').format(self.m, _delta.size))
+                                  '{}, got {}.\n').format(self.m, init_delta.size))
 
-            if not _np.isclose(_delta.sum(), 1.):
-                raise ValueError(('Argument for parameter `_delta` '
+            if not _np.isclose(init_delta.sum(), 1.0):
+                raise ValueError(('Argument for parameter `init_delta` '
                                   'is not a valid stochastic vector.'))
-            self._delta = _delta
+            self.init_delta = init_delta
 
         else:
-            raise TypeError(('Unrecognized type in param `_delta`. '
-                            'Expected `str` or `numpy.ndarray`, '
-                            'got {}.\n').format(type(_delta)))
+            raise TypeError(('Unrecognized type in param `init_delta`. '
+                             'Expected `str` or `numpy.ndarray`, '
+                             'got {}.\n').format(type(init_delta)))
 
-        self._theta = (self._lambda, self._gamma, self._delta)
+        self._theta = (self.init_lambda, self.init_gamma, self.init_delta)
         self.lambda_ = None
         self.gamma_ = None
         self.delta_ = None
         self.theta_ = None
 
-    def fit(self, X):
-        _check_poisson_input(X)
+    def fit(self, X: _np.ndarray) -> bool:
+        """Fit the initialized PoissonHMM to the input data set.
 
+        Args:
+            X   (np.ndarray)    Input data set.
+
+        Returns:
+            (int)   True on success else False.
+        """
+        check_poisson_input(X)
+
+        self.theta_, self.nll, em_ok = _core.poisson_EM(X, self.m, self._theta)
+        self.lambda_, self.gamma_, self.delta_ = self.theta_
+        self.aic = self.compute_aic()
+        self.bic = self.compute_bic(X.size)
+
+        self.delta_ = stationary_distr(self.gamma_)
+        self.viterbi = _core.poisson_viterbi(self, X)
+
+        if not em_ok:
+            warnings.warn('EM did not converge.', category=RuntimeWarning)
+
+        return True
 
     def to_json(self, path):
         """Serialize HMM as JSON."""
@@ -209,10 +238,9 @@ class PoissonHMM(HMM_Base):
         to_txt(self, path)
 
     def to_pickle(self, path):
-        to_pickle(self, path):
+        """Serialzed HMM to pickle."""
 
-
-def _check_poisson_input(X):
+def check_poisson_input(X):
     """Check wheter data is a one-dimensional array of integer values.
     Otherwise raise an exception.
     """
@@ -225,56 +253,62 @@ def _check_poisson_input(X):
         raise AttributeError('Input vector must be numpy array')
 
 
-def init_lambda_linear(x, m:int):
-    """Linearily space m initial guesses in [min(data), max(data)].
+def init_lambda_linear(X: _np.ndarray, m: int) -> _np.ndarray:
+    """Initialize state-dependent means with `m` linearily spaced values
+    from ]min(data), max(data)[.
 
-        Params:
-            x    (np.ndarray)   Input data.
+        Args:
+            X    (np.ndarray)   Input data.
             m    (int)          Number of states.
 
-        Return:
-            (np.ndarray)    m equidistant guesses.
+        Returns:
+            (np.ndarray)    Initial state-dependent means of shape (m, ).
     """
-    return _np.linspace(min(x), max(x), m)
+    bordered_space = _np.linspace(X.min(), X.max(), m+2)
+    return bordered_space[1:-1]
 
 
-def init_lambda_quantile(x, m:int):
-    """Compute m equally spaced percentiles from data.
+def init_lambda_quantile(X: _np.ndarray, m: int) -> _np.ndarray:
+    """Initialize state-dependent means with `m` equally spaced
+    percentiles from data.
 
-    Params:
-        x    (np.ndarray) Input data.
+    Args:
+        X    (np.ndarray) Input data.
         m    (int)        Number of HMM states.
 
-    Return:
-        (np.ndarray)    m equally spaced percentiles.
+    Returns:
+        (np.ndarray)    Initial state-dependent means of shape (m, ).
     """
     if 3 <= m <= 100:
-        pc = _np.linspace(100 / (m + 1), 100, m + 1)[:-1]
-        return _np.percentile(x, pc)
-    elif m == 2:
-        return _np.percentile(x, [25, 75])
-    elif m == 1:
-        return _np.median(x)
-    else:
-        raise ValueError('Wrong input: m={}. 1 < m <= 100.'.format(m))
+        q_range = _np.linspace(100 / (m + 1), 100, m + 1)[:-1]
+        return _np.percentile(X, q_range)
+
+    if m == 2:
+        return _np.percentile(X, [25, 75])
+
+    if m == 1:
+        return _np.median(X)
+
+    raise ValueError('Wrong input: m={}. 1 < m <= 100.'.format(m))
 
 
-def init_lambda_random(x, m:int):
-    """Init `_lambda` with random integers from [min(x), max(x)[.
+def init_lambda_random(X: _np.ndarray, m: int) -> _np.ndarray:
+    """Initialize state-dependent means with random integers from
+    [min(x), max(x)[.
 
-    Params:
-        x   (iterable)  Data set.
-        m   (int)       Number of states.
+    Args:
+        X   (np.ndarray)    Data set.
+        m   (int)           Number of states.
 
     Retruns:
-        (np.ndarray)    Initial guesses of shape (m, ).
+        (np.ndarray)    Initial state-dependent means of shape (m, ).
     """
-    return _np.random.randint(x.min(), x.max(), m).astype(float)
+    return _np.random.randint(X.min(), X.max(), m).astype(float)
 
 
-def init_gamma_dirichlet(m:int, alpha:Iterable):
+def init_gamma_dirichlet(m: int, alpha: tuple) -> _np.ndarray:
     """
-    Params:
+    Args:
         m       (int)       Number of states.
         alpha   (iterable)  Dirichlet distribution parameters.
                             Iterable of size m. Each entry controls
@@ -287,37 +321,37 @@ def init_gamma_dirichlet(m:int, alpha:Iterable):
 
     if alpha.ndim != 1:
         raise ValueError(('Wrong shape of param `alpha`. '
-                         'Expected 1, got {}\n')
+                          'Expected 1, got {}\n')
                          .format(alpha.ndim))
 
     if alpha.size != m:
         raise ValueError(('Wrong size of param `alpha`. '
                           'Expected {}, got {}\n')
-                          .format(m, alpha.size))
+                         .format(m, alpha.size))
 
-    dv = (_stats.dirichlet(_np.roll(alpha, i)).rvs() for i in range(m))
-    return _np.vstack(dv)
+    distr = (_stats.dirichlet(_np.roll(alpha, i)).rvs() for i in range(m))
+    return _np.vstack(distr)
 
 
-def init_gamma_softmax(m:int):
-    """Initialize `_gamma` by applying softmax to a sample of random floats.
+def init_gamma_softmax(m: int) -> _np.ndarray:
+    """Initialize `init_gamma` by applying softmax to a sample of random floats.
 
-    Params:
+    Args:
         m   (int)   Number of states.
 
     Returns:
         (np.ndarray)    Transition probability matrix of shape (m, m).
     """
-    _gamma = _np.random.rand(m, m)
-    return _np.exp(_gamma) / _np.exp(_gamma).sum(axis=1, keepdims=True)
+    init_gamma = _np.random.rand(m, m)
+    return _np.exp(init_gamma) / _np.exp(init_gamma).sum(axis=1, keepdims=True)
 
 
-def init_gamma_uniform(m:int, diag:float):
-    """Fill the main diagonal of `_gamma` with `diag`. Set the
+def init_gamma_uniform(m: int, diag: float) -> _np.ndarray:
+    """Fill the main diagonal of `init_gamma` with `diag`. Set the
        off-diagoanl elements to the proportion of the remaining
        probability mass and the remaining number of elements per row.
 
-        Params:
+        Args:
            m        (int)   Number of states.
            diag     (float) Value on main diagonal in [0, 1].
 
@@ -329,16 +363,17 @@ def init_gamma_uniform(m:int, diag:float):
                          'Expected <float>, got {}.\n')
                         .format(type(diag)))
 
-    _gamma = _np.empty((m, m))
-    _gamma.fill( (1-diag) / (m-1) )
-    _np.fill_diagonal(_gamma, diag)
+    init_gamma = _np.empty((m, m))
+    init_gamma.fill((1-diag) / (m-1))
+    _np.fill_diagonal(init_gamma, diag)
 
-    return _gamma
+    return init_gamma
 
 
-def init_delta_dirichlet(m:int, alpha:Iterable):
-    """
-    Params:
+def init_delta_dirichlet(m: int, alpha: tuple) -> _np.ndarray:
+    """Initialize the initial distribution with a Dirichlet random sample.
+
+    Args:
         m       (int)       Number of states.
         alpha   (iterable)  Dirichlet distribution params.
 
@@ -349,47 +384,49 @@ def init_delta_dirichlet(m:int, alpha:Iterable):
 
     if alpha.ndim != 1:
         raise ValueError(('Wrong shape of param `alpha`. '
-                         'Expected 1, got {}\n')
+                          'Expected 1, got {}\n')
                          .format(alpha.ndim))
 
     if alpha.size != m:
         raise ValueError(('Wrong size of param `alpha`. '
                           'Expected {}, got {}\n')
-                          .format(m, alpha.size))
+                         .format(m, alpha.size))
 
     return _stats.dirichlet(alpha).rvs()
 
 
-def init_delta_softmax(m:int):
-    """Initialize `_delta` by applying softmax to a sample of random floats.
+def init_delta_softmax(m: int) -> _np.ndarray:
+    """Initialize the initial distribution by applying softmax to a sample
+    of random floats.
 
-    Params:
+    Args:
         m   (int)   Number of states.
 
     Returns:
         (np.ndarray)    Stochastic vector of shape (m, ).
     """
-    v = _np.random.rand(m)
-    return _np.exp(v) / _np.exp(v).sum()
+    rnd_vals = _np.random.rand(m)
+    return _np.exp(rnd_vals) / _np.exp(rnd_vals).sum()
 
 
-def init_delta_stationary(_gamma):
-    """Initialize `_delta` with the stationary distribution of `_gamma`.
+def init_delta_stationary(gamma_: _np.ndarray) -> _np.ndarray:
+    """Initialize the initial distribution with the stationary
+    distribution of `init_gamma`.
 
-    Params:
-        _gamma  (np.ndarray)    Initial transition probability matrix.
+    Args:
+        gamma_  (np.ndarray)    Initial transition probability matrix.
 
     Returns:
         (np.ndarray)    Stochastic vector of shape (m, ).
     """
-    return stationary_distr(_gamma)
+    return stationary_distr(gamma_)
 
 
-def init_delta_uniform(m:int):
-    """Initialize `_delta` with a uniform distribution.
+def init_delta_uniform(m: int) -> _np.ndarray:
+    """Initialize the initial distribution uniformly.
     The initial values are set to the inverse of the number of states.
 
-    Params:
+    Args:
         m   (int)   Number of states.
 
     Returns:
@@ -398,43 +435,49 @@ def init_delta_uniform(m:int):
     return _np.full(m, 1/m)
 
 
-def stationary_distr(_gamma):
+def stationary_distr(tpm: _np.ndarray) -> _np.ndarray:
     """Calculate the stationary distribution of the transition probability
-    matrix `_gamma`.
+    matrix `tpm`.
 
-    Params:
-        _gamma  (np.ndarray)    Transition probability matrix.
+    Args:
+        tpm (np.ndarray)    Transition probability matrix.
 
-    Return:
+    Returns:
         (np.ndarray)    Stationary distribution of shape (m, ).
     """
-    if is_tpm(_gamma):
-        m = _gamma.shape[0]
+    if is_tpm(tpm):
+        m = tpm.shape[0]
     else:
         raise ValueError('Matrix is not stochastic.')
-    return _linalg.solve((_np.eye(m) - _gamma + 1).T, [1] * m)
+    return _linalg.solve((_np.eye(m) - tpm + 1).T, _np.ones(m))
 
 
-def to_txt(model, path):
+def to_txt(model: PoissonHMM, path: path_t):
+    """Serialize `model` to `path` as text.
+
+    Args:
+        model   (PoissonHMM)    Any valid PoissonHMM instance.
+        path    (str)           Save path.
+    """
     path = pathlib.Path(path)
     out_str = ('Name\n{}\n\n'
-                + 'Training date\n{}\n\n'
-                + 'Apollon version\n{}\n\n'
-                + 'Initial Lambda\n{}\n\n'
-                + 'Initial Delta\n{}\n\n'
-                + 'Initial Gamma\n{}\n\n'
-                + '\n------------------------------------------\n'
-                + '\nLambda\n{}\n\n'
-                + 'Delta\n{}\n\n'
-                + 'Gamma\n{}\n\n'
-                + '{:20}{:20}{:20}\n{:<20}{:<20}{:<20}\n')
+               + 'Training date\n{}\n\n'
+               + 'Apollon version\n{}\n\n'
+               + 'Initial Lambda\n{}\n\n'
+               + 'Initial Delta\n{}\n\n'
+               + 'Initial Gamma\n{}\n\n'
+               + '\n------------------------------------------\n'
+               + '\nLambda\n{}\n\n'
+               + 'Delta\n{}\n\n'
+               + 'Gamma\n{}\n\n'
+               + '{:20}{:20}{:20}\n{:<20}{:<20}{:<20}\n')
 
     out_params = (path.stem,
                   model.training_date,
                   model.apollon_version,
-                  model._init_lambda,
-                  model._init_delta,
-                  model._init_gamma,
+                  model.init_lambda,
+                  model.init_delta,
+                  model.init_gamma,
                   model.lambda_,
                   model.delta_,
                   model.gamma_,
@@ -445,14 +488,20 @@ def to_txt(model, path):
         file.write(out_str.format(*out_params))
 
 
-def to_json(model, path):
+def to_json(model: PoissonHMM, path: path_t):
+    """Serialize `model` to `path` using JSON.
+
+    Args:
+        model   (PoissonHMM)    Any valid PoissonHMM instance.
+        path    (str)           Save path.
+    """
     path = pathlib.Path(path)
     data = {'name': path.stem,
             'training_date': model.training_date,
             'apollon_version': model.apollon_version,
-            '_init_lambda': model._init_lambda.tolist(),
-            '_init_delta':  model._init_delta.tolist(),
-            '_init_gamma':  model._init_gamma.tolist(),
+            'init_lambda': model.init_lambda.tolist(),
+            'init_delta':  model.init_delta.tolist(),
+            'init_gamma':  model.init_gamma.tolist(),
             'lambda_': model.lambda_.tolist(),
             'delta_':  model.delta_.tolist(),
             'gamma_':  model.gamma_.tolist(),
@@ -464,19 +513,25 @@ def to_json(model, path):
         json.dump(data, file)
 
 
-def to_pickle(model, path):
+def to_pickle(model: PoissonHMM, path: path_t):
+    """Serialize `model` to `path` using pickle.
+
+    Args:
+        model   (PoissonHMM)    Any valid PoissonHMM instance.
+        path    (str)           Save path.
+    """
     path = pathlib.Path(path)
     with path.open('w') as file:
-        file.dump(data, file)
+        file.dump(model, file)
 
 
-def is_tpm(arr):
+def is_tpm(arr: _np.ndarray):
     """Test wheter `arr` is a valid stochastic matrix.
 
     A stochastic matrix is a (1) two-dimensional, (2) quadratic
-    matrix, whose row all sum up to exactly 1.
+    matrix, whose (3) rows all sum up to exactly 1.
 
-    Params:
+    Args:
         arr (np.ndarray)    Input array.
 
     Returns:
@@ -495,3 +550,16 @@ def is_tpm(arr):
         raise ValueError('Matrix is not row-stochastic.')
 
     return True
+
+Initializer = typing.TypeVar('Initializer', str, _np.ndarray)
+
+@dataclass
+class HyperParams:
+    init_lambda_meth: Initializer
+    init_gamma_meth: Initializer
+    init_delta_meth: Initializer
+    g_dirichlet: tuple
+    d_dirichlet: tuple
+    fill_diag: float
+
+

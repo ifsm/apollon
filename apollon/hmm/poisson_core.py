@@ -107,12 +107,15 @@ def poisson_EM(x, m, theta, maxiter=1000, tol=1e-6):
                 _np.abs(this_delta - next_delta).sum())
 
         if crit < tol:
-            return next_lambda, next_gamma, next_delta, log_likelihood, True
+            theta_ = (next_lambda, next_gamma, next_delta)
+            return theta_, log_likelihood, True
         else:
             this_lambda = next_lambda.copy()
             this_gamma = next_gamma.copy()
             this_delta = next_delta.copy()
-    return next_lambda, next_gamma, next_delta, log_likelihood, False
+
+    theta_ = (next_lambda, next_gamma, next_delta)
+    return theta_, log_likelihood, False
 
 
 def poisson_viterbi(mod, x):
@@ -157,4 +160,3 @@ def poisson_viterbi(mod, x):
         phi[i] = _np.argmax(mod.gamma_[phi[i+1]] * xi[i])
 
     return phi
-

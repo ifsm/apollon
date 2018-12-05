@@ -20,5 +20,5 @@ from apollon.signal.audio import loadwav
 from apollon import segment
 from apollon import tools
 
-from apollon.hmm.poisson_hmm import PoissonHmm
-from apollon.hmm.poisson_hmm import viterbi
+from apollon.hmm.poissonhmm import PoissonHMM
+from apollon.hmm.poisson_core import poisson_viterbi as viterbi
