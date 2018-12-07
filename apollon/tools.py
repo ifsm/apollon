@@ -8,6 +8,7 @@ Every day tools.
 
 
 Functions:
+    assert_array        Raise if array does not match given params.
     get_offdiag         Return off-diag elements of square array.
     L1_Norm             Compute L1_Norm.
     normalize           Return _normalized version of input.
@@ -33,7 +34,40 @@ from typing import Iterable
 from apollon import _defaults
 
 
-__author__ = 'Michael Blaß'
+def assert_array(arr: _np.ndarray, ndim: int, size: int,
+                 lower_bound: float = -_np.inf,
+                 upper_bound: float = _np.inf,
+                 name: str = None):
+    """Raise an error if shape of `arr` does not match given arguments.
+
+    Args:
+        arr    (np.ndarray)    Array to test.
+        ndim   (int)           Expected number of dimensions.
+        size   (int)           Expected total number of elements.
+        lower_bound (float)    Lower bound for array elements.
+        upper_bound (float)    Upper bound for array elemets.
+
+    Raises:
+        ValueError
+    """
+    name = 'input' if name is None else name
+
+    if arr.ndim != ndim:
+        raise ValueError(('Shape of `{}` does not match HMM. Expected'
+                          '{}, got {}.\n').format(name, ndim, arr.ndim))
+
+    if arr.size != size:
+        raise ValueError(('Size of `{}` does not match '
+                          'number of HMM states. Expected '
+                          '{}, got {}.\n').format(name, size, arr.size))
+
+    if _np.any(arr < lower_bound):
+        raise ValueError(('Elements of `{}` must '
+                          'be >= {}.'.format(name, lower_bound)))
+
+    if _np.any(arr > upper_bound):
+        raise ValueError(('Elements of `{}` must '
+                          'be <= {}.'.format(name, upper_bound)))
 
 
 def get_offdiag(mat):
