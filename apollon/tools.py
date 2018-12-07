@@ -9,6 +9,9 @@ Every day tools.
 
 Functions:
     assert_array        Raise if array does not match given params.
+    assert_st_matrix    Raise if array is not a stochastic matrix.
+    assert_st_vector    Raise if array is not a stochastic vector.
+
     get_offdiag         Return off-diag elements of square array.
     L1_Norm             Compute L1_Norm.
     normalize           Return _normalized version of input.
@@ -37,7 +40,7 @@ from apollon import _defaults
 def assert_array(arr: _np.ndarray, ndim: int, size: int,
                  lower_bound: float = -_np.inf,
                  upper_bound: float = _np.inf,
-                 name: str = None):
+                 name: str = 'arr'):
     """Raise an error if shape of `arr` does not match given arguments.
 
     Args:
@@ -45,31 +48,70 @@ def assert_array(arr: _np.ndarray, ndim: int, size: int,
         ndim   (int)           Expected number of dimensions.
         size   (int)           Expected total number of elements.
         lower_bound (float)    Lower bound for array elements.
-        upper_bound (float)    Upper bound for array elemets.
+        upper_bound (float)    Upper bound for array elements.
 
     Raises:
         ValueError
     """
-    name = 'input' if name is None else name
-
     if arr.ndim != ndim:
-        raise ValueError(('Shape of `{}` does not match HMM. Expected'
+        raise ValueError(('Shape of {} does not match. Expected '
                           '{}, got {}.\n').format(name, ndim, arr.ndim))
 
     if arr.size != size:
-        raise ValueError(('Size of `{}` does not match '
-                          'number of HMM states. Expected '
+        raise ValueError(('Size of {} does not match. Expected '
                           '{}, got {}.\n').format(name, size, arr.size))
 
     if _np.any(arr < lower_bound):
-        raise ValueError(('Elements of `{}` must '
+        raise ValueError(('Elements of {} must '
                           'be >= {}.'.format(name, lower_bound)))
 
     if _np.any(arr > upper_bound):
-        raise ValueError(('Elements of `{}` must '
+        raise ValueError(('Elements of {} must '
                           'be <= {}.'.format(name, upper_bound)))
 
 
+def assert_st_matrix(arr: _np.ndarray):
+    """Raise if `arr` is not a valid two-dimensional
+    stochastic matrix.
+
+    A stochastic matrix is a (1) two-dimensional, (2) quadratic
+    matrix, whose (3) rows all sum up to exactly 1.
+    Args:
+        arr (np.ndarray)    Input array.
+
+    Returns:
+        True
+
+    Raises:
+        ValueError
+    """
+    if arr.ndim != 2:
+        raise ValueError('Matrix must be two-dimensional.')
+
+    if arr.shape[0] != arr.shape[1]:
+        raise ValueError('Matrix must be quadratic.')
+    
+    if not _np.all(_np.isclose(arr.sum(axis=1), 1.0)):
+         raise ValueError('Matrix is not row-stochastic. The sum of at least one row does not equal 1.')
+         
+
+def assert_st_vector(vect: _np.ndarray):
+    """Raise if `vect` is not a valid one-dimensional
+    stochastic vector.
+    
+    Args:
+        vect (np.ndarray)    Object to test.
+        
+    Raises:
+        ValueError
+    """    
+    if vect.ndim != 1:
+        raise ValueError('Vector must be one-dimensional.')
+
+    if not _np.isclose(vect.sum(), 1.0):
+         raise ValueError('Vector is not stochastic, i. e., sum(vect) != 1.')
+         
+         
 def get_offdiag(mat):
     """Return all off-diagonal elements of square array.
 
