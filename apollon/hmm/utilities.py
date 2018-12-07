@@ -23,34 +23,6 @@ from apollon import tools as _tools
 
 
 
-"""
------------------ Deprecated API ---------------------------------
-"""
-
-def is_tpm(mat):
-    '''Test whether `mat` is a transition probability matrix.
-
-        Tpms in first order markov chains must be two-dimensional,
-        quadratic matrices with each row summing up to exactly 1.
-
-        Params:
-            mat    (np.ndarray) Matrix to test
-
-        Return:
-            True if `mat` is tpm else eaise LinAlgError.'''
-    if mat.ndim == 2:
-        x, y = mat.shape
-        if x * y == x * x:
-            if _np.isclose(mat.sum(axis=1).sum(), x):
-                return True
-            else:
-                raise _linalg.LinAlgError('Matrix is not row-stoachastic.')
-        else:
-            raise _linalg.LinAlgError('Matrix is not quadratic.')
-    else:
-        raise _linalg.LinAlgError('Matrix must be two-dimensional.')
-
-
 
 
 def sort_param(m_key, m_param):
