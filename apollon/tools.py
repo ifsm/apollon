@@ -9,17 +9,13 @@ Every day tools.
 
 Functions:
     assert_array        Raise if array does not match given params.
-    assert_st_matrix    Raise if array is not a stochastic matrix.
-    assert_st_vector    Raise if array is not a stochastic vector.
 
-    get_offdiag         Return off-diag elements of square array.
     L1_Norm             Compute L1_Norm.
     normalize           Return _normalized version of input.
     in2out              Create a save from an input path.
     offdiag             Access to off-diagonal elements of square array.
     rowdiag             kth array diagonal sorted by array's rows.
     scale               Scale array between bounds.
-    set_offdiag         Set off-diag elements of square array.
     smooth_stat         Return smoothed input.
     standardize         Scale to zero mean and unit standard deviation.
     time_stamp          Return time stamp.
@@ -70,64 +66,6 @@ def assert_array(arr: _np.ndarray, ndim: int, size: int,
                           'be <= {}.'.format(name, upper_bound)))
 
 
-def assert_st_matrix(arr: _np.ndarray):
-    """Raise if `arr` is not a valid two-dimensional
-    stochastic matrix.
-
-    A stochastic matrix is a (1) two-dimensional, (2) quadratic
-    matrix, whose (3) rows all sum up to exactly 1.
-    Args:
-        arr (np.ndarray)    Input array.
-
-    Returns:
-        True
-
-    Raises:
-        ValueError
-    """
-    if arr.ndim != 2:
-        raise ValueError('Matrix must be two-dimensional.')
-
-    if arr.shape[0] != arr.shape[1]:
-        raise ValueError('Matrix must be quadratic.')
-    
-    if not _np.all(_np.isclose(arr.sum(axis=1), 1.0)):
-         raise ValueError('Matrix is not row-stochastic. The sum of at least one row does not equal 1.')
-         
-
-def assert_st_vector(vect: _np.ndarray):
-    """Raise if `vect` is not a valid one-dimensional
-    stochastic vector.
-    
-    Args:
-        vect (np.ndarray)    Object to test.
-        
-    Raises:
-        ValueError
-    """    
-    if vect.ndim != 1:
-        raise ValueError('Vector must be one-dimensional.')
-
-    if not _np.isclose(vect.sum(), 1.0):
-         raise ValueError('Vector is not stochastic, i. e., sum(vect) != 1.')
-         
-         
-def get_offdiag(mat):
-    """Return all off-diagonal elements of square array.
-
-    Params:
-        mat    (np.ndarray) square array.
-
-    Return:
-        (np.ndarray)    mat filled with values
-    """
-    x, y = mat.shape
-    if x != y:
-        raise ValueError('Matrix is not square.')
-    mask = _np.eye(x, dtype=bool)
-    offitems = mat[~mask]
-
-    return offitems
 
 
 def in2out(inp_path, out_path, ext=None):
@@ -258,30 +196,6 @@ def standardize(x: _np.ndarray) -> _np.ndarray:
     return (x - x.mean(axis=0)) / x.std(axis=0)
 
 
-
-def set_offdiag(mat, values):
-    """Set all off-diagonal of square array with elements with `values`.
-
-    Params:
-        mat        (np.ndarray) the matrix to fill.
-
-    Return:
-        values     (np.ndarray) values
-    """
-    values = _np.atleast_1d(values)
-
-    x, y = mat.shape
-    if x != y:
-        raise ValueError("Matrix is not square.")
-
-    mask = _np.eye(x, dtype=bool)
-    offitems = mat[~mask]
-
-    if values.size == offitems.size:
-        mat[~mask] = values
-    else:
-        raise IndexError("Number of off-diagonal elements must equal length  \
-                         of values.")
 
 def time_stamp():
     """Return default time stamp."""
