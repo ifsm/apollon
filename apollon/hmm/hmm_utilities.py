@@ -46,6 +46,7 @@ import numpy as _np
 from numpy import linalg as _linalg
 from scipy import stats as _stats
 
+from apollon import tools as _tools
 
 def assert_poisson_input(X: _np.ndarray):
     """Check wether data is a one-dimensional array of integer values.
@@ -73,7 +74,8 @@ def assert_st_matrix(arr: _np.ndarray):
     stochastic matrix.
 
     A stochastic matrix is a (1) two-dimensional, (2) quadratic
-    matrix, whose (3) rows all sum up to exactly 1.
+    matrix, with (3) elements from [0.0, 1.0] and (4) rows sums
+    of exactly exactly 1.0.
 
     Args:
         arr (np.ndarray)    Input array.
@@ -81,8 +83,7 @@ def assert_st_matrix(arr: _np.ndarray):
     Raises:
         ValueError
     """
-    if arr.ndim != 2:
-        raise ValueError('Matrix must be two-dimensional.')
+    _tools.assert_array(arr, 2, arr.size, 0, 1, 'st_matrix')
 
     if arr.shape[0] != arr.shape[1]:
         raise ValueError('Matrix must be quadratic.')
