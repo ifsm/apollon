@@ -83,7 +83,7 @@ def assert_st_matrix(arr: _np.ndarray):
     Raises:
         ValueError
     """
-    _tools.assert_array(arr, 2, arr.size, 0, 1, 'st_matrix')
+    _tools.assert_array(arr, 2, arr.size, 0.0, 1.0, 'st_matrix')
 
     if arr.shape[0] != arr.shape[1]:
         raise ValueError('Matrix must be quadratic.')
@@ -108,6 +108,26 @@ def assert_st_vector(vect: _np.ndarray):
 
     if not _np.isclose(vect.sum(), 1.0):
         raise ValueError('Vector is not stochastic, i. e., sum(vect) != 1.')
+
+
+def assert_st_val(val: float_or_none_t):
+    """Check wheter `val` is suitable as element of stochastic matrix.
+
+    Args:
+        val (float)    Input to check.
+
+    Raises:
+        TypeError
+        ValueError
+    """
+    if val is None:
+        return val
+
+    if not isinstance(val, float):
+        raise TypeError('`val` must be of type float.')
+
+    if not (0.0 <= val <= 1.0):
+        raise ValueError('`val` must be within [0.0, 1.0].')
 
 
 def init_lambda_linear(X: _np.ndarray, m: int) -> _np.ndarray:
