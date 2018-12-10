@@ -23,8 +23,7 @@ import os as _os
 import pathlib as _pathlib
 import pickle as _pickle
 
-from . types import path_t
-from . types import path_generator_t
+from apollon import types as _types
 
 
 class WavFileAccessControl:
@@ -56,7 +55,8 @@ class WavFileAccessControl:
         del self.__attribute[obj]
 
 
-def files_in_path(path:path_t, file_type:str = '.wav', recursive:bool = False) -> path_generator_t:
+def files_in_path(path: _type.PathType, file_type:str = '.wav',
+                  recursive:bool = False) -> _types.PathGen:
     """Generate all files with suffix `file_type` in `path`.
 
     If `path` points to a file, it is yielded. 
