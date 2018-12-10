@@ -125,6 +125,12 @@ def _normalize(arr):
     return (arr - arr_min) / (arr_max - arr_min)
 
 
+def assert_and_pass(assert_func, arg):
+    """Call `assert_func` with `arg` and return `arg`. Additionally allow arg to be None."""
+    if arg is not None:
+        assert_func(arg)
+    return arg
+
 
 def rowdiag(v, k=0):
     """Get or set k'th diagonal of square matrix.
