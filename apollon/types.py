@@ -20,6 +20,7 @@ import pathlib as _pathlib
 import typing as _typing
 import numpy as _np
 
+Array = _typing.TypeVar('Array', _np.ndarray)
 ArrayOrStr = _typing.TypeVar('ArrayOrStr', str, _np.ndarray)
 IterOrNone = _typing.TypeVar('IterOrNone', _typing.Iterable, None)
 FloatOrNone = _typing.TypeVar('FloatOrNone', float, None)
