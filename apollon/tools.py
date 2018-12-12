@@ -22,15 +22,15 @@ Functions:
 
 
 from datetime import datetime as _datetime
+import typing as _typing
+
 import numpy as _np
-import matplotlib.pyplot as _plt
-import pathlib as _pathlib
-from typing import Iterable
 
 from apollon import _defaults
+from apollon import types as apt
 
 
-def assert_array(arr: _np.ndarray, ndim: int, size: int,
+def assert_array(arr: _np.ndarray, ndim: int, size: int,     # pylint: disable=R0913
                  lower_bound: float = -_np.inf,
                  upper_bound: float = _np.inf,
                  name: str = 'arr'):
@@ -63,24 +63,8 @@ def assert_array(arr: _np.ndarray, ndim: int, size: int,
                           'be <= {}.'.format(name, upper_bound)))
 
 
-
-
-def in2out(inp_path, out_path, ext=None):
-    '''Creat a save path from inp_path.'''
-
-    if isinstance(inp_path, str):
-        inp_path = _pathlib.Path(inp_path)
-
-    if isinstance(out_path, str):
-        out_path = _pathlib.Path(out_path)
-
-    _ext = ext if ext.startswith('.') else '.' + ext
-    fn = inp_path.stem if ext is None else inp_path.stem + _ext
-    return out_path.joinpath(fn)
-
-
-def jsonify(inp: Any):
-    """Returns a representation of `inp` that can be serialized to JSON.
+def jsonify(inp: _typing.Any):
+    """Returns a representation of ``inp`` that can be serialized to JSON.
 
     This method passes through Python objects of type dict, list, str, int
     float, True, False, and None. Tuples will be converted to list by the JSON
@@ -94,18 +78,26 @@ def jsonify(inp: Any):
     Returns:
         (dict)  jsonified  input.
     """
-    if isinstance(inp, dict) or isinstance(inp, list) or isinstance(inp, tuple)
-       or isinstance(inp, str) or isinstance(inp, int) or isinstance(inp, float)
-       or inp is True or inp is False or inp is None:
+    valid_types = (dict, list, tuple, str, int, float)
+    valid_vals = (True, False, None)
+
+    xx = [isintance(inp, v_type) for v_type in valid_types]
+    yy = [inp is v_vals for v_vals in valid_vals]
+
+    if any(xx) or any(yy):
         return inp
 
     if isinstance(inp, _np.ndarray):
         return inp.to_list()
 
-def L1_Norm(x):
+    return str(inp)
+
+
+#TODO Move to better place
+def L1_Norm(arr2d: _np.ndarray) -> float:
     """Compute the L_1 norm of input vector `x`.
 
-    This is implementation generally faster than np.norm(x, ord=1).
+    This implementation is generally faster than np.norm(x, ord=1).
     """
     return _np.abs(x).sum(axis=0)
 
@@ -128,14 +120,14 @@ def normalize(arr, mode='array'):
     if mode == 'array':
         return _normalize(arr)
 
-    elif mode == 'rows':
+    if mode == 'rows':
         return _np.vstack(_normalize(row) for row in arr)
 
-    elif mode == 'cols':
+    if mode == 'cols':
         return _np.hstack(_normalize(col[:, None]) for col in arr.T)
 
-    else:
-        raise ValueError('Unknown normalization mode')
+    raise ValueError('Unknown normalization mode')
+
 
 # TODO: This normalizes in [0, 1]; for audio we need [-1, 1]
 def _normalize(arr):
@@ -171,18 +163,18 @@ def rowdiag(v, k=0):
 
 def scale(x, new_min=0, new_max=1, axis=-1):
     """Scale `x` between `new_min` and `new_max`.
-    
+
     Parmas:
         x         (np.array)          Array to be scaled.
         new_min   (real numerical)    Lower bound.
         new_max   (real numerical)    Upper bound.
-        
+
     Return:
         (np.ndarray)    One-dimensional array of transformed values.
     """
     xmax = x.max(axis=axis, keepdims=True)
     xmin = x.min(axis=axis, keepdims=True)
-    
+
     a = (x-xmin) / (xmax - xmin)
     y = a * (new_max - new_min) + new_min
 
@@ -222,22 +214,27 @@ def standardize(x: _np.ndarray) -> _np.ndarray:
     return (x - x.mean(axis=0)) / x.std(axis=0)
 
 
-
 def time_stamp():
     """Return default time stamp."""
     return _datetime.now().strftime(_defaults.time_stamp_fmt)
 
 
-def within(x: float, window: Iterable) -> bool:
-    """Return True if x is in window."""
-    return window[0] <= x <= window[1]
+def within(val: float, bounds: _typing.Tuple[float, float]) -> bool:
+    """Return True if x is in window.
+
+    Args:
+        val (float)    Value to test.
+
+    Retrns:
+        (bool)    True if ``val`` is within ``bounds``.
+    """
+    return bounds[0] <= val <= bounds[1]
 
 
-def within_any(x: float, windows: _np.ndarray) -> bool:
+def within_any(val: float, windows: _np.ndarray) -> bool:
     """Return True if x is in any of the given windows"""
-    a = windows[:, 0] <= x
-    b = x <= windows[:, 1]
+    a = windows[:, 0] <= val
+    b = val <= windows[:, 1]
     c = _np.logical_and(a, b)
 
     return np.any(c)
-
