@@ -15,6 +15,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+
 Functions:
     assert_poisson_input    Raise if array does not conform restrictions.
     assert_st_matrix        Raise if array is not a stochastic matrix.
@@ -42,11 +43,14 @@ Functions:
     sort_param              Sort messed up gamma.
 """
 
-import numpy as _np
+
 from numpy import linalg as _linalg
 from scipy import stats as _stats
 
+import numpy as _np
+
 from apollon import tools as _tools
+
 
 def assert_poisson_input(X: _np.ndarray):
     """Check wether data is a one-dimensional array of integer values.
@@ -110,7 +114,7 @@ def assert_st_vector(vect: _np.ndarray):
         raise ValueError('Vector is not stochastic, i. e., sum(vect) != 1.')
 
 
-def assert_st_val(val: float_or_none_t):
+def assert_st_val(val: float):
     """Check wheter `val` is suitable as element of stochastic matrix.
 
     Args:
@@ -120,13 +124,10 @@ def assert_st_val(val: float_or_none_t):
         TypeError
         ValueError
     """
-    if val is None:
-        return val
-
     if not isinstance(val, float):
         raise TypeError('`val` must be of type float.')
 
-    if not (0.0 <= val <= 1.0):
+    if not 0.0 <= val <= 1.0:
         raise ValueError('`val` must be within [0.0, 1.0].')
 
 
