@@ -1,6 +1,3 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
-
 """
 tools.py
 
@@ -81,6 +78,29 @@ def in2out(inp_path, out_path, ext=None):
     fn = inp_path.stem if ext is None else inp_path.stem + _ext
     return out_path.joinpath(fn)
 
+
+def jsonify(inp: Any):
+    """Returns a representation of `inp` that can be serialized to JSON.
+
+    This method passes through Python objects of type dict, list, str, int
+    float, True, False, and None. Tuples will be converted to list by the JSON
+    encoder. Numpy arrays will be converted to list using thier .to_list() method.
+    On all other types, the method will try to call str() and raises
+    on error.
+
+    Args:
+        inp (Any)    Input to jsonify.
+
+    Returns:
+        (dict)  jsonified  input.
+    """
+    if isinstance(inp, dict) or isinstance(inp, list) or isinstance(inp, tuple)
+       or isinstance(inp, str) or isinstance(inp, int) or isinstance(inp, float)
+       or inp is True or inp is False or inp is None:
+        return inp
+
+    if isinstance(inp, _np.ndarray):
+        return inp.to_list()
 
 def L1_Norm(x):
     """Compute the L_1 norm of input vector `x`.
