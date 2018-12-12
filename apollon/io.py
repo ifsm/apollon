@@ -1,11 +1,9 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
 """apollon/IO.py
 
 Tools for file access.
 
 Classes:
+    ArrayEncoder            Serialize numpy array to JSON.
     FileAccessControl       Descriptor for file name attributes.
 
 Functions:
@@ -16,18 +14,68 @@ Functions:
 """
 
 
-__author__ = 'Michael Blaß'
+import json
+import pathlib
+import pickle
+import typing
+
+import numpy as np
+
+import apollon.types as apt
 
 
-import os as _os
-import pathlib as _pathlib
-import pickle as _pickle
+class ArrayEncoder(json.JSONEncoder):
+    # pylint: disable=E0202
+    # Issue: False positive for E0202 (method-hidden) #414
+    # https://github.com/PyCQA/pylint/issues/414
+    """Encode np.ndarrays to JSON.
 
-from apollon import types as _types
+    Simply set the `cls` parameter of the dump method to this class.
+    """
+    def default(self, o):
+        """Custon default JSON encoder. Properly handles numpy arrays and JSONEncoder.default
+        for all other types.
+
+        Params:
+            o (any)  Object to encode.
+
+        Returns:
+            (dict)
+        """
+        if isinstance(o, apt.Array):
+            out = {'__ndarray__': True,
+                   '__dtype__': o.dtype.str,
+                   'data': o.tolist()}
+            return out
+        return json.JSONEncoder.default(self, o)
+
+
+def decode_array(json_data: dict) -> typing.Any:
+    """Properly decodes numpy arrays from a JSON data stream.
+
+    This method need to be called on the return value of ``json.load`` or ``json.loads``.
+
+    Args:
+        json_data (dict)    JSON formatted dict to encode.
+
+    Returns:
+        (any)
+    """
+    if '__ndarray__' in json_data and '__dtype__' in json_data:
+        return np.array(json_data['data'], dtype=json_data['__dtype__'])
+    return json_data
 
 
 class WavFileAccessControl:
+    """Control initialization and access to the ``file`` attribute of class:``AudioData``.
+
+    This assures that the path indeed points to a file, which has to be a .wav file. Otherwise
+    an error is raised. The path to the file is saved as absolute path and the attribute is
+    read-only.
+    """
+
     def __init__(self):
+        """Hi there!"""
         self.__attribute = {}
 
     def __get__(self, obj, objtype):
@@ -35,7 +83,7 @@ class WavFileAccessControl:
 
     def __set__(self, obj, file_name):
         if obj not in self.__attribute.keys():
-            _path = _pathlib.Path(file_name).resolve()
+            _path = pathlib.Path(file_name).resolve()
             if _path.exists():
                 if _path.is_file():
                     if _path.suffix == '.wav':
@@ -55,76 +103,89 @@ class WavFileAccessControl:
         del self.__attribute[obj]
 
 
-def files_in_path(path: _type.PathType, file_type:str = '.wav',
-                  recursive:bool = False) -> _types.PathGen:
-    """Generate all files with suffix `file_type` in `path`.
+def files_in_path(path: apt.PathType, ext: str = '.wav',
+                  recursive: bool = False) -> apt.PathGen:
+    """Generate all files with extension ``ext`` in ``path``.
 
-    If `path` points to a file, it is yielded. 
-    If `path` points to a directory, all files with suffix `file_type`
+    If `path` points to a file, it is yielded.
+    If `path` points to a directory, all files with suffix `ext`
     are yielded.
 
-    Params:
-        path        (path_t)   Path to audio file or folder of audio files.
-        file_type   (str)      The file type.
+    Args:
+        path        (PathType) Path to audio file or folder of audio files.
+        ext   (str)      The file type.
         recursive   (bool)     If True, recursively visite all subdirs of `path`.
-        
+
     Yield:
-        (Path_Genrator_t)
+        (PathGen)
     """
-    path = _pathlib.Path(path)
+    path = pathlib.Path(path)
 
     if path.exists():
         if path.is_file():
-            if path.suffix == file_type:
+            if path.suffix == ext:
                 yield path.resolve()
             else:
-                raise FileNotFoundError('File "{}" is not a "{}" file.\n'
-                                        .format(path, file_type))
-                
-        else:              
-            ft = '*' + file_type
+                raise FileNotFoundError(f'File ``{path}`` is not a ``{ext}`` file.\n')
+        else:
+            name_pattern = '*'.join(ext)
             if recursive:
-                for p in path.rglob(ft):
-                    yield p.resolve()
+                for filepath in path.rglob(name_pattern):
+                    yield filepath.resolve()
             else:
-                for p in path.glob(ft):
-                    yield p.resolve()
+                for filepath in path.glob(name_pattern):
+                    yield filepath.resolve()
     else:
         raise FileNotFoundError('Path "{}" could not be found.\n'.format(path))
-        
-        
-def load(path):
+
+
+def load(path: apt.PathType) -> typing.Any:
     """Load a pickled file.
 
-    Parameters:
+    Args:
         path    (str) Path to file.
 
-    return      (object) unpickled object
+    Returns:
+        (object) unpickled object
     """
-    with open(path, 'rb') as fobj:
-        data = _pickle.load(fobj)
+    path = pathlib.Path(path)
+    with path.open('rb') as file:
+        data = pickle.load(file)
     return data
 
 
-def repath(current_path, new_path, ext=None):
-    """Change the path but keep the file name. Optinally chnage the
-       extension, too.
+def repath(current_path: apt.PathType, new_path: apt.PathType,
+           ext: apt.StrOrNone = None) -> apt.PathType:
+    """Change the path and keep the file name. Optinally change the extension, too.
+
+    Args:
+        current_path (str or Path)  The path to change.
+        new_path     (str or Path)  The new path.
+        ext          (str or None)  Change file extension if ``ext`` is not None.
+
+    Returns:
+        (pathlib.Path)
     """
-    current_path = _pathlib.Path(current_path)
-    new_path = _pathlib.Path(new_path)
+    current_path = pathlib.Path(current_path)
+    new_path = pathlib.Path(new_path)
 
     if not ext.startswith('.'):
         ext = '.' + ext
-    fn = current_path.stem if ext is None else current_path.stem + ext
-    return new_path.joinpath(fn)
+
+    file_path = current_path.stem
+    if ext is not None:
+        file_path.join(ext)
+
+    return new_path.joinpath(file_path)
 
 
-def save(data, path):
+def save(data: typing.Any, path: apt.PathType):
     """Pickles data to path.
 
-    Parameters:
-        data    (arbitray) pickleable object.
-        path    (str) Path to safe the file.
+    Args:
+        data    (Any)         Pickleable object.
+        path    (str or Path) Path to safe the file.
     """
-    with open(path, 'wb') as fobj:
-        _pickle.dump(data, fobj)
+    path = pathlib.Path(path)
+    with path.open('wb') as file:
+        pickle.dump(data, file)
