@@ -153,7 +153,7 @@ def load(path: apt.PathType) -> typing.Any:
         data = pickle.load(file)
     return data
 
-
+#TODO AttributeError if ext is None.
 def repath(current_path: apt.PathType, new_path: apt.PathType,
            ext: apt.StrOrNone = None) -> apt.PathType:
     """Change the path and keep the file name. Optinally change the extension, too.
