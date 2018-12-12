@@ -16,15 +16,18 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import pathlib as _pathlib
-import typing as _typing
-import numpy as _np
+import pathlib
+import typing
+import numpy as np
 
-Array = _typing.TypeVar('Array', _np.ndarray)
-ArrayOrStr = _typing.TypeVar('ArrayOrStr', str, _np.ndarray)
-IterOrNone = _typing.TypeVar('IterOrNone', _typing.Iterable, None)
-FloatOrNone = _typing.TypeVar('FloatOrNone', float, None)
 
-ParserType = _typing.Tuple[_typing.Dict[str, _typing.Any], _typing.List[str]]
-PathType = _typing.TypeVar('PathType', str, _pathlib.Path)
-PathGen = _typing.Generator[PathType, None, None]
+Array = np.ndarray    # pylint: disable=C0103
+
+ArrayOrStr = typing.TypeVar('ArrayOrStr', str, Array)
+IterOrNone = typing.TypeVar('IterOrNone', typing.Iterable, None)
+FloatOrNone = typing.TypeVar('FloatOrNone', float, None)
+StrOrNone = typing.TypeVar('StrOrNone', str, None)
+
+ParserType = typing.Tuple[typing.Dict[str, typing.Any], typing.List[str]]
+PathType = typing.TypeVar('PathType', str, pathlib.Path)
+PathGen = typing.Generator[PathType, None, None]
