@@ -266,10 +266,8 @@ class _HyperParameters:
         return str(vals)
 
     def __repr__(self):
-        args = ''
-        for attr in self.__slots__:
-            args += '\n\t{attr} = {val},'.format(attr=attr, val=repr(getattr(self, attr)))
-        return '_HyerParameters({})'.format(args.strip(','))
+        items = ('\t{}={!r}'.format(attr, getattr(self, attr)) for attr in self.__slots__)
+        return '_HyerParameters(\n{})'.format(',\n'.join(items))
 
 
 def assert_poisson_input(X: _np.ndarray):
