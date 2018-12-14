@@ -66,6 +66,32 @@ def decode_array(json_data: dict) -> typing.Any:
     return json_data
 
 
+class PoissonHmmEncoder(io.ArrayEncoder):
+    """JSON encoder for PoissonHmm.
+    """
+    def default(self, o):
+        """Custon default JSON encoder. Properly handles <class 'PoissonHMM'>.
+
+        Note: Falls back to ``ArrayEncoder`` for all types that do not implement
+        a ``to_dict()`` method.
+
+        Params:
+            o (any)  Object to encode.
+
+        Returns:
+            (dict)
+        """
+        if isinstance(o, HMM):
+            items = {}
+            for attr in o.__slots__:
+                try:
+                    items[attr] = getattr(o, attr).to_dict()
+                except AttributeError:
+                    items[attr] = getattr(o, attr)
+            return items
+        return io.ArrayEncoder.default(self, o)
+
+
 class WavFileAccessControl:
     """Control initialization and access to the ``file`` attribute of class:``AudioData``.
 
