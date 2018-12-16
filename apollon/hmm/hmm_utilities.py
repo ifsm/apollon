@@ -44,10 +44,9 @@ Functions:
 """
 
 
+import numpy as _np
 from numpy import linalg as _linalg
 from scipy import stats as _stats
-
-import numpy as _np
 
 from apollon import tools as _tools
 
@@ -131,187 +130,206 @@ def assert_st_val(val: float):
         raise ValueError('`val` must be within [0.0, 1.0].')
 
 
-def init_lambda_linear(X: _np.ndarray, m: int) -> _np.ndarray:
-    """Initialize state-dependent means with `m` linearily spaced values
-    from ]min(data), max(data)[.
+class StateDependentMeansInitializer:
+    """Initializer methods for state-dependent vector of means."""
+
+    @staticmethod
+    def linear(X: _np.ndarray, m: int) -> _np.ndarray:
+        """Initialize state-dependent means with `m` linearily spaced values
+        from ]min(data), max(data)[.
+
+            Args:
+                X    (np.ndarray)   Input data.
+                m    (int)          Number of states.
+
+            Returns:
+                (np.ndarray)    Initial state-dependent means of shape (m, ).
+        """
+        bordered_space = _np.linspace(X.min(), X.max(), m+2)
+        return bordered_space[1:-1]
+
+
+    @staticmethod
+    def quantile(X: _np.ndarray, m: int) -> _np.ndarray:
+        """Initialize state-dependent means with `m` equally spaced
+        percentiles from data.
 
         Args:
-            X    (np.ndarray)   Input data.
-            m    (int)          Number of states.
+            X    (np.ndarray) Input data.
+            m    (int)        Number of HMM states.
 
         Returns:
             (np.ndarray)    Initial state-dependent means of shape (m, ).
-    """
-    bordered_space = _np.linspace(X.min(), X.max(), m+2)
-    return bordered_space[1:-1]
+        """
+        if 3 <= m <= 100:
+            q_range = _np.linspace(100 / (m + 1), 100, m + 1)[:-1]
+            return _np.percentile(X, q_range)
+
+        if m == 2:
+            return _np.percentile(X, [25, 75])
+
+        if m == 1:
+            return _np.median(X)
+
+        raise ValueError('Wrong input: m={}. 1 < m <= 100.'.format(m))
 
 
-def init_lambda_quantile(X: _np.ndarray, m: int) -> _np.ndarray:
-    """Initialize state-dependent means with `m` equally spaced
-    percentiles from data.
-
-    Args:
-        X    (np.ndarray) Input data.
-        m    (int)        Number of HMM states.
-
-    Returns:
-        (np.ndarray)    Initial state-dependent means of shape (m, ).
-    """
-    if 3 <= m <= 100:
-        q_range = _np.linspace(100 / (m + 1), 100, m + 1)[:-1]
-        return _np.percentile(X, q_range)
-
-    if m == 2:
-        return _np.percentile(X, [25, 75])
-
-    if m == 1:
-        return _np.median(X)
-
-    raise ValueError('Wrong input: m={}. 1 < m <= 100.'.format(m))
-
-
-def init_lambda_random(X: _np.ndarray, m: int) -> _np.ndarray:
-    """Initialize state-dependent means with random integers from
-    [min(x), max(x)[.
-
-    Args:
-        X   (np.ndarray)    Data set.
-        m   (int)           Number of states.
-
-    Retruns:
-        (np.ndarray)    Initial state-dependent means of shape (m, ).
-    """
-    return _np.random.randint(X.min(), X.max(), m).astype(float)
-
-
-def init_gamma_dirichlet(m: int, alpha: tuple) -> _np.ndarray:
-    """
-    Args:
-        m       (int)       Number of states.
-        alpha   (iterable)  Dirichlet distribution parameters.
-                            Iterable of size m. Each entry controls
-                            the probability mass that is put on the
-                            respective transition.
-    Returns:
-        (np.ndarray)    Transition probability matrix of shape (m, m).
-    """
-    alpha = _np.atleast_1d(alpha)
-
-    if alpha.ndim != 1:
-        raise ValueError(('Wrong shape of param `alpha`. '
-                          'Expected 1, got {}\n')
-                         .format(alpha.ndim))
-
-    if alpha.size != m:
-        raise ValueError(('Wrong size of param `alpha`. '
-                          'Expected {}, got {}\n')
-                         .format(m, alpha.size))
-
-    distr = (_stats.dirichlet(_np.roll(alpha, i)).rvs() for i in range(m))
-    return _np.vstack(distr)
-
-
-def init_gamma_softmax(m: int) -> _np.ndarray:
-    """Initialize `init_gamma` by applying softmax to a sample
-    of random floats.
-
-    Args:
-        m   (int)   Number of states.
-
-    Returns:
-        (np.ndarray)    Transition probability matrix of shape (m, m).
-    """
-    init_gamma = _np.random.rand(m, m)
-    return _np.exp(init_gamma) / _np.exp(init_gamma).sum(axis=1, keepdims=True)
-
-
-def init_gamma_uniform(m: int, diag: float) -> _np.ndarray:
-    """Fill the main diagonal of `init_gamma` with `diag`. Set the
-       off-diagoanl elements to the proportion of the remaining
-       probability mass and the remaining number of elements per row.
+    @staticmethod
+    def random(X: _np.ndarray, m: int) -> _np.ndarray:
+        """Initialize state-dependent means with random integers from
+        [min(x), max(x)[.
 
         Args:
-           m        (int)   Number of states.
-           diag     (float) Value on main diagonal in [0, 1].
+            X   (np.ndarray)    Data set.
+            m   (int)           Number of states.
+
+        Retruns:
+            (np.ndarray)    Initial state-dependent means of shape (m, ).
+        """
+        return _np.random.randint(X.min(), X.max(), m).astype(float)
+
+
+class TpmInitializer:
+    """Initializes transition probability matrix."""
+
+    @staticmethod
+    def dirichlet(m: int, alpha: tuple) -> _np.ndarray:
+        """
+        Args:
+            m       (int)       Number of states.
+            alpha   (iterable)  Dirichlet distribution parameters.
+                                Iterable of size m. Each entry controls
+                                the probability mass that is put on the
+                                respective transition.
+        Returns:
+            (np.ndarray)    Transition probability matrix of shape (m, m).
+        """
+        alpha = _np.atleast_1d(alpha)
+
+        if alpha.ndim != 1:
+            raise ValueError(('Wrong shape of param `alpha`. '
+                              'Expected 1, got {}\n')
+                             .format(alpha.ndim))
+
+        if alpha.size != m:
+            raise ValueError(('Wrong size of param `alpha`. '
+                              'Expected {}, got {}\n')
+                             .format(m, alpha.size))
+
+        distr = (_stats.dirichlet(_np.roll(alpha, i)).rvs() for i in range(m))
+        return _np.vstack(distr)
+
+
+    @staticmethod
+    def softmax(m: int) -> _np.ndarray:
+        """Initialize `init_gamma` by applying softmax to a sample
+        of random floats.
+
+        Args:
+            m   (int)   Number of states.
 
         Returns:
             (np.ndarray)    Transition probability matrix of shape (m, m).
-    """
-    if not isinstance(diag, float):
-        raise TypeError(('Wrong type for param `diag`. '
-                         'Expected <float>, got {}.\n')
-                        .format(type(diag)))
-
-    init_gamma = _np.empty((m, m))
-    init_gamma.fill((1-diag) / (m-1))
-    _np.fill_diagonal(init_gamma, diag)
-
-    return init_gamma
+        """
+        init_gamma = _np.random.rand(m, m)
+        return _np.exp(init_gamma) / _np.exp(init_gamma).sum(axis=1, keepdims=True)
 
 
-def init_delta_dirichlet(m: int, alpha: tuple) -> _np.ndarray:
-    """Initialize the initial distribution with a Dirichlet random sample.
+    @staticmethod
+    def uniform(m: int, diag: float) -> _np.ndarray:
+        """Fill the main diagonal of `init_gamma` with `diag`. Set the
+           off-diagoanl elements to the proportion of the remaining
+           probability mass and the remaining number of elements per row.
 
-    Args:
-        m       (int)       Number of states.
-        alpha   (iterable)  Dirichlet distribution params.
+            Args:
+               m        (int)   Number of states.
+               diag     (float) Value on main diagonal in [0, 1].
 
-    Returns:
-        (np.ndarray)    Stochastic vector of shape (m, ).
-    """
-    alpha = _np.atleast_1d(alpha)
+            Returns:
+                (np.ndarray)    Transition probability matrix of shape (m, m).
+        """
+        if not isinstance(diag, float):
+            raise TypeError(('Wrong type for param `diag`. '
+                             'Expected <float>, got {}.\n')
+                            .format(type(diag)))
 
-    if alpha.ndim != 1:
-        raise ValueError(('Wrong shape of param `alpha`. '
-                          'Expected 1, got {}\n')
-                         .format(alpha.ndim))
+        init_gamma = _np.empty((m, m))
+        init_gamma.fill((1-diag) / (m-1))
+        _np.fill_diagonal(init_gamma, diag)
 
-    if alpha.size != m:
-        raise ValueError(('Wrong size of param `alpha`. '
-                          'Expected {}, got {}\n')
-                         .format(m, alpha.size))
-
-    return _stats.dirichlet(alpha).rvs()
-
-
-def init_delta_softmax(m: int) -> _np.ndarray:
-    """Initialize the initial distribution by applying softmax to a sample
-    of random floats.
-
-    Args:
-        m   (int)   Number of states.
-
-    Returns:
-        (np.ndarray)    Stochastic vector of shape (m, ).
-    """
-    rnd_vals = _np.random.rand(m)
-    return _np.exp(rnd_vals) / _np.exp(rnd_vals).sum()
+        return init_gamma
 
 
-def init_delta_stationary(gamma_: _np.ndarray) -> _np.ndarray:
-    """Initialize the initial distribution with the stationary
-    distribution of `init_gamma`.
+class StartDistributionInitializer:
+    """Initializes the start distribution of HMM."""
 
-    Args:
-        gamma_  (np.ndarray)    Initial transition probability matrix.
+    @staticmethod
+    def dirichlet(m: int, alpha: tuple) -> _np.ndarray:
+        """Initialize the initial distribution with a Dirichlet random sample.
 
-    Returns:
-        (np.ndarray)    Stochastic vector of shape (m, ).
-    """
-    return stationary_distr(gamma_)
+        Args:
+            m       (int)       Number of states.
+            alpha   (iterable)  Dirichlet distribution params.
+
+        Returns:
+            (np.ndarray)    Stochastic vector of shape (m, ).
+        """
+        alpha = _np.atleast_1d(alpha)
+
+        if alpha.ndim != 1:
+            raise ValueError(('Wrong shape of param `alpha`. '
+                              'Expected 1, got {}\n')
+                             .format(alpha.ndim))
+
+        if alpha.size != m:
+            raise ValueError(('Wrong size of param `alpha`. '
+                              'Expected {}, got {}\n')
+                             .format(m, alpha.size))
+
+        return _stats.dirichlet(alpha).rvs()
 
 
-def init_delta_uniform(m: int) -> _np.ndarray:
-    """Initialize the initial distribution uniformly.
-    The initial values are set to the inverse of the number of states.
+    @staticmethod
+    def softmax(m: int) -> _np.ndarray:
+        """Initialize the initial distribution by applying softmax to a sample
+        of random floats.
 
-    Args:
-        m   (int)   Number of states.
+        Args:
+            m   (int)   Number of states.
 
-    Returns:
-        (np.ndarray)    Stochastic vector of shape (m, ).
-    """
-    return _np.full(m, 1/m)
+        Returns:
+            (np.ndarray)    Stochastic vector of shape (m, ).
+        """
+        rnd_vals = _np.random.rand(m)
+        return _np.exp(rnd_vals) / _np.exp(rnd_vals).sum()
+
+
+    @staticmethod
+    def stationary(gamma_: _np.ndarray) -> _np.ndarray:
+        """Initialize the initial distribution with the stationary
+        distribution of `init_gamma`.
+
+        Args:
+            gamma_  (np.ndarray)    Initial transition probability matrix.
+
+        Returns:
+            (np.ndarray)    Stochastic vector of shape (m, ).
+        """
+        return stationary_distr(gamma_)
+
+
+    @staticmethod
+    def uniform(m: int) -> _np.ndarray:
+        """Initialize the initial distribution uniformly.
+        The initial values are set to the inverse of the number of states.
+
+        Args:
+            m   (int)   Number of states.
+
+        Returns:
+            (np.ndarray)    Stochastic vector of shape (m, ).
+        """
+        return _np.full(m, 1/m)
 
 
 def stationary_distr(tpm: _np.ndarray) -> _np.ndarray:

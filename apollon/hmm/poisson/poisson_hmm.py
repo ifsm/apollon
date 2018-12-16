@@ -35,15 +35,15 @@ import warnings as _warnings
 import numpy as _np
 
 from apollon import types as _at
+from apollon.types import Array as _Array
 from apollon import tools as _tools
 from apollon.hmm import hmm_utilities as _utils
 from apollon.hmm.poisson.poisson_base import HMM_Base
 #import apollon.hmm.poisson.poisson_core as _core
 
 
-VALID_LAMBDA_METHS = ('linear', 'quantile', 'random')
-VALID_GAMMA_METHS = ('dirichlet', 'softmax', 'uniform')
-VALID_DELTA_METHS = ('dirichlet', 'softmax', 'stationary', 'uniform')
+
+
 
 
 class PoissonHMM(HMM_Base):
@@ -84,6 +84,10 @@ class PoissonHMM(HMM_Base):
 
         self.hyper_params = _HyperParameters(m, init_lambda, init_gamma, init_delta, g_dirichlet,
                                              d_dirichlet, fill_diag)
+
+        self.init_params = _InitialParameters(self.hyper_parameters)
+        self.params = _PoissonParameters()
+
 
     def fit(self, X: _np.ndarray) -> bool:
         """Fit the initialized PoissonHMM to the input data set.
@@ -142,6 +146,11 @@ class _HyperParameters:
         self.init_lambda_meth = self._assert_lambda(init_lambda)
         self.init_gamma_meth = self._assert_gamma(init_gamma, gamma_dp, fill_diag)
         self.init_delta_meth = self._assert_delta(init_delta, delta_dp)
+
+
+    def to_dict(self):
+        return {attr: getattr(self, attr) for attr in self.__slots__}
+
 
     def _assert_lambda(self, _lambda: _at.ArrayOrStr) -> _np.ndarray:
         """Assure that `_lambda` fits requirements for Poisson state-dependent means.
@@ -270,7 +279,70 @@ class _HyperParameters:
         return '_HyerParameters(\n{})'.format(',\n'.join(items))
 
 
-def assert_poisson_input(X: _np.ndarray):
+class _InitialParameters:
+    """Initialize PoissonHmm parameters.
+    """
+    def __init__(self, X: _np.ndarray, hy_params: _HyperParameters):
+        """
+        """
+        assert_poisson_input_data(X)
+
+        self._lambda = self._init_lambda(hy_params, X)
+        self._gamma = self._init_gamma(hy_params)
+        self._delta = self._init_delta(hy_params)
+
+    def _init_lambda(hpy_pa: _HyperParameters, m: int, X: _Array) -> _Array:
+        if hy_params.init_gamma_meth == 'linear':
+            return _utils.StateDependentMeansInitializer.linear(X, hy_params.m)
+
+        if hy_params.init_gamma_meth == 'quantile':
+            return _utils.StateDependentMeansInitializer.quantile(X, hy_params.m)
+
+        if hy_params.init_gamma_meth == 'random':
+            return _utils.StateDependentMeansInitializer.random(X, hy_params.m)
+
+        return hy_params.init_lambda_meth.copy()
+
+
+    def _init_gamma(hy_pa: _HyperParameters) -> _Array:
+        if hy_params.init_gamma_meth == 'dirichlet':
+            return _utils.TpmInitializer.dirichlet(hy_params.m, hy_params.gamma_dp)
+
+        if hy_params.init_gamma_meth == 'softmax':
+            return _utils.TpmInitializer.softmax(hy_params.m)
+
+        if hy_params.init_gamma_meth == 'uniform':
+            return _utils.TpmInitializer.uniform(hy_params, hy_params.diag_val)
+
+        return hy_params.init_gamma_meth.copy
+
+
+    def _init_delta(hy_params: _HyperParameters) -> _Array:
+        if hy_params.init_delta == 'dirichlet':
+            return _utils.StartDistributionInitializer.dirichlet(hy_params.m, hy_params.delta_dp)
+
+        if hy_params.init_delta == 'softmax':
+            return _utils.StartDistributionInitializer.softmax(hy_params.m)
+
+        if hy_params.init_delta == 'stationary':
+            return _utils.StartDistributionInitializer.stationary(self.init_gamma)
+
+        if hy_params.init_delta == 'uniform':
+            return _utils.StartDistributionInitializer.uniform(hy_params.m)
+
+        return hy_params.init_delta_meth.copy()
+
+
+class _PoissonParameters():
+    """
+    """
+    def __init__(self, init_params: _InitialParameters):
+        self.lambda_ = init_params._lambda.copy()
+        self.gamma_ = init_params._gamma.copy()
+        self.delta_ = init_params._delta.copy()
+
+
+def assert_poisson_input_data(X: _np.ndarray):
     """Raise if X is not a array of integers.
 
     Args:
