@@ -133,6 +133,8 @@ def assert_st_val(val: float):
 class StateDependentMeansInitializer:
     """Initializer methods for state-dependent vector of means."""
 
+    methods = ('linear', 'quantile', 'random')
+
     @staticmethod
     def linear(X: _np.ndarray, m: int) -> _np.ndarray:
         """Initialize state-dependent means with `m` linearily spaced values
@@ -191,6 +193,8 @@ class StateDependentMeansInitializer:
 
 class TpmInitializer:
     """Initializes transition probability matrix."""
+
+    methods = ('dirichlet', 'softmax', 'uniform')
 
     @staticmethod
     def dirichlet(m: int, alpha: tuple) -> _np.ndarray:
@@ -262,6 +266,8 @@ class TpmInitializer:
 
 class StartDistributionInitializer:
     """Initializes the start distribution of HMM."""
+
+    methods = ('dirichlet', 'softmax', 'stationary', 'uniform')
 
     @staticmethod
     def dirichlet(m: int, alpha: tuple) -> _np.ndarray:

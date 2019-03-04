@@ -34,26 +34,27 @@ import warnings as _warnings
 
 import numpy as _np
 
+import chains_addiction as _ca
+
+import apollon
 from apollon import types as _at
+from apollon import io as _io
 from apollon.types import Array as _Array
 from apollon import tools as _tools
 from apollon.hmm import hmm_utilities as _utils
-from apollon.hmm.poisson.poisson_base import HMM_Base
 #import apollon.hmm.poisson.poisson_core as _core
 
 
+class PoissonHmm:
 
-
-
-
-class PoissonHMM(HMM_Base):
     # pylint: disable=too-many-arguments
 
     """Hidden-Markov Model with univariate Poisson-distributed states."""
 
-    __slots__ = ['hyper_params', 'init_params', 'params', 'decoding', 'quality']
+    __slots__ = ['hyper_params', 'init_params', 'params', 'decoding', 'quality',
+                 'verbose', 'version', 'training_date', 'success']
 
-    def __init__(self, X: _np.ndarray, m: int,
+    def __init__(self, X: _Array, m_states: int,
                  init_lambda: _at.ArrayOrStr = 'quantile',
                  init_gamma: _at.ArrayOrStr = 'uniform',
                  init_delta: _at.ArrayOrStr = 'stationary',
@@ -66,7 +67,7 @@ class PoissonHMM(HMM_Base):
 
         Args:
             X           (np.ndarray of ints)    Data set.
-            m           (int)                   Number of states.
+            m_states    (int)                   Number of states.
             init_lambda (str or np.ndarray)     Method name or array of init values.
             init_gamma  (str or np.ndarray)     Method name or array of init values.
             init_delta  (str or np.ndarray)     Method name or array of init values.
@@ -80,16 +81,18 @@ class PoissonHMM(HMM_Base):
             fill_diag   (float or None)     Value on main diagonal of tran sition prob matrix.
                                             Mandatory if `init_gamma` == 'uniform'.
         """
-        super().__init__(m, verbose)
+        self.training_date = _tools.time_stamp()
+        self.verbose = verbose
+        self.version = apollon.__version__
+        self.hyper_params = _HyperParams(m_states, init_lambda, init_gamma, init_delta,
+                                         g_dirichlet, d_dirichlet, fill_diag)
 
-        self.hyper_params = _HyperParameters(m, init_lambda, init_gamma, init_delta, g_dirichlet,
-                                             d_dirichlet, fill_diag)
+        self.init_params = _InitParams(X, self.hyper_params)
+        self.params = None
+        self.quality = None
+        self.success = None
 
-        self.init_params = _InitialParameters(self.hyper_parameters)
-        self.params = _PoissonParameters()
-
-
-    def fit(self, X: _np.ndarray) -> bool:
+    def fit(self, X: _Array) -> bool:
         """Fit the initialized PoissonHMM to the input data set.
 
         Args:
@@ -98,24 +101,35 @@ class PoissonHMM(HMM_Base):
         Returns:
             (int)   True on success else False.
         """
-        assert_poisson_input(X)
-        em_ok = True
-        if not em_ok:
+        assert_poisson_input_data(X)
+
+        res = _ca.hmm_poisson_fit_em(X, self.hyper_params.m_states,
+                                     *self.init_params.__dict__.values(), 1000, 1e-5)
+
+        self.success = True if res[0] == 1 else False
+        self.params = Params(*res[1:4])
+        self.quality = QualityMeasures(*res[4:])
+
+        if self.success is False:
             _warnings.warn('EM did not converge.', category=RuntimeWarning)
 
 
-class _HyperParameters:
+    def score(self, X: _Array):
+        """Compute the log-likelihood of `X` under this HMM."""
+
+
+class _HyperParams:
 
     # pylint: disable=too-many-instance-attributes
     # pylint: disable=too-many-arguments
 
     """Check and save model hyper parameters. Meant for compositional and internal only use.
     """
-    __slots__ = ['m', 'init_lambda_meth', 'init_gamma_meth', 'init_delta_meth', 'gamma_dp',
+    __slots__ = ['m_states', 'init_lambda_meth', 'init_gamma_meth', 'init_delta_meth', 'gamma_dp',
                  'delta_dp', 'fill_diag']
 
     def __init__(self,
-                 m: int,
+                 m_states: int,
                  init_lambda: _at.ArrayOrStr,
                  init_gamma: _at.ArrayOrStr,
                  init_delta: _at.ArrayOrStr,
@@ -125,17 +139,17 @@ class _HyperParameters:
         """Check and save model hyper parameters.
 
         Args:
-            m              (int)
-            init_lambda    (str or ndarray)
-            init_gamma     (str or ndarray)
-            init_delta     (str or ndarray)
-            gamma_dp       (tuple)
-            delta_dp       (tuple)
-            fill_diag      (float)
+            m_states        (int)
+            init_lambda     (str or ndarray)
+            init_gamma      (str or ndarray)
+            init_delta      (str or ndarray)
+            gamma_dp        (tuple)
+            delta_dp        (tuple)
+            fill_diag       (float)
         """
 
-        if isinstance(m, int) and m > 0:
-            self.m = m
+        if isinstance(m_states, int) and m_states > 0:
+            self.m_states = m_states
         else:
             raise ValueError('Number of states `m` must be positiv integer.')
 
@@ -149,6 +163,7 @@ class _HyperParameters:
 
 
     def to_dict(self):
+        """Return dict representation."""
         return {attr: getattr(self, attr) for attr in self.__slots__}
 
 
@@ -166,11 +181,11 @@ class _HyperParameters:
             TypeError
         """
         if isinstance(_lambda, str):
-            if _lambda not in VALID_LAMBDA_METHS:
+            if _lambda not in _utils.StateDependentMeansInitializer.methods:
                 raise ValueError('Unrecognized initialization method `{}`'.format(_lambda))
 
         elif isinstance(_lambda, _np.ndarray):
-            _tools.assert_array(_lambda, 1, self.m, 0, name='init_lambda')
+            _tools.assert_array(_lambda, 1, self.m_states, 0, name='init_lambda')
 
         else:
             raise TypeError(('Unrecognized type of param ``init_lambda`` Expected ``str`` or '
@@ -196,7 +211,7 @@ class _HyperParameters:
         """
         if isinstance(_gamma, str):
 
-            if _gamma not in VALID_GAMMA_METHS:
+            if _gamma not in _utils.TpmInitializer.methods:
                 raise ValueError('Unrecognized initialization method `{}`'.format(_gamma))
 
             if _gamma == 'dirichlet' and gamma_dp is None:
@@ -231,7 +246,7 @@ class _HyperParameters:
         """
         if isinstance(_delta, str):
 
-            if _delta not in VALID_DELTA_METHS:
+            if _delta not in _utils.StartDistributionInitializer.methods:
                 raise ValueError('Unrecognized initialization method `{}`'.format(_delta))
 
             if _delta == 'dirichlet' and delta_dp is None:
@@ -261,7 +276,7 @@ class _HyperParameters:
         """
         param = _np.asarray(param)
 
-        if param.size != self.m:
+        if param.size != self.m_states:
             raise ValueError('Size of dirichlet parameter must equal number of states.')
 
         if _np.any(param < 0):
@@ -279,67 +294,117 @@ class _HyperParameters:
         return '_HyerParameters(\n{})'.format(',\n'.join(items))
 
 
-class _InitialParameters:
+
+
+class _InitParams:
     """Initialize PoissonHmm parameters.
     """
-    def __init__(self, X: _np.ndarray, hy_params: _HyperParameters):
+    def __init__(self, X: _np.ndarray, hy_params: _HyperParams):
         """
         """
+
         assert_poisson_input_data(X)
-
-        self._lambda = self._init_lambda(hy_params, X)
-        self._gamma = self._init_gamma(hy_params)
-        self._delta = self._init_delta(hy_params)
-
-    def _init_lambda(hpy_pa: _HyperParameters, m: int, X: _Array) -> _Array:
-        if hy_params.init_gamma_meth == 'linear':
-            return _utils.StateDependentMeansInitializer.linear(X, hy_params.m)
-
-        if hy_params.init_gamma_meth == 'quantile':
-            return _utils.StateDependentMeansInitializer.quantile(X, hy_params.m)
-
-        if hy_params.init_gamma_meth == 'random':
-            return _utils.StateDependentMeansInitializer.random(X, hy_params.m)
-
-        return hy_params.init_lambda_meth.copy()
+        self.lambda_ = self._init_lambda(hy_params, X)
+        self.gamma_ = self._init_gamma(hy_params)
+        self.delta_ = self._init_delta(hy_params)
 
 
-    def _init_gamma(hy_pa: _HyperParameters) -> _Array:
+    @staticmethod
+    def _init_lambda(hy_params: _HyperParams, X: _Array) -> _Array:
+        if isinstance(hy_params.init_lambda_meth, _np.ndarray):
+            return hy_params.init_lambda_meth.copy()
+
+        if hy_params.init_lambda_meth == 'linear':
+            return _utils.StateDependentMeansInitializer.linear(X, hy_params.m_states)
+
+        if hy_params.init_lambda_meth == 'quantile':
+            return _utils.StateDependentMeansInitializer.quantile(X, hy_params.m_states)
+
+        if hy_params.init_lambda_meth == 'random':
+            return _utils.StateDependentMeansInitializer.random(X, hy_params.m_states)
+
+        raise ValueError("Unknown init method or init_lambda_meth is not an array.")
+
+
+    @staticmethod
+    def _init_gamma(hy_params: _HyperParams) -> _Array:
+
+        if isinstance(hy_params.init_gamma_meth, _np.ndarray):
+            return hy_params.init_gamma_meth.copy()
+
         if hy_params.init_gamma_meth == 'dirichlet':
-            return _utils.TpmInitializer.dirichlet(hy_params.m, hy_params.gamma_dp)
+            return _utils.TpmInitializer.dirichlet(hy_params.m_states, hy_params.gamma_dp)
 
         if hy_params.init_gamma_meth == 'softmax':
-            return _utils.TpmInitializer.softmax(hy_params.m)
+            return _utils.TpmInitializer.softmax(hy_params.m_states)
 
         if hy_params.init_gamma_meth == 'uniform':
-            return _utils.TpmInitializer.uniform(hy_params, hy_params.diag_val)
+            return _utils.TpmInitializer.uniform(hy_params.m_states, hy_params.fill_diag)
 
-        return hy_params.init_gamma_meth.copy
-
-
-    def _init_delta(hy_params: _HyperParameters) -> _Array:
-        if hy_params.init_delta == 'dirichlet':
-            return _utils.StartDistributionInitializer.dirichlet(hy_params.m, hy_params.delta_dp)
-
-        if hy_params.init_delta == 'softmax':
-            return _utils.StartDistributionInitializer.softmax(hy_params.m)
-
-        if hy_params.init_delta == 'stationary':
-            return _utils.StartDistributionInitializer.stationary(self.init_gamma)
-
-        if hy_params.init_delta == 'uniform':
-            return _utils.StartDistributionInitializer.uniform(hy_params.m)
-
-        return hy_params.init_delta_meth.copy()
+        raise ValueError("Unknown init method or init_gamma_meth is not an array.")
 
 
-class _PoissonParameters():
+    def _init_delta(self, hy_params: _HyperParams) -> _Array:
+        if isinstance(hy_params.init_delta_meth, _np.ndarray):
+            return hy_params.init_delta_meth.copy()
+
+        if hy_params.init_delta_meth == 'dirichlet':
+            return _utils.StartDistributionInitializer.dirichlet(hy_params.m_states,
+                                                                 hy_params.delta_dp)
+
+        if hy_params.init_delta_meth == 'softmax':
+            return _utils.StartDistributionInitializer.softmax(hy_params.m_states)
+
+        if hy_params.init_delta_meth == 'stationary':
+            return _utils.StartDistributionInitializer.stationary(self.gamma_)
+
+        if hy_params.init_delta_meth == 'uniform':
+            return _utils.StartDistributionInitializer.uniform(hy_params.m_states)
+
+        raise ValueError("Unknown init method or init_delta_meth is not an array.")
+
+    def __str__(self):
+        with _io.array_print_opt(precision=4, suppress=True):
+            out = 'Initial Lambda:\n{}\n\nInitial Gamma:\n{}\n\nInitial Delta:\n{}\n'
+            out = out.format(*self.__dict__.values())
+        return out
+
+    def __repr__(self):
+        return self.__str__()
+
+
+class QualityMeasures:
     """
     """
-    def __init__(self, init_params: _InitialParameters):
-        self.lambda_ = init_params._lambda.copy()
-        self.gamma_ = init_params._gamma.copy()
-        self.delta_ = init_params._delta.copy()
+    def __init__(self, aic, bic, nll, n_iter):
+        self.aic = aic
+        self.bic = bic
+        self.nll = nll
+        self.n_iter = n_iter
+
+    def __str__(self):
+        return 'AIC = {}\nBIC = {}\nNLL = {}\nn_iter = {}'.format(*self.__dict__.values())
+
+    def __repr__(self):
+        return self.__str__()
+
+
+class Params:
+    """Easy access to estimated HMM parameters and quality measures.
+    """
+    def __init__(self, lambda_, gamma_, delta_):
+        self.lambda_ = lambda_
+        self.gamma_ = gamma_
+        self.delta_ = delta_
+
+    def __str__(self):
+        with _io.array_print_opt(precision=4, suppress=True):
+            out = 'Lambda:\n{}\n\nGamma:\n{}\n\nDelta:\n{}\n'
+            out = out.format(*self.__dict__.values())
+        return out
+
+    def __repr__(self):
+        return self.__str__()
 
 
 def assert_poisson_input_data(X: _np.ndarray):
