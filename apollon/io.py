@@ -7,19 +7,21 @@ Classes:
     FileAccessControl       Descriptor for file name attributes.
 
 Functions:
+    array_print_opt         Set format for printing numpy arrays.
+    decode_array            Decode numpy array from JSON.
     files_in_folder         Iterate over all files in given folder.
     load                    Load pickled data.
     repath                  Change path but keep file name.
     save                    Pickle some data.
 """
 
-
+from contextlib import contextmanager as _contextmanager
 import json
 import pathlib
 import pickle
 import typing
 
-import numpy as np
+import numpy as _np
 
 import apollon.types as apt
 
@@ -62,11 +64,11 @@ def decode_array(json_data: dict) -> typing.Any:
         (any)
     """
     if '__ndarray__' in json_data and '__dtype__' in json_data:
-        return np.array(json_data['data'], dtype=json_data['__dtype__'])
+        return _np.array(json_data['data'], dtype=json_data['__dtype__'])
     return json_data
 
 
-class PoissonHmmEncoder(io.ArrayEncoder):
+class PoissonHmmEncoder(ArrayEncoder):
     """JSON encoder for PoissonHmm.
     """
     def default(self, o):
@@ -127,6 +129,23 @@ class WavFileAccessControl:
 
     def __delete__(self, obj):
         del self.__attribute[obj]
+
+
+@_contextmanager
+def array_print_opt(*args, **kwargs):
+    """Set print format for numpy arrays.
+
+    Thanks to unutbu:
+    https://stackoverflow.com/questions/2891790/how-to-pretty-print-a-numpy-array-without-
+    scientific-notation-and-with-given-pre
+    """
+    std_options = _np.get_printoptions()
+    _np.set_printoptions(*args, **kwargs)
+
+    try:
+        yield
+    finally:
+        _np.set_printoptions(**std_options)
 
 
 def files_in_path(path: apt.PathType, ext: str = '.wav',
