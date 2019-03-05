@@ -1,6 +1,7 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
+"""
+Copyright 2019, Michael Blaß
+michael.blass@uni-hamburg.de
+"""
 
 import math as _math
 from collections import OrderedDict
@@ -8,11 +9,10 @@ from collections import OrderedDict
 import numpy as _np
 
 from apollon.decorators import isAudioChunk
-from apollon.signal.audio import _AudioChunks
+from apollon.audio import _AudioChunks
 from apollon.signal.spectral import fft as _fft
 
-
-__author__ = 'Michael Blaß'
+from . types import Array as _Array
 
 
 @isAudioChunk
@@ -55,26 +55,27 @@ def rms_energy(chunk, **kwargs):
     return _math.sqrt(_np.sum(_np.square(chunk)) / len(chunk))
 
 
-def spectral_centroid(chunks, window=None, sr=None, **kwargs):
-    """Extract spectral centroid from chunks.
+def spectral_centroid(inp: _Array, fs: int, window: str = 'hamming') -> _Array:
+    """Extract spectral centroid from input array.
 
     Params:
-        window      (function) window function.
-        sr          (int)   sample rate i Hz.
+        fs     (int)    Sampling frequency in Hz.
+        window (str)    Window function indentifier.
 
     return    (numpy ndarray) of spc values.
     """
-    if isinstance(chunks, _AudioChunks):
-        out = _np.zeros(len(chunks))
+    if inp.ndim == 2:
+        out = _np.zeros(inp.shape[0])
 
-        for i, chunk in enumerate(chunks):
-            X = _fft(chunk, sr=sr, window=window)
-            out[i] = X.centroid()
+        for i, seg in enumerate(inp):
+            out[i] = _fft(seg, fs=fs, window=window).centroid()
         return out
 
+    elif inp.ndim == 1:
+        return _fft(inp, fs=fs, window=window).centroid()
+
     else:
-        spc = _fft(chunks, sr=sr, window=window)
-        return spc.centroid()
+        raise ValueError('Input array must have at max two dimensions.')
 
 
 available_features = OrderedDict({'maxamp': maxamp,
