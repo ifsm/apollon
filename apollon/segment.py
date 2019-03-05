@@ -1,125 +1,103 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
 """apollon/segment.py
-
-(c) Michael Blaß, 2016
-
-This module encapsulates a bunch of function for simple audio segmentation.
-A given AudioData signal is segmented to chunks by means of either samples or
-seconds, each with or without hop size. There is no need to instantiate Split()
-since its member functions are all static.
 """
-
 
 import numpy as _np
 
-from apollon.exceptions import NotAudioDataError
-from apollon.signal import tools
-from apollon.signal.audio import _AudioChunks
-from apollon.signal.audio import _AudioData
+from . signal.tools import zero_padding as _zero_padding
+from . types import Array as _Array
 
 
-def by_samples(signal_obj, len_of_chunks_in_samples, padding=True):
-    """A signal of raw audio data is segmented by means of samples. Since there
-    is no zero padding applied by default, the last segment may be shorter then
-    the other if len(signal) % len_of_parts != 0.
+def _by_samples(x: _Array, n_perseg: int) -> _Array:
+    """Split `x` into segments of lenght `n_perseg` samples.
 
-    :param signal_obj:               (AudioData) audio object
-    :param len_of_chunks_in_samples: (int) length of each part given in samples
-    :param padding:                  (bool) apply zero padding if true
-    :return:    AudiChunks object
+    This function automatically applies zero padding for inputs that cannot be
+    split evenly.
+
+    Args:
+        x        (np.ndarray)    One-dimensional input array.
+        n_perseg (int)           Length of segments in samples.
+
+    Returns:
+        (np.ndarray)    Two-dimensional array of segments.
     """
-    len_sig = len(signal_obj)
+    if not isinstance(n_perseg, int):
+        raise TypeError('Param `n_perchunk` must be of type int.')
 
-    # security
-    if len_of_chunks_in_samples < 1 or len_of_chunks_in_samples >= len_sig:
-        raise ValueError('Length must be: 1 <= part_length >= len(signal).')
+    if n_perchunk < 1:
+        raise ValueError('`n_perchunk` out of range. Expected 1 <= n_perchunk.')
 
-    if type(len_of_chunks_in_samples) is not int:
-        raise ValueError('Length must be an integer > 1.')
+    fit_size = int(_np.ceil(x.size / n_perchunk) * n_perseg)
+    n_ext = fit_size - x.size
+    x = _zero_padding(x, n_ext)
 
-    # get data
-    data, sr = _get_audio_data(signal_obj)
+    return x.reshape(-1, n_perseg)
 
-    # calculate number of parts
-    if len_sig % len_of_chunks_in_samples:
-        n_parts = int(len_sig / len_of_chunks_in_samples) + 1
+
+def _by_samples_with_hop(x: _Array, n_perseg: int, hop_size: int) -> _Array:
+    """Split `x` into segments of lenght `n_perseg` samples. Move the extraction
+    window `hop_size` samples.
+
+    This function automatically applies zero padding for inputs that cannot be
+    split evenly.
+
+    Args:
+        x        (np.ndarray)    One-dimensional input array.
+        n_perseg (int)           Length of segments in samples.
+        hop_size (int)           Hop size in samples
+
+    Returns:
+        (np.ndarray)    Two-dimensional array of segments.
+    """
+    if not (isinstance(n_perseg, int) and isinstance(hop_size, int)):
+        raise TypeError('Params must be of type int.')
+
+    if not 1 < n_perseg <= x.size:
+        raise ValueError('n_perseg out of range. Expected 1 < n_perseg <= len(x).')
+
+    if hop_size < 1:
+        raise ValueError('hop_size out of range. Expected 1 < hop_size.')
+
+    n_hops = (x.size - n_perseg) // hop_size + 1
+    n_segs = n_hops
+
+    if (x.size - n_perseg) % hop_size != 0:
+        n_segs += 1
+
+    fit_size = hop_size * n_hops + n_perseg
+    n_ext = fit_size - x.size
+    x = _zero_padding(x, n_ext)
+
+    out = _np.empty((n_segs, n_perseg), dtype=x.dtype)
+    for i in range(n_segs):
+        off = i * hop_size
+        out[i] = x[off:off+n_perseg]
+
+    return out
+
+
+def by_samples(x: _Array, n_perseg: int, hop_size: int = 0) -> _Array:
+    """Segment the input into n segments of length n_persegs and move the
+    window `hop_size` samples.
+
+    This function automatically applies zero padding for inputs that cannot be
+    split evenly.
+
+    If `hop_size` is less than one, it is reset to `n_perseg`.
+
+    Overlap in percent is calculated as ov = hop_size / n_perseg * 100.
+
+    Args:
+        x           One-dimensional input array.
+        n_perseg    Length of segments in samples.
+        hop_size    Hop size in samples. If < 1, hop_size = n_perseg.
+
+    Returns:
+        (np.ndarray)    Two-dimensional array of segments.
+        """
+    if hop_size < 1:
+        return _by_samples(x, n_perseg)
     else:
-        n_parts = int(len_sig / len_of_chunks_in_samples)
-
-    # set up array for parts and the corresponding limits
-    parts = _np.zeros([n_parts, len_of_chunks_in_samples], dtype=data.dtype)
-    limits = []
-    parts_counter = 0
-
-    # zero-padding
-    if padding:
-        padding = parts.size - len_sig
-        data = tools.zero_padding(data, padding)
-        len_sig = len(data)
-
-    # calculate parts
-    for i in range(0, len_sig, len_of_chunks_in_samples):
-        if (i + len_of_chunks_in_samples) <= len_sig:
-            limits.append([i, i+len_of_chunks_in_samples])
-        else:
-            limits.append([i, len_sig])
-        parts_counter += 1
-
-    return _AudioChunks(data, n_parts, len_of_chunks_in_samples,
-                             _np.array(limits), sr, padding)
-
-
-def by_samples_with_hop(signal_obj, len_of_chunks_in_samples,
-                        hop_size_in_samples):
-    '''Segments a signal into subchunks given a chunk length and hop
-        size. Using the formula (len_chunk + hop_size * x) = len_sig
-        the number of chunks as well as the padding can be calculated
-        easily.
-
-        Params:
-            len_of_chunks_in_samples:    (int) chunk length in samples
-            hop_size_in_samples:         (int) hop size in samples
-    '''
-    len_sig = len(signal_obj)
-
-    # security
-    if not (isinstance(len_of_chunks_in_samples, int) and
-            isinstance(hop_size_in_samples, int)):
-        raise ValueError('Length and hop size have to be ints > 1.')
-
-    if not (1 <= len_of_chunks_in_samples <= len_sig):
-        raise ValueError('Length have to be: 1 <= part_length >= len(signal).')
-
-    if hop_size_in_samples < 1:
-        raise ValueError('Hop sizes have to be ints > 0')
-
-    # get the data
-    data, sr = _get_audio_data(signal_obj)
-
-    # calculate number of chunks and len of padding
-    if (len_sig - len_of_chunks_in_samples) % hop_size_in_samples:
-        nhchunks = ((len_sig - len_of_chunks_in_samples) //
-                    hop_size_in_samples + 1)
-        nchunks = nhchunks + 1
-        padding = ((len_of_chunks_in_samples + hop_size_in_samples *
-                    nhchunks) - len_sig)
-        data = tools.zero_padding(data, padding)
-    else:
-        nchunks = ((len_sig - len_of_chunks_in_samples) //
-                   hop_size_in_samples + 1)
-        padding = False
-
-    # set up array of chunk bounds
-    bounds = _np.zeros((nchunks, 2), dtype=int)
-    for i in range(nchunks):
-        lb = i * hop_size_in_samples
-        ub = lb + len_of_chunks_in_samples
-        bounds[i] = [lb, ub]
-
-    return _AudioChunks(data, nchunks, len_of_chunks_in_samples,
-                             bounds, sr, padding)
+        return _by_samples_with_hop(x, n_perseg, hop_size)
 
 
 def by_ms(signal_obj, len_of_chunks_in_ms, padding=True, sr=44100):
