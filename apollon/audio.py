@@ -1,6 +1,3 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
 """
 Classes:
     _AudioChunks
@@ -12,18 +9,14 @@ Functions:
 
 
 import numpy as _np
-import pathlib
-import soundfile as sf
+import soundfile as _sf
 
-from apollon.io import WavFileAccessControl
+from apollon.io import WavFileAccessControl as _WavFileAccessControl
 from apollon.signal.tools import normalize
 
 
-__author__ = 'Michael Blaß'
-
-
 class _AudioChunks:
-    '''    Representation of chunked audio data.
+    """Representation of chunked audio data.
 
     Adds audio chunking functionality to an object.
     This class makes it easy to deal with evenly segmented audio signals.
@@ -38,16 +31,18 @@ class _AudioChunks:
         iter_parts(self)
         get_limits(self)
         get_sr(self)
-    '''
+    """
     def __init__(self, _signal, _nchunks, _lchunks, _limits,
                  _sample_rate, _padding=False):
-        '''        :param _signal:        (AudioData)  Audiodata object
-        :param _nchunks:       (int)        Number of chunks
-        :param _lchunks:       (int)        Length of each chunk
-        :param _limits:        (array)      Indices of first and last frame
-        :param _sample_rate:   (int)        Sample rate chunks
-        :param _padding:       (bool)       True if the signal was zero-padded
-        '''
+        """
+        Args:
+            _signal        (AudioData)  Audiodata object
+            _nchunks       (int)        Number of chunks
+            _lchunks       (int)        Length of each chunk
+            _limits        (array)      Indices of first and last frame
+            _sample_rate   (int)        Sample rate chunks
+            _padding       (bool)       True if the signal was zero-padded
+        """
         self._signal = _signal
         self._Nchunks = _nchunks
         self._lchunks = _lchunks
@@ -58,7 +53,7 @@ class _AudioChunks:
     def get_chunks(self):
         '''Return chunks as nested array.'''
         return _np.array([self._signal[start:stop]
-                         for start, stop in self._limits])
+                          for start, stop in self._limits])
 
     def get_chunk_len(self):
         return self._lchunks
@@ -83,9 +78,10 @@ class _AudioChunks:
     def __str__(self):
         if self._padding:
             return '<AudioChunks object, N: {}, Len of each: {}, zero padding of len {}>'. \
-                format(self._Nchunks, self._lchunks, self._padding)
+                   format(self._Nchunks, self._lchunks, self._padding)
         else:
-            return '<AudioChunks object, N: {}, Len of each: {}, No padding>'.format(self._Nchunks, self._lchunks)
+            return '<AudioChunks object, N: {}, Len of each: {}, No padding>'. \
+                   format(self._Nchunks, self._lchunks)
 
     def __repr__(self):
         return self.__str__()
@@ -117,7 +113,7 @@ class _AudioData:
     __slots__ = ['_fs', '_data']
 
     # Descriptor attribute
-    file = WavFileAccessControl()
+    file = _WavFileAccessControl()
 
     def __init__(self, file_name, norm=True):
         """Representation of an audio file.
@@ -131,7 +127,7 @@ class _AudioData:
         """
         self.file = file_name
 
-        self._data, self._fs = sf.read(file_name, dtype='float64')
+        self._data, self._fs = _sf.read(file_name, dtype='float64')
 
         if self._data.ndim == 2:
             self._data = self._data.sum(axis=1) / 2
@@ -140,34 +136,35 @@ class _AudioData:
             self._data = normalize(self._data)
 
     @property
-    def fs(self):
+    def fs(self) -> int:
         """Return sample rate."""
         return self._fs
 
     @property
-    def data(self, n=None):
+    def data(self, n: int = None) -> _np.ndarray:
         """Return the audio frames as ints.
 
-        Params:
+        Args:
             n: (int)    Return only the first n frames (default = None)
 
-        Return:
+        Returns:
             (np.ndarray) frames
         """
         return self._data[:n]
+
 
     def plot(self, tickunit='seconds'):
         _aplot.signal(self, xaxis=tickunit)
 
     def __str__(self):
         return "<{}, fs: {}, N: {}>" \
-        .format(self.file.name,  self.fs, len(self))
+        .format(self.file.name, self.fs, len(self))
 
     def __repr__(self):
         return self.__str__()
 
     def __len__(self):
-        return self.data.size
+        return self._data.size
 
     def __getitem__(self, item):
         return self._data[item]
