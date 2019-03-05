@@ -167,7 +167,7 @@ class _Spectrum(_Spectrum_Base):
             fig.show()
 
 
-def fft(signal, sr=None, n=None, window=None):
+def fft(signal, fs=None, n=None, window=None):
     """Return the discrete fourier transform of the input.
 
     Params:
@@ -183,10 +183,10 @@ def fft(signal, sr=None, n=None, window=None):
     length = len(sig)
 
     # sample rate
-    if sr is None:
-        sr = length
+    if fs is None:
+        fs = length
     else:
-        sr = sr
+        fs = fs
 
     # fft length
     if n is None:
@@ -200,7 +200,7 @@ def fft(signal, sr=None, n=None, window=None):
     else:
         bins = _np.fft.rfft(sig, n) / length * 2
 
-    return _Spectrum(bins, sr, n, window)
+    return _Spectrum(bins, fs, n, window)
 
 
 class STFT:
