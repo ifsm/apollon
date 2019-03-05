@@ -4,7 +4,7 @@
 import unittest
 import numpy as _np
 
-from apollon.signal.audio import loadwav
+from apollon.audio import loadwav
 
 
 class Test_ModulAudio(unittest.TestCase):

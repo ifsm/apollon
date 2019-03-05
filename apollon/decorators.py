@@ -3,7 +3,7 @@
 
 __author__ = 'Michael Blaß'
 
-from apollon.signal.audio import _AudioChunks
+from apollon.audio import _AudioChunks
 import numpy as _np
 import matplotlib.pyplot as _plt
 

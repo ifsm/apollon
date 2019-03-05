@@ -25,7 +25,7 @@ import numpy as _np
 from scipy import stats as _stats
 
 from apollon._defaults import plot_params as _plot_params
-from apollon.signal.audio import _AudioData
+from apollon.audio import _AudioData
 
 
 def _new_figure(**kwargs):

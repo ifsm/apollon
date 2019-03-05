@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 """apollon/interactive/__init__.py
 
 (c) Michael Blaß, 2016
@@ -16,7 +13,7 @@ from apollon import io
 from apollon import onsets
 from apollon import som
 
-from apollon.signal.audio import loadwav
+from apollon.audio import loadwav
 from apollon import segment
 from apollon import tools
 
