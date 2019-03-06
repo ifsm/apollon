@@ -475,7 +475,7 @@ class SelfOrganizingMap(_som_base):
             raise AttributeError('SOM is not calibrated.')
 
 
-from apollon.hmm.poisson_hmm import hmm_distance
+#from apollon.hmm.poisson_hmm import hmm_distance
 
 class DotSom(_som_base):
     def __init__(self, dims=(10, 10, 3), eta=.8, nh=8, n_iter=10,
