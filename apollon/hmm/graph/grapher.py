@@ -200,6 +200,64 @@ def draw_network(labels, tpm, delta):
     return fig, ax, G
 
 
+def draw_matrix(tpm):
+    """Draw a heatmap from a transition probability matrix.
+
+    Args:
+        tpm (np.ndarray)    Two-dimensional, row-stochastic square matrix.
+
+    Returns:
+        (fig, ax, img)
+    """
+    img_kwargs = {'origin': 'upper',
+                 'interpolation': 'nearest',
+                 'aspect': 'equal',
+                 'cmap': 'viridis',
+                 'vmin': 0.0, 'vmax': 1.0}
+
+    nx, ny = tpm.shape
+
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot(1, 1, 1)
+    img = ax.imshow(tpm, **img_kwargs)
+
+    # colorbar
+    cbar = ax.figure.colorbar(img, ax=ax)
+    cbar.ax.set_ylabel('Probability', rotation=-90, va="bottom")
+
+    # major ticks 
+    ax.set_xticks(np.arange(nx))
+    ax.set_yticks(np.arange(ny))
+    ax.tick_params(which='major', top=True, bottom=False,
+                   labeltop=True, labelbottom=False)
+
+    # minor ticks (for grid)
+    ax.set_xticks(np.arange(nx)-.5, minor=True)
+    ax.set_yticks(np.arange(ny)-.5, minor=True)
+    ax.tick_params(which="minor", bottom=False, left=False)
+    ax.grid(which="minor", color="w", linestyle='-', linewidth=2)
+
+    # spines
+    ax.spines['top'].set_position(('outward', 10))
+    ax.spines['left'].set_position(('outward', 10))
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    # cell labels
+    font_kw = {'fontsize': 14}
+    text_kw = {'ha': 'center', 'va': 'center', 'fontdict': font_kw}
+    for i in range(nx):
+        for j in range(ny):
+            val = tpm[i, j].astype(float).round(2)
+            bc = cm.viridis(val)
+            tc = cm.viridis(1-val)
+            if np.array_equal(tc, bc):
+                tc = 'k'
+            ax.text(j, i, '{:.3f}'.format(val), **text_kw, color=tc)
+
+    return fig, ax, img
+
+
 def save_hmmfig(fig, path, **kwargs):
     """Save the figure to file.
 

@@ -1,2 +1,1 @@
-from . grapher import draw
-from . grapher import save_hmmfig
+from . grapher import draw_matrix, draw_network, save_hmmfig
