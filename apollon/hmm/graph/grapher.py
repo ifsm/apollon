@@ -1,6 +1,3 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
-
 """
 grapher.py -- Plot graphs from HMMs.
 
@@ -34,9 +31,9 @@ from scipy.spatial import distance
 from apollon import tools
 
 
-def _prepare_fig(pos):    
+def _prepare_fig(pos):
     """Prepare a figure with the correct size.
-    
+
     Params:
         pos    (dict) with structur {node_name_i: np.array([pos_x, pos_y])}
                       as return by nx.layout methods.
@@ -164,7 +161,7 @@ def _legend(G, nodes, ax):
     return legend
 
 
-def draw(labels, tpm, delta):
+def draw_network(labels, tpm, delta):
     """Draw the graph of a HMM's transition probability matrix.
 
     Params:
