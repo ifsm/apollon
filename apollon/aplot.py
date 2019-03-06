@@ -180,9 +180,9 @@ def marginal_distr(x, lambda_, delta, figsize=(10, 4), bins=20, legend=True):
 
 
 
-def onsets(sig, odx, figsize=(10, 4), **kwargs):
-    ax = signal(sig)
-    ax.vlines(odx, -1, 1, **_plot_params.onset)
+def onsets(x, fs, onset_times, figsize=(10, 5), **kwargs):
+    ax = signal(x, fs, figsize=figsize, **kwargs)
+    ax.vlines(onset_times, -1, 1, **_plot_params.onset)
     return ax
 
 
@@ -198,28 +198,21 @@ def onset_decoding(sig, odx, dec):
 
 
 
-def signal(sig, xaxis='seconds', figsize=(10, 4), params=None):
-    '''Plot a signal on fancy axes.'''
+def signal(x, fs, xaxis_scale='seconds', figsize=(10, 4), params=None, **kwargs):
+    """Plot a signal on fancy axes.
+    """
     ax = _new_axis(figsize=figsize)
 
-    if params is None:
-        params = _plot_params.signal
-
-    if isinstance(sig, _AudioData):
-        if xaxis == 'samples':
-            ax.set_xlabel('Time [samples]')
-        elif xaxis == 'seconds':
-            # TODO: ticklabes for signals > 1 min
-            len_in_sec = sig._N / sig.get_sr()
-            ticks = _np.linspace(0, sig._N, _np.ceil(len_in_sec)*2)
-            ticklabels = _np.arange(0, len_in_sec, .5)
-            ax.set_xticks(ticks)
-            ax.set_xticklabels(ticklabels)
-            ax.set_xlabel('Time [s]')
-        else:
-            raise ValueError('Unknown option <{}>'.format(xaxis))
-        ax.set_ylabel('Amplitude')
-        ax.plot(sig.get_data(), **params)
+    if xaxis_scale == 'seconds':
+        t = _np.arange(0, x.size, dtype=float) / fs
+        ax.set_xlabel('Time [s]')
     else:
-        ax.plot(sig, **params)
+        t = _np.arange(x.size)
+        ax.set_xlabel('Samples')
+
+    ax.set_ylabel('Amplitude')
+
+    params = _plot_params.signal
+    ax.plot(t, x, **params)
+
     return ax
