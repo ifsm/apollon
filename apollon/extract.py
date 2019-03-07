@@ -8,38 +8,30 @@ from collections import OrderedDict
 
 import numpy as _np
 
-from apollon.decorators import isAudioChunk
-from apollon.audio import _AudioChunks
 from apollon.signal.spectral import fft as _fft
-
 from . types import Array as _Array
 
 
-@isAudioChunk
 def maxamp(chunk, **kwargs):
     '''Extract maximal amplitude from chunk.'''
     return _np.max(_np.absolute(chunk))
 
 
-@isAudioChunk
 def meanamp(chunk, **kwargs):
     '''Extract mean amplitude from chunk.'''
     return _np.sum(chunk) / len(chunk)
 
 
-@isAudioChunk
 def stdamp(chunk, **kwargs):
     '''Extract standard deviation from chunk.'''
     return _np.std(chunk)
 
 
-@isAudioChunk
 def energy(chunk, **kwargs):
     '''Extract linear energy from chunk.'''
     return _np.sum(_np.square(chunk))
 
 
-# @isAudioChunk
 def entropy(chunk, theta=2, bins=10, window=None, **kwargs):
     '''Shannon Entropy in [nat], normalized by log(N)'''
     if window:
@@ -49,7 +41,6 @@ def entropy(chunk, theta=2, bins=10, window=None, **kwargs):
     return pps.get_entropy()
 
 
-@isAudioChunk
 def rms_energy(chunk, **kwargs):
     """Extract rms energy from chunk."""
     return _math.sqrt(_np.sum(_np.square(chunk)) / len(chunk))
