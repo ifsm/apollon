@@ -1,7 +1,3 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
-
-
 """apollon/fractal.py   (c) Michael Blaß 2017
 
 Tools for estimating fractal dimensions.
@@ -15,7 +11,7 @@ Function:
 
 import numpy as _np
 from scipy import stats as _stats
-from scipy.spatial import distance
+from scipy.spatial import distance as _distance
 
 
 def correlation_dimension(data, tau, m, r, mode='cut', fit_n_points=10):
@@ -27,14 +23,14 @@ def correlation_dimension(data, tau, m, r, mode='cut', fit_n_points=10):
         - Implement multiprocessing
         - Find a way to use L_\inf norm with distance.pdist
 
-    Params:
+    Args:
         data    (1d array)  Input time series.
         tau     (int)       Reconstruction delay.
         m       (iterable)  of embedding dimensions
         r       (iterable)  of radii
         mode    (str)       See doc of `embedding`.
 
-    Return:
+    Returns:
         lCrm    (array) Logarithm of correlation sums given r_i.
         lr      (array) Logarithm of radii.
         d2      (float) Estimate of correlation dimension.
@@ -59,8 +55,8 @@ def correlation_dimension(data, tau, m, r, mode='cut', fit_n_points=10):
 
         # compute distance matrix
         # we should use L_\inf norm here
-        pairwise_distances = distance.squareform(
-            distance.pdist(emb.T, metric='euclidean'))
+        pairwise_distances = _distance.squareform(
+            _distance.pdist(emb.T, metric='euclidean'))
 
         # compute correlation sums
         Cr = _np.array([_np.sum(pairwise_distances < ri) for ri in r],
