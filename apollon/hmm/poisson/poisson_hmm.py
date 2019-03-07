@@ -42,7 +42,6 @@ from apollon import io as _io
 from apollon.types import Array as _Array
 from apollon import tools as _tools
 from apollon.hmm import hmm_utilities as _utils
-#import apollon.hmm.poisson.poisson_core as _core
 
 
 class PoissonHmm:
