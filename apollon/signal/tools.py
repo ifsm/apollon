@@ -12,6 +12,7 @@ Functions:
     corr_coef_pearson   Correlation coefficient after Pearson.
     freq2mel            Transform frequency to mel.
     mel2freq            Transform mel to frequency.
+    frq2bark            Transform frequency to Bark scale.
     maxamp              Maximal amplitude of signal.
     minamp              Minimal amplitude of signal.
     normalize           Scale data betwee -1.0 and 1.0.
@@ -127,6 +128,19 @@ def mel2freq(z):
     """
     z = _np.atleast_1d(z)
     return 700 * (_np.exp(z / 1125) - 1)
+
+
+def frq2bark(frq) -> _Array:
+    """Transform `frq` in Hz to critical band rate aka Bark scale.
+
+    Args:
+        frq    Frequency in Hz.
+
+    Returns:
+        Critical band rate.
+    """
+    frq = _np.atleast1d(frq)
+    return 13.0 * _np.arctan(0.00076*frq) + 3.5 * _np.arctan(_np.power(frq/7500, 2))
 
 
 def maxamp(sig):
