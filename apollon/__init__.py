@@ -1,8 +1,7 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 import os as _os
-from . _version import __version__
+import pkg_resources as _pkg
+
+
+__version__ = _pkg.get_distribution('apollon').version
 
 APOLLON_PATH = _os.path.dirname(_os.path.realpath(__file__))
-
