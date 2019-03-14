@@ -24,6 +24,7 @@ Functions:
 import numpy as _np
 from scipy import stats as _stats
 
+from .. types import Array as _Array
 
 def acf(inp_sig):
     """Normalized estimate of the autocorrelation function of `inp_sig`
@@ -69,8 +70,18 @@ def acf_pearson(inp_sig):
     return out
 
 
-def amp2db(amp):
+def amp2db(amp, ref:float = 20e-6) -> _Array:
     """Transform amplitude to dB.
+
+    Return a copy of `amp` in dB scaling regarding a reference pressure `ref`.
+    The reference pressure is commonly the human hearing treshold at
+    20 micro Pa.
+
+    `amp` is supposed to be a inon-negative scalar or numpy.array taken from a
+    magnitude spectrum.
+
+    This function set all values of `amp` smaller then `ref` to `ref`, hence
+    eliminating inaudible singnal energy in the log domain.
 
     Params:
         amp    (array-like or number) Given amplitude values.
@@ -78,8 +89,7 @@ def amp2db(amp):
     Return:
         (ndarray)    values in dB.
     """
-    foo = _np.atleast_1d(amp)
-    return 20 * _np.log10(foo / maxamp(foo))
+    return 20 * _np.log10(_np.maximum(amp, ref) / ref)
 
 
 def corr_coef_pearson(x, y):
