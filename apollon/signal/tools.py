@@ -130,17 +130,6 @@ def mel2freq(z):
     return 700 * (_np.exp(z / 1125) - 1)
 
 
-def frq2bark(frq) -> _Array:
-    """Transform `frq` in Hz to critical band rate aka Bark scale.
-
-    Args:
-        frq    Frequency in Hz.
-
-    Returns:
-        Critical band rate.
-    """
-    frq = _np.atleast1d(frq)
-    return 13.0 * _np.arctan(0.00076*frq) + 3.5 * _np.arctan(_np.power(frq/7500, 2))
 
 
 def maxamp(sig):
