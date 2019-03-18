@@ -17,7 +17,7 @@ def frq2cbr(frq) -> _Array:
     return 13.0 * _np.arctan(0.00076*frq) + 3.5 * _np.arctan(_np.power(frq/7500, 2))
 
 
-def level(cbi:_Array):
+def level(cbi: _Array):
     """Compute the critical band level L_G from critical band intensities I_G.
 
     Args:
@@ -30,7 +30,7 @@ def level(cbi:_Array):
     return 10.0 * _np.log10(_np.maximum(cbi, ref) / ref)
 
 
-def specific_loudness(cbr:_Array):
+def specific_loudness(cbr: _Array):
     """Compute the specific loudness of a critical band rate spectra.
 
     The specific loudness is the loudness per critical band rate. The spectra
@@ -45,7 +45,7 @@ def specific_loudness(cbr:_Array):
     return _np.power(level(cbr), 0.23)
 
 
-def total_loudness(cbr:_Array):
+def total_loudness(cbr: _Array):
     """Compute the totals loudness of critical band rate spectra.
 
     The total loudness is the sum of the specific loudnesses. The spectra
@@ -102,3 +102,15 @@ def weight_factor(z):
     slope = 0.066 * _np.exp(0.171 * _np.atleast_1d(z))
 
     return _np.maximum(base, slope)
+
+
+def sharpness(cbr_spctrm):
+   """
+   Calculate a measure for the perception of auditory sharpness from a spectrogram
+   of critical band levels.
+   """
+   loud_specific = _np.maximum(specific_loudness(cbr_spctrm), _np.finfo('float64').eps)
+   loud_total = loud_specific.sum(axis=0)
+
+   z = _np.arange(1, 25)
+   return ((z * weight_factor(z)) @ cbr_spctrm) / loud_total
