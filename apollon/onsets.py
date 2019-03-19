@@ -10,7 +10,6 @@ from typing import Dict, Tuple
 from apollon import fractal as _fractal
 from apollon import segment as _segment
 from apollon import tools as _tools
-from apollon.signal.spectral import STFT
 
 
 class EnrtopyOnsetDetector:
