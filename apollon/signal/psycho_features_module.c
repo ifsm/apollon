@@ -18,6 +18,8 @@ ext_roughness (PyObject *self, PyObject *args)
     PyArrayObject *frqs     = NULL;
     PyArrayObject *rghnss   = NULL;
     npy_intp      *shape    = NULL;
+    size_t         n_times  = 0;
+    size_t         n_frqs   = 0;
 
     if (!PyArg_ParseTuple (args, "OO", &py_spectrogram, &py_frqs))
     {
@@ -29,14 +31,20 @@ ext_roughness (PyObject *self, PyObject *args)
 
     if (spctrgrm == NULL)
     {
-        PyErr_SetString (PyExc_MemoryError, "Could not allocate spectrogram buffer.\n");
+        PyErr_SetString (PyExc_MemoryError, "Could not convert spectrogram buffer.\n");
         Py_RETURN_NONE;
     }
 
-    shape = PyArray_SHAPE(spctrgrm);
-    rghnss = (PyArrayObject *) PyArray_NewFromDescr
-                (&PyArray_Type, PyArray_DescrFromType (NPY_DOUBLE), 1,
-                 &shape[1], NULL, NULL, 0, NULL);
+    if (frqs == NULL)
+    {
+        PyErr_SetString (PyExc_MemoryError, "Could not convert frquency buffer.\n");
+        Py_RETURN_NONE;
+    }
+
+    shape   = PyArray_SHAPE(spctrgrm);
+    n_times = shape[0];
+    n_frqs  = shape[1];
+    rghnss  = (PyArrayObject *) PyArray_ZEROS(1, (npy_intp *) &n_times, NPY_DOUBLE, 0);
 
     if (rghnss == NULL)
     {
@@ -47,8 +55,7 @@ ext_roughness (PyObject *self, PyObject *args)
     double *amp_data = PyArray_DATA (spctrgrm);
     double *frq_data = PyArray_DATA (frqs);
     double *r_data   = PyArray_DATA (rghnss);
-    size_t  n_times  = (size_t) shape[0];
-    size_t  n_frqs   = (size_t) shape[1];
+
     for (size_t t = 0; t < n_times; t++)
     {
         r_data[t] = 0.0f;
@@ -66,6 +73,8 @@ ext_roughness (PyObject *self, PyObject *args)
             }
         }
     }
+
+    Py_INCREF (rghnss);
     return (PyObject *) rghnss;
 }
 
