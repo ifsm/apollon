@@ -28,7 +28,7 @@ def _by_samples(x: _Array, n_perseg: int) -> _Array:
     if n_perseg < 1:
         raise ValueError('`n_perchunk` out of range. Expected 1 <= n_perchunk.')
 
-    fit_size = int(_np.ceil(x.size / n_perchunk) * n_perseg)
+    fit_size = int(_np.ceil(x.size / n_perseg) * n_perseg)
     n_ext = fit_size - x.size
     x = _zero_padding(x, n_ext)
 
