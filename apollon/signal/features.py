@@ -23,6 +23,7 @@ def log_attack_time(inp: _Array, fs: int, ons_idx: _Array, wlen:float=0.05) -> _
     """
     wlen = int(fs * wlen)
     segs = _segment.by_onsets(inp, wlen, ons_idx)
-    mx = _np.absolute(_hilbert(segs)).argmax(axis=1)
+    mx = _np.absolute(_hilbert(segs)).argmax(axis=1) / fs
+    mx[mx == 0.0] = 1.0
 
-    return _np.log(mx/fs)
+    return _np.log(mx)
