@@ -22,7 +22,7 @@ import matplotlib.pyplot as _plt
 from scipy.signal import get_window as _get_window
 from deprecation import deprecated as _deprecated
 
-from apollon.signal.tools import amp2db as _amp2db
+from . import tools as _tools
 from .. types import Array as _Array
 from apollon import __version__
 
@@ -167,46 +167,48 @@ class _Spectrum(_Spectrum_Base):
         if not _plt.isinteractive():
             fig.show()
 
-@_deprecated('0.1.3', '0.2', __version__, 'This function is faulty and will be rewritten shortly')
-def fft(signal, fs=None, n=None, window=None):
-    """Return the discrete fourier transform of the input.
+
+def fft(sig, window=None, n_fft=None):
+    """Return the Discrete Fourier Transform for real input.
 
     Params:
-        signal      (array-like) input time domain signal
-        sr          (int) sample rate
-        n           (int) fft length
-        window      (str) name of valid window
+        sig    (array-like)    Input time domain signal
+        fs     (int)           Sample rate
+        n_fft  (int)           FFT length
+        window (str)           Name of window function
 
     Returns:
-        (_spectrum._Spectrum)       Spectrum object
+        (ndarray) FFT bins.
     """
-    sig = _np.atleast_1d(signal)
-    length = len(sig)
+    sig = _np.atleast_2d(sig).astype('float64')
+    n_sig = sig.shape[-1]
 
-    # sample rate
-    if fs is None:
-        fs = length
+    if n_fft is None:
+        n_fft = n_sig
+
+    if window is not None:
+        sig = _np.multiply(sig, _get_window(window, n_sig))
+
+    bins = _np.fft.rfft(sig, n_fft)
+    bins = _np.divide(bins, float(n_fft))
+
+    if n_fft % 2 != 0:
+        bins = _np.multiply(bins[:, :-1], 2.0)
     else:
-        fs = fs
+        bins = _np.multiply(bins, 2.0)
 
-    # fft length
-    if n is None:
-        n = length
-    else:
-        n = n
-
-    if window:
-        w = _get_window(window, length)
-        bins = _np.fft.rfft(sig * w, n) / length * 2
-    else:
-        bins = _np.fft.rfft(sig, n) / length * 2
-
-    return _Spectrum(bins, fs, n, window)
+    return bins.squeeze()
 
 
 class Spectrogram:
-    def __init__(self, inp:_Array, fs:int, window_name:str, n_perseg:int, hop_size:int) -> None:
+    def __init__(self, inp:_Array, fs:int, window:str, n_perseg:int, hop_size:int) -> None:
         """Compute a spectrogram of the input data.
+
+        The input signal is segmented according to `n_perseg` and `hop_size`. To each
+        segment FFT for real input is applied.
+
+        If the segmentation parameters do not match the shape of the input array, the
+        array is cropped.
 
         Args:
             inp      (np.ndarray)    Input signal.
@@ -220,16 +222,15 @@ class Spectrogram:
         """
         self.inp_size = inp.size
         self.fs = fs
-        self.window_name = window_name
+        self.window = window
         self.n_perseg = n_perseg
         self.hop_size = hop_size
-        self.n_overlap  = self.n_perseg - self.hop_size
+        self.n_overlap = self.n_perseg - self.hop_size
 
         self.bins = None
         self.frqs = None
         self.times = None
         self._compute_spectrogram(inp)
-
 
     def _compute_spectrogram(self, inp):
         shp_x = (self.inp_size - self.n_overlap ) // self.hop_size
@@ -239,21 +240,14 @@ class Spectrogram:
         strd_y = inp.strides[0]
 
         inp_strided = _np.lib.stride_tricks.as_strided(inp, (shp_x, shp_y), (strd_x, strd_y))
-        inp_strided = _get_window(self.window_name, shp_y) * inp_strided
 
-        self.bins = _np.fft.rfft(inp_strided) / self.n_perseg
-
-        if shp_y % 2 != 0:
-            self.bins[:, -1] *= 2
-        self.bins *= 2
-
+        self.bins = fft(inp_strided, self.window)
         self.bins = _np.transpose(self.bins)
         self.frqs = _np.fft.rfftfreq(self.n_perseg, 1/self.fs)
 
         t_start = shp_y / 2
         t_stop = inp.size - shp_y / 2 + 1
         self.times = _np.arange(t_start, t_stop, self.hop_size) / float(self.fs)
-
 
     def abs(self):
         return self.__abs__()
