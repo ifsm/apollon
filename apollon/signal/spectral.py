@@ -1,6 +1,3 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
-
 """spectral.py    (c) Michael Blaß 2016
 
 Provide easy access to frequency spectra obtained by the DFT.
@@ -14,17 +11,14 @@ Functions:
 """
 
 
-__author__ = 'Michael Blaß'
-
-
-import numpy as _np
 import matplotlib.pyplot as _plt
+import numpy as _np
 from scipy.signal import get_window as _get_window
-from deprecation import deprecated as _deprecated
 
 from . import tools as _tools
+from . import features as _features
 from .. types import Array as _Array
-from apollon import __version__
+
 
 class _Spectrum_Base:
     def __abs__(self):
@@ -255,12 +249,20 @@ class Spectrogram:
     def power(self):
         return _np.square(self.__abs__())
 
-    def centroid(self):
-        X_pow = _np.maximum(self.power(), _np.finfo('float64').eps)
-        return _np.sum(X_pow.T * self.frqs, axis=1) / X_pow.sum(axis=0)
+    def centroid(self, power=True):
+        if power is True:
+            inp = self.power()
+        else:
+            inp = self.abs()
 
-    def flux(self, hr=True):
-        return _np.maximum(_np.diff(self.abs(), axis=1), 0)
+        return _features.spectral_centroid(inp.T, self.frqs)
+
+    def flux(self, subband=False):
+        flux = _features.spectral_flux(self.abs())
+        if subband is True:
+            return flux
+        return flux.sum(axis=0)
+
 
     def plot(self, cmap:str = 'nipy_spectral', cbar:bool = True,
              figsize:tuple = (8, 4)) -> tuple:
