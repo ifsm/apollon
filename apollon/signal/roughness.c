@@ -42,8 +42,8 @@ ext_roughness (PyObject *self, PyObject *args)
     }
 
     shape   = PyArray_SHAPE(spctrgrm);
-    n_times = shape[0];
-    n_frqs  = shape[1];
+    n_frqs  = shape[0];
+    n_times = shape[1];
     rghnss  = (PyArrayObject *) PyArray_ZEROS(1, (npy_intp *) &n_times, NPY_DOUBLE, 0);
 
     if (rghnss == NULL)
@@ -69,7 +69,9 @@ ext_roughness (PyObject *self, PyObject *args)
                 {
                     break;
                 }
-                r_data[t] += _roughness (d_frq, amp_data[i*n_frqs+t], amp_data[j*n_frqs+t]);
+                // printf ("t: %zu/%zu\t i: %zu/%zu\t j: %zu/%zut a1: %zu/%zu\t a2: %zu/%zu\t\n", t, n_times, i, n_frqs-1, j, n_frqs, i*n_times+t, n_times*n_frqs, j*n_times+t, n_times*n_frqs);
+                // printf ("f1: %f, f2: %f, a1: %f, a2: %f\n", frq_data[i], frq_data[j], amp_data[i*n_times+t], amp_data[j*n_times+t]);
+                r_data[t] += _roughness (d_frq, amp_data[i*n_times+t], amp_data[j*n_times+t]);
             }
         }
     }
@@ -95,18 +97,18 @@ PF_Methods[] = {
 };
 
 static struct PyModuleDef
-psycho_features_module = {
+roughness_module = {
     PyModuleDef_HEAD_INIT,
-    "psycho_features",
+    "roughness",
     NULL,
     -1,
     PF_Methods
 };
 
 PyMODINIT_FUNC
-PyInit_psycho_features (void)
+PyInit_roughness (void)
 {
     import_array ();
-    return PyModule_Create (&psycho_features_module);
+    return PyModule_Create (&roughness_module);
 }
 
