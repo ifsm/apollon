@@ -17,17 +17,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import pathlib
-import typing
-import numpy as np
+from typing import Any, Dict, Generator, Iterable, List, Tuple, Union
 
 
-Array = np.ndarray    # pylint: disable=C0103
+Array = Iterable
 
-ArrayOrStr = typing.TypeVar('ArrayOrStr', str, Array)
-IterOrNone = typing.TypeVar('IterOrNone', typing.Iterable, None)
-FloatOrNone = typing.TypeVar('FloatOrNone', float, None)
-StrOrNone = typing.TypeVar('StrOrNone', str, None)
+ArrayOrStr  = Union[Array, str]
+IterOrNone  = Union[Iterable, None]
+FloatOrNone = Union[float, None]
+StrOrNone   = Union[str, None]
 
-ParserType = typing.Tuple[typing.Dict[str, typing.Any], typing.List[str]]
-PathType = typing.TypeVar('PathType', str, pathlib.Path)
-PathGen = typing.Generator[PathType, None, None]
+ParserType = Tuple[Dict[str, Any], List[str]]
+PathType   = Union[str, pathlib.Path]
+PathGen    = Generator[PathType, None, None]
