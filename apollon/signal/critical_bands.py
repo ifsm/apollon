@@ -104,13 +104,18 @@ def weight_factor(z):
     return _np.maximum(base, slope)
 
 
-def sharpness(cbr_spctrm):
-   """
-   Calculate a measure for the perception of auditory sharpness from a spectrogram
-   of critical band levels.
-   """
-   loud_specific = _np.maximum(specific_loudness(cbr_spctrm), _np.finfo('float64').eps)
-   loud_total = loud_specific.sum(axis=0)
+def sharpness(cbr_spctrm: _Array) -> _Array:
+    """Calculate a measure for the perception of auditory sharpness from a spectrogram
+    of critical band levels.
 
-   z = _np.arange(1, 25)
-   return ((z * weight_factor(z)) @ cbr_spctrm) / loud_total
+    Args:
+        cbr_spctrm (ndarray)    Critical band rate Spectrogram.
+
+    Returns:
+        (ndarray)    Sharpness for each time instant of the cbr_spctrm
+    """
+    loud_specific = _np.maximum(specific_loudness(cbr_spctrm), _np.finfo('float64').eps)
+    loud_total = loud_specific.sum(axis=0)
+
+    z = _np.arange(1, 25)
+    return ((z * weight_factor(z)) @ cbr_spctrm) / loud_total
