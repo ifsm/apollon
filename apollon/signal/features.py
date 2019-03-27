@@ -3,7 +3,7 @@ from scipy.signal import hilbert as _hilbert
 
 from .. import segment as _segment
 from .. types import Array as _Array
-
+from .  import critical_bands as _cb
 
 def spectral_centroid(inp: _Array, frqs: _Array) -> _Array:
     """Estimate the spectral centroid frequency.
@@ -25,6 +25,7 @@ def spectral_centroid(inp: _Array, frqs: _Array) -> _Array:
     total_nrgy[total_nrgy == 0.0] = 1.0
 
     return _np.divide(weighted_nrgy, total_nrgy)
+
 
 def spectral_flux(inp: _Array) -> _Array:
     """Estimate the spectral flux
@@ -61,3 +62,17 @@ def log_attack_time(inp: _Array, fs: int, ons_idx: _Array, wlen:float=0.05) -> _
     mx[mx == 0.0] = 1.0
 
     return _np.log(mx)
+
+
+def sharpness(inp: _Array, frqs: _Array) -> _Array:
+    """Calculate a measure for the perception of auditory sharpness from a spectrogram.
+
+    Args:
+        inp  (ndarray)    Two-dimensional input array. Assumed to be an magnitude spectrogram.
+        frqs (ndarray)    Frequency axis of the spectrogram.
+
+    Returns:
+        (ndarray)    Sharpness for each time instant of the spectragram.
+    """
+    cbrs = _cb.filter_bank(frqs) @ inp
+    return _cb.sharpness(cbrs)
