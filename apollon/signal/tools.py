@@ -19,6 +19,7 @@ Functions:
     noise               Generate withe noise.
     sinusoid            Generate sinusoidal signal.
     zero_padding        Append array with zeros.
+    trim_spectrogram    Trim spectrogram to a frequency range.
 """
 
 
@@ -226,3 +227,23 @@ def zero_padding(sig, n):
     container = _np.zeros(sig.size+n)
     container[:sig.size] = sig
     return container
+
+
+def trim_spectrogram(inp: _Array, frqs: _Array, low: float, high: float) -> _Array:
+    """Trim spectrogram and frequency array to the frequency range [low, high].
+
+    Args:
+        inp  (ndarray)    Input spectrogram.
+        frqs (ndarray)    Spectrogram frequency axis.
+        low  (float)      Lower trim boundary.
+        high (float)      Upper trim boundary.
+
+    Returns:
+        (tuple)    (trimmed_spectrogram, trimmed_frqs)
+    """
+    lower_bound = _np.maximum(low, frqs[0])
+    upper_bound = _np.minimum(high, frqs[-1])
+
+    clip_range = _np.logical_and(lower_bound <= frqs, frqs <= upper_bound)
+
+    return inp[clip_range], frqs[clip_range]
