@@ -2,8 +2,11 @@ import numpy as _np
 from scipy.signal import hilbert as _hilbert
 
 from .. import segment as _segment
+from .. tools import array2d_fsum
 from .. types import Array as _Array
 from .  import critical_bands as _cb
+from .  roughness import roughness
+from .  tools import trim_spectrogram
 
 def spectral_centroid(inp: _Array, frqs: _Array) -> _Array:
     """Estimate the spectral centroid frequency.
@@ -27,17 +30,77 @@ def spectral_centroid(inp: _Array, frqs: _Array) -> _Array:
     return _np.divide(weighted_nrgy, total_nrgy)
 
 
-def spectral_flux(inp: _Array) -> _Array:
+def spectral_flux(inp: _Array, delta:float=1.0) -> _Array:
     """Estimate the spectral flux
 
     Args:
-        inp (ndarray)    Input. Each row is assumend FFT bins.
+        inp   (ndarray)    Input. Each row is assumend FFT bins.
+        delta (float)      Sample spacing.
 
     Returns:
         (ndarray)    Spectral flux.
     """
     inp = _np.atleast_2d(inp).astype('float64')
-    return _np.maximum(_np.diff(inp, axis=-1), 0).squeeze()
+    return _np.maximum(_np.gradient(inp, delta, axis=-1), 0).squeeze()
+
+
+def spectral_shape(inp, frqs, low: float = 50, high: float = 16000):
+    """Compute low-level spectral shape descriptors.
+
+    This function computes the first four central moments of
+    the input spectrum. If input is two-dimensional, the first
+    axis is assumed to represent frequency.
+
+    The central moments are:
+        - Spectral Centroid (SC)
+        - Spectral Spread (SSP),
+        - Spectral Skewness (SSK)
+        - Spectral Kurtosis (SKU).
+
+    Spectral Centroid represents the center of gravity of the spectrum.
+    It correlates well with the perception of auditory brightness.
+
+    Spectral Spread is a measure for the frequency deviation around the
+    centroid.
+
+    Spectral Skewness is a measure of spectral symmetry. For values of
+    SSK = 0 the spectral distribution is exactly symmetric. SSK > 0 indicates
+    more power in the frequency domain below the centroid and vice versa.
+
+    Spectral Kurtosis is a measure of flatness. The lower the value, the faltter
+    the distribution.
+
+    Args:
+        inp  (ndarray)    Input spectrum or spectrogram.
+        frqs (ndarray)    Frequency axis.
+        low  (float)      Lower cutoff frequency.
+        high (float)      Upper cutoff frequency.
+
+    Returns:
+        (ndarray)    First axis represents the measures, second axis
+                     their values for each time step.
+    """
+
+    if inp.ndim < 2:
+        inp = inp[:, None]
+
+    vals, frqs = trim_spectrogram(inp, frqs, 50, 16000)
+    out = _np.empty((4, inp.shape[1]), dtype='float')
+
+    total_nrgy = array2d_fsum(vals)
+
+    out[0] = frqs @ vals / total_nrgy
+    deviation = frqs[:, None] - out[0]
+
+    out[1] = array2d_fsum(_np.power(deviation, 2) * vals)
+    out[2] = array2d_fsum(_np.power(deviation, 3) * vals)
+    out[3] = array2d_fsum(_np.power(deviation, 4) * vals)
+
+    out[1] = _np.sqrt(out[1] / total_nrgy)
+    out[2] = out[2] / total_nrgy / _np.power(out[1], 3)
+    out[3] = out[3] / total_nrgy / _np.power(out[1], 4)
+
+    return out
 
 
 def log_attack_time(inp: _Array, fs: int, ons_idx: _Array, wlen:float=0.05) -> _Array:
