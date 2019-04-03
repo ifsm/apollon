@@ -18,14 +18,15 @@ Functions:
     time_stamp          Return time stamp.
     within              Test wether val is in window.
     within_any          Test wether val is in any of windows.
+    array2d_fsum        Sum array entry with machine precision.
 """
 
 
 from datetime import datetime as _datetime
 import typing as _typing
-
+from . types import Array as _Array
 import numpy as _np
-
+import math
 from apollon import _defaults
 from apollon import types as apt
 
@@ -238,3 +239,13 @@ def within_any(val: float, windows: _np.ndarray) -> bool:
     c = _np.logical_and(a, b)
 
     return np.any(c)
+
+
+def array2d_fsum(arr: _Array, axis: int = 0) -> _Array:
+    """Return math.fsum along the specifyed axis."""
+    if axis == 0:
+        vals = arr.T
+    else:
+        vals = arr
+
+    return _np.array([math.fsum(ax_slice) for ax_slice in vals])
