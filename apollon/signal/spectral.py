@@ -185,7 +185,7 @@ def fft(sig, window=None, n_fft=None):
             win_func = getattr(_np, window)
         except AttributeError:
             raise AttributeError('Unknown window function `{}`.'.format(window))
-        sig = _np.multiply(sig, winfunc(n_sig))
+        sig = _np.multiply(sig, win_func(n_sig))
 
     bins = _np.fft.rfft(sig, n_fft)
     bins = _np.divide(bins, float(n_fft))
@@ -199,7 +199,12 @@ def fft(sig, window=None, n_fft=None):
 
 
 class Spectrogram:
-    def __init__(self, inp:_Array, fs:int, window:str, n_perseg:int, hop_size:int) -> None:
+    """Compute a spectrogram from an one-dimensional input signal."""
+
+    # pylint: disable=too-many-instance-attributes, too-many-arguments
+
+    def __init__(self, inp:_Array, fps: int, window: str, n_perseg: int, hop_size: int,
+                 n_fft: int = None) -> None:
         """Compute a spectrogram of the input data.
 
         The input signal is segmented according to `n_perseg` and `hop_size`. To each
@@ -209,29 +214,49 @@ class Spectrogram:
         array is cropped.
 
         Args:
-            inp      (np.ndarray)    Input signal.
-            fs       (int)           Sampling frequency of input signal.
-            window   (str)           Name of window function.
-            n_perseg (int)           Number of samples per DFT.
-            hop_size (int)           Number of samples to shift the window.
+            inp      (ndarray)    Input signal.
+            fps      (int)        Sampling frequency of input signal.
+            window   (str)        Name of window function.
+            n_perseg (int)        Number of samples per DFT.
+            hop_size (int)        Number of samples to shift the window.
+            n_fft    (int)        Number of FFT bins.
 
         Returns:
             (Spectrogram)
         """
         self.inp_size = inp.size
-        self.fs = fs
+        self.fps = fps
         self.window = window
         self.n_perseg = n_perseg
         self.hop_size = hop_size
         self.n_overlap = self.n_perseg - self.hop_size
 
-        self.bins = None
-        self.frqs = None
-        self.times = None
-        self._compute_spectrogram(inp)
+        if n_fft is None:
+            self.n_fft = self.n_perseg
+        else:
+            self.n_fft = n_fft
 
-    def _compute_spectrogram(self, inp):
-        shp_x = (self.inp_size - self.n_overlap ) // self.hop_size
+        self.d_frq = self.fps / self.n_fft
+        self.d_time = self.hop_size / self.fps
+
+        self.times = self._compute_time_axis(inp)
+        self.frqs = _np.fft.rfftfreq(self.n_fft, 1.0/self.fps)
+        self.shape = (self.frqs.size, self.times.size)
+        self.bins = self._compute_spectrogram(inp)
+
+    def _compute_time_axis(self, inp: _Array) -> _Array:
+        """Compute the time axis of the spectrogram"""
+        t_start = self.n_perseg / 2
+        t_stop = inp.size - self.n_perseg / 2 + 1
+        return _np.arange(t_start, t_stop, self.hop_size) / float(self.fps)
+
+    def _compute_spectrogram(self, inp: _Array) -> _Array:
+        """Core spectrogram computation.
+
+        Args:
+            inp (ndarray)    Input signal.
+        """
+        shp_x = (self.inp_size - self.n_overlap) // self.hop_size
         shp_y = self.n_perseg
 
         strd_x = self.hop_size * inp.strides[0]
@@ -239,18 +264,14 @@ class Spectrogram:
 
         inp_strided = _np.lib.stride_tricks.as_strided(inp, (shp_x, shp_y), (strd_x, strd_y))
 
-        self.bins = fft(inp_strided, self.window)
-        self.bins = _np.transpose(self.bins)
-        self.frqs = _np.fft.rfftfreq(self.n_perseg, 1/self.fs)
-
-        t_start = shp_y / 2
-        t_stop = inp.size - shp_y / 2 + 1
-        self.times = _np.arange(t_start, t_stop, self.hop_size) / float(self.fs)
+        return _np.transpose(fft(inp_strided, self.window, self.n_fft))
 
     def abs(self):
+        """Return the magnitude spectrogram."""
         return self.__abs__()
 
     def power(self):
+        """Return the power spectrogram."""
         return _np.square(self.__abs__())
 
     def centroid(self, power=True):
@@ -268,12 +289,16 @@ class Spectrogram:
         return flux.sum(axis=0)
 
 
-    def plot(self, cmap:str = 'nipy_spectral', cbar:bool = True,
-             figsize:tuple = (8, 4)) -> tuple:
-        """Plot the spectrogram in dB scaling.
+    def plot(self, cmap: str = 'nipy_spectral', log_frq: float = None,
+             low: float = None, high: float = None, figsize: tuple = (14, 6),
+             cbar: bool = True ) -> tuple:
+        """Plot the spectrogram in dB scaling. The 0-frequency component
+        is ommitted in plots.
 
         Args:
             cmap    (str)      Colormarp name.
+            log_frq (float)    If None, plot the frequency axis linearly, else
+                               plot it in log domain, centered on `log_frq` Hz.
             cbar    (bool)     Display a color scale if True.
             figsize (tuple)    Width and height of figure.
 
@@ -283,11 +308,27 @@ class Spectrogram:
         fig, ax = _plt.subplots(1, figsize=figsize)
         ax.set_xlabel('Time [s]')
         ax.set_ylabel('Frequency [Hz]')
-        cmesh = ax.pcolormesh(self.times, self.frqs, _tools.amp2db(self.abs()), cmap=cmap)
+
+        if low is None:
+            low = 50
+
+        if high is None:
+            high = 16000
+
+        low_idx = int(_np.floor(low/self.d_frq))
+        high_idx = int(_np.floor(high/self.d_frq))
+
+        vals = _tools.amp2db(self.abs()[low_idx:high_idx, :])
+        cmesh_frqs = _np.append(self.frqs[low_idx:high_idx], self.frqs[-1]+self.d_frq)
+        if log_frq is not None:
+            cmesh_frqs = _np.log2(cmesh_frqs / log_frq)
+
+        cmesh_times = _np.append(self.times, self.times[-1]+self.d_time)
+        cmesh = ax.pcolormesh(cmesh_times, cmesh_frqs, vals, cmap=cmap)
 
         if cbar:
-            cb = fig.colorbar(cmesh, ax=ax)
-            cb.set_label('db SPL')
+            clr_bar = fig.colorbar(cmesh, ax=ax)
+            clr_bar.set_label('db SPL')
 
         return fig, ax
 
@@ -295,19 +336,27 @@ class Spectrogram:
         return _np.absolute(self.bins)
 
 
-def stft(inp: _Array, fs:int, window:str = 'hanning', n_perseg:int = 512, hop_size:int = 256):
+def stft(inp: _Array, fps: int, window: str = 'hanning', n_perseg: int = 512, hop_size: int = None,
+         n_fft: int = None) -> Spectrogram:
     """Perform Short Time Fourier Transformation of `inp`
 
     `inp` is assumed to be an one-dimensional array of real values.
 
     Args:
-        inp      (np.ndarray)    Input signal.
-        fs       (int)           Sampling frequency of input signal.
-        window   (str)           Name of window function.
-        n_perseg (int)           Number of samples per DFT.
-        hop_size (int)           Number of samples to shift the window.
+        inp      (ndarray)    Input signal.
+        fps      (int)        Sampling frequency of input signal.
+        window   (str)        Name of window function.
+        n_perseg (int)        Number of samples per DFT.
+        hop_size (int)        Number of samples to shift the window.
+        n_fft    (int)        Number of FFT bins.
 
     Returns:
         (Spectrogram)
     """
-    return Spectrogram(inp, fs, window, n_perseg, hop_size)
+
+    # pylint: disable=too-many-arguments
+
+    if hop_size is None:
+        hop_size = n_perseg // 2
+
+    return Spectrogram(inp, fps, window, n_perseg, hop_size, n_fft)
