@@ -258,7 +258,7 @@ class Spectrogram:
         return _features.spectral_centroid(inp.T, self.frqs)
 
     def flux(self, subband=False):
-        flux = _features.spectral_flux(self.abs())
+        flux = _features.spectral_flux(self.abs(), self.times)
         if subband is True:
             return flux
         return flux.sum(axis=0)
@@ -279,7 +279,7 @@ class Spectrogram:
         fig, ax = _plt.subplots(1, figsize=figsize)
         ax.set_xlabel('Time [s]')
         ax.set_ylabel('Frequency [Hz]')
-        cmesh = ax.pcolormesh(self.times, self.frqs, _amp2db(self.abs()), cmap=cmap)
+        cmesh = ax.pcolormesh(self.times, self.frqs, _tools.amp2db(self.abs()), cmap=cmap)
 
         if cbar:
             cb = fig.colorbar(cmesh, ax=ax)
