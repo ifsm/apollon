@@ -9,14 +9,12 @@ Classes:
 Functions:
     fft                 Easy to use discrete fourier transform
 """
-
-
 import matplotlib.pyplot as _plt
 import numpy as _np
 from scipy.signal import get_window as _get_window
 
-from . import tools as _tools
 from . import features as _features
+from . import tools as _tools
 from .. types import Array as _Array
 
 
@@ -167,12 +165,14 @@ def fft(sig, window=None, n_fft=None):
 
     Params:
         sig    (array-like)    Input time domain signal
-        fs     (int)           Sample rate
         n_fft  (int)           FFT length
         window (str)           Name of window function
 
     Returns:
         (ndarray) FFT bins.
+
+    Raises:
+        AttributeError
     """
     sig = _np.atleast_2d(sig).astype('float64')
     n_sig = sig.shape[-1]
@@ -181,7 +181,11 @@ def fft(sig, window=None, n_fft=None):
         n_fft = n_sig
 
     if window is not None:
-        sig = _np.multiply(sig, _get_window(window, n_sig))
+        try:
+            win_func = getattr(_np, window)
+        except AttributeError:
+            raise AttributeError('Unknown window function `{}`.'.format(window))
+        sig = _np.multiply(sig, winfunc(n_sig))
 
     bins = _np.fft.rfft(sig, n_fft)
     bins = _np.divide(bins, float(n_fft))
