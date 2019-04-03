@@ -41,10 +41,10 @@ ext_roughness (PyObject *self, PyObject *args)
         Py_RETURN_NONE;
     }
 
-    shape   = PyArray_SHAPE(spctrgrm);
+    shape   = PyArray_SHAPE (spctrgrm);
     n_frqs  = shape[0];
     n_times = shape[1];
-    rghnss  = (PyArrayObject *) PyArray_ZEROS(1, (npy_intp *) &n_times, NPY_DOUBLE, 0);
+    rghnss  = (PyArrayObject *) PyArray_ZEROS (1, (npy_intp *) &n_times, NPY_DOUBLE, 0);
 
     if (rghnss == NULL)
     {
@@ -111,4 +111,3 @@ PyInit_roughness (void)
     import_array ();
     return PyModule_Create (&roughness_module);
 }
-
