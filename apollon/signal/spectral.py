@@ -315,13 +315,14 @@ class Spectrogram:
         if high is None:
             high = 16000
 
-        low_idx = int(_np.floor(low/self.d_frq))
+        low_idx = int(_np.floor(low/self.d_frq)) + 1
         high_idx = int(_np.floor(high/self.d_frq))
 
         vals = _tools.amp2db(self.abs()[low_idx:high_idx, :])
-        cmesh_frqs = _np.append(self.frqs[low_idx:high_idx], self.frqs[-1]+self.d_frq)
+        frq_range = self.frqs[low_idx:high_idx]
+        cmesh_frqs = _np.append(frq_range, frq_range[-1]+self.d_frq)
         if log_frq is not None:
-            cmesh_frqs = _np.log2(cmesh_frqs / log_frq)
+            cmesh_frqs = _np.log2(cmesh_frqs/log_frq)
 
         cmesh_times = _np.append(self.times, self.times[-1]+self.d_time)
         cmesh = ax.pcolormesh(cmesh_times, cmesh_frqs, vals, cmap=cmap)
