@@ -1,9 +1,9 @@
 """
 Classes:
-    _AudioData
+    AudioFile   Representation of an audio file.
 
 Functions:
-    loadwav         Load .wav file.
+    loadaudio   Load .wav file.
 """
 import pathlib as _pathlib
 
@@ -56,7 +56,7 @@ class AudioFile:
         return self.data[item]
 
 
-def loadwav(path, norm=True):
+def loadaudio(path, norm=True):
     """Load a .wav file.
 
     Params:
