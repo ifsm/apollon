@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+
+"""Launch the apollon main app """
+
+import sys
+import argparse
+import subprocess
+
+import apollon
+from apollon import commands
+
+
+_valid_subcommand = ('features', 'onset', 'hmm', 'som')
+
+
+def _parse_cml(argv):
+    parser = argparse.ArgumentParser('Apollon main app')
+
+    parser.add_argument('subcommand', type=str, nargs=1, choices=_valid_subcommand)
+    parser.add_argument('--version', action='version', version=apollon.__version__,
+                        help='Disply apollon version.')
+
+    if len(argv) > 1:
+        return parser.parse_known_args(argv[1:])
+    else:
+        return parser.parse_known_args(argv)
+
+
+def _exec_subcommand(sub_cmd, argv):
+    cmd = 'apollon_' + sub_cmd
+    subroutine = getattr(commands, cmd)
+
+    return subroutine.main(argv)
+
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv
+
+    args, scmd_args= _parse_cml(argv)
+
+    if args.subcommand:
+        return _exec_subcommand(args.subcommand[0], scmd_args)
+
+if __name__ == '__main__':
+    sys.exit(main())
