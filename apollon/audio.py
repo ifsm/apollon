@@ -5,75 +5,55 @@ Classes:
 Functions:
     loadwav         Load .wav file.
 """
-
+import pathlib as _pathlib
 
 import numpy as _np
+import matplotlib.pyplot as plt
 import soundfile as _sf
 
-from apollon.io import WavFileAccessControl as _WavFileAccessControl
 from apollon.signal.tools import normalize
+from . types import Array as _Array
 
 
-class _AudioData:
-
-    __slots__ = ['_fs', '_data']
-
-    # Descriptor attribute
-    file = _WavFileAccessControl()
-
-    def __init__(self, file_name, norm=True):
-        """Representation of an audio file.
-
-        Params:
-            file_name   (str)   Name of file.
-            norm        (bool)  If True, signal will be normalized.
-
-        Return:
-            (AudioData) Object
-        """
-        self.file = file_name
-
-        self._data, self._fs = _sf.read(file_name, dtype='float64')
-
-        if self._data.ndim == 2:
-            self._data = self._data.sum(axis=1) / 2
-
-        if norm:
-            self._data = normalize(self._data)
-
-    @property
-    def fs(self) -> int:
-        """Return sample rate."""
-        return self._fs
-
-    @property
-    def data(self, n: int = None) -> _np.ndarray:
-        """Return the audio frames as ints.
+class AudioFile:
+    """Representation of an audio file.
+    """
+    def __init__(self, path: str, norm: bool = True, mono: bool = True) -> None:
+        """Load an audio file.
 
         Args:
-            n: (int)    Return only the first n frames (default = None)
-
-        Returns:
-            (np.ndarray) frames
+            path (str)     Path to file.
+            norm (bool)    If True, signal will be normalized ]-1, 1[.
+            mono (bool)    If True, mixdown all channels.
         """
-        return self._data[:n]
+        self.file = _pathlib.Path(path)
+        self.data, self.fps = _sf.read(self.file, dtype='float')
+        self.size = self.data.shape[0]
+
+        if mono and self.data.ndim > 1:
+            self.data = self.data.sum(axis=1) / self.data.shape[1]
+
+        if norm:
+            self.data = normalize(self.data)
 
 
-    def plot(self, tickunit='seconds'):
-        _aplot.signal(self, xaxis=tickunit)
+    def plot(self):
+        fig = plt.figure(figsize=(14, 7))
+        ax1 = fig.add_subplot(1,1,1)
+        ax1.plot(self.data)
 
     def __str__(self):
-        return "<{}, fs: {}, N: {}>" \
-        .format(self.file.name, self.fs, len(self))
+        return "<{}, {} kHz, {:.3} s>" \
+        .format(self.file.name, self.fps/1000, self.size/self.fps)
 
     def __repr__(self):
         return self.__str__()
 
     def __len__(self):
-        return self._data.size
+        return self.size
 
     def __getitem__(self, item):
-        return self._data[item]
+        return self.data[item]
 
 
 def loadwav(path, norm=True):
