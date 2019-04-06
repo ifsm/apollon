@@ -77,30 +77,31 @@ def spectral_shape(inp, frqs, low: float = 50, high: float = 16000):
         high (float)      Upper cutoff frequency.
 
     Returns:
-        (ndarray)    First axis represents the measures, second axis
-                     their values for each time step.
+        (tuple)    (centroid, spread, skewness, kurtosis)
     """
 
     if inp.ndim < 2:
         inp = inp[:, None]
 
     vals, frqs = trim_spectrogram(inp, frqs, 50, 16000)
-    out = _np.empty((4, inp.shape[1]), dtype='float')
 
     total_nrgy = array2d_fsum(vals)
+    total_nrgy[total_nrgy == 0.0] = 1.0    # Total energy is zero iff input signal is all zero.
+                                           # Replace these bin values with 1, so division by
+                                           # total energy will not lead to nans.
 
-    out[0] = frqs @ vals / total_nrgy
+    centroid = frqs @ vals / total_nrgy
     deviation = frqs[:, None] - out[0]
 
-    out[1] = array2d_fsum(_np.power(deviation, 2) * vals)
-    out[2] = array2d_fsum(_np.power(deviation, 3) * vals)
-    out[3] = array2d_fsum(_np.power(deviation, 4) * vals)
+    spread = array2d_fsum(_np.power(deviation, 2) * vals)
+    skew   = array2d_fsum(_np.power(deviation, 3) * vals)
+    kurt   = array2d_fsum(_np.power(deviation, 4) * vals)
 
-    out[1] = _np.sqrt(out[1] / total_nrgy)
-    out[2] = out[2] / total_nrgy / _np.power(out[1], 3)
-    out[3] = out[3] / total_nrgy / _np.power(out[1], 4)
+    spread = _np.sqrt(spread / total_nrgy)
+    skew   = out[2] / total_nrgy / _np.power(spread, 3)
+    kurt   = out[3] / total_nrgy / _np.power(spread, 4)
 
-    return out
+    return centroid, spread, skew, kurt
 
 
 def log_attack_time(inp: _Array, fs: int, ons_idx: _Array, wlen:float=0.05) -> _Array:
