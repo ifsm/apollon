@@ -9,6 +9,7 @@ Classes:
 Functions:
     fft                 Easy to use discrete fourier transform
 """
+import json as _json
 import matplotlib.pyplot as _plt
 import numpy as _np
 from scipy.signal import get_window as _get_window
@@ -241,8 +242,8 @@ class Spectrogram:
 
         self.times = self._compute_time_axis(inp)
         self.frqs = _np.fft.rfftfreq(self.n_fft, 1.0/self.fps)
-        self.shape = (self.frqs.size, self.times.size)
         self.bins = self._compute_spectrogram(inp)
+        self.shape = _SpectralShape(*_features.spectral_shape(self.power(), self.frqs))
 
     def _compute_time_axis(self, inp: _Array) -> _Array:
         """Compute the time axis of the spectrogram"""
@@ -287,7 +288,6 @@ class Spectrogram:
         if subband is True:
             return flux
         return flux.sum(axis=0)
-
 
     def plot(self, cmap: str = 'nipy_spectral', log_frq: float = None,
              low: float = None, high: float = None, figsize: tuple = (14, 6),
@@ -361,3 +361,21 @@ def stft(inp: _Array, fps: int, window: str = 'hanning', n_perseg: int = 512, ho
         hop_size = n_perseg // 2
 
     return Spectrogram(inp, fps, window, n_perseg, hop_size, n_fft)
+
+
+class _SpectralShape:
+    def __init__(self, centroid, spread, skewness, kurtosis):
+        self.centroid = centroid
+        self.spread = spread
+        self.skewness = skewness
+        self.kurtosis = kurtosis
+
+    def as_array(self):
+        """Return shape parameters stacked to a 2-dimensional array."""
+
+    def to_json(self):
+        """Return shape parameters as JSON-serializable object."""
+        out = {}
+        for key, value in self.__dict__.items():
+            out[key] = _json.dumps(value, cls=_io.ArrayEncoder)
+        return out
