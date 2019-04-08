@@ -91,15 +91,15 @@ def spectral_shape(inp, frqs, low: float = 50, high: float = 16000):
                                            # total energy will not lead to nans.
 
     centroid = frqs @ vals / total_nrgy
-    deviation = frqs[:, None] - out[0]
+    deviation = frqs[:, None] - centroid
 
     spread = array2d_fsum(_np.power(deviation, 2) * vals)
     skew   = array2d_fsum(_np.power(deviation, 3) * vals)
     kurt   = array2d_fsum(_np.power(deviation, 4) * vals)
 
     spread = _np.sqrt(spread / total_nrgy)
-    skew   = out[2] / total_nrgy / _np.power(spread, 3)
-    kurt   = out[3] / total_nrgy / _np.power(spread, 4)
+    skew   = skew / total_nrgy / _np.power(spread, 3)
+    kurt   = kurt / total_nrgy / _np.power(spread, 4)
 
     return centroid, spread, skew, kurt
 
