@@ -18,7 +18,7 @@ from . types import Array as _Array
 class AudioFile:
     """Representation of an audio file.
     """
-    def __init__(self, path: str, norm: bool = True, mono: bool = True) -> None:
+    def __init__(self, path: str, norm: bool = False, mono: bool = True) -> None:
         """Load an audio file.
 
         Args:
@@ -56,7 +56,7 @@ class AudioFile:
         return self.data[item]
 
 
-def load_audio(path, norm: bool = False, mono: bool = False) -> AudioFile:
+def load_audio(path, norm: bool = False, mono: bool = True) -> AudioFile:
     """Load an audio file.
 
     Params:
