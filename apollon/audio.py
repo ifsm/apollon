@@ -56,14 +56,15 @@ class AudioFile:
         return self.data[item]
 
 
-def load_audio(path, norm=True):
-    """Load a .wav file.
+def load_audio(path, norm: bool = False, mono: bool = False) -> AudioFile:
+    """Load an audio file.
 
     Params:
-        path    (str or fobject)
-        norm    (bool) True if data should be normalized.
+        path (str)     Path to audio file.
+        norm (bool)    True if data should be normalized.
+        mono (bool)    If True, mixdown channels.
 
     Return:
-        (_AudioData) object.
+        (AudioFile) object.
     """
     return AudioFile(path, norm)
