@@ -44,7 +44,7 @@ class ArrayEncoder(json.JSONEncoder):
         Returns:
             (dict)
         """
-        if isinstance(o, apt.Array):
+        if isinstance(o, _np.ndarray):
             out = {'__ndarray__': True,
                    '__dtype__': o.dtype.str,
                    'data': o.tolist()}
@@ -91,7 +91,8 @@ class PoissonHmmEncoder(ArrayEncoder):
                 except AttributeError:
                     items[attr] = getattr(o, attr)
             return items
-        return io.ArrayEncoder.default(self, o)
+        return ArrayEncoder.default(self, o)
+
 
 
 class WavFileAccessControl:
