@@ -2,7 +2,7 @@ import numpy as _np
 from scipy.signal.windows import get_window as _get_window
 
 from .. types import Array as _Array
-
+from .. import tools as _tools
 
 def frq2cbr(frq) -> _Array:
     """Transform frquencies in Hz to critical band rates in Bark.
@@ -57,7 +57,7 @@ def total_loudness(cbr: _Array):
     Returns:
         (ndarray)    Total loudness.
     """
-    return specific_loudness(cbr).sum(axis=0)
+    return _tools.array2d_fsum(specific_loudness(cbr), axis=0)
 
 
 def filter_bank(frqs):
@@ -115,7 +115,7 @@ def sharpness(cbr_spctrm: _Array) -> _Array:
         (ndarray)    Sharpness for each time instant of the cbr_spctrm
     """
     loud_specific = _np.maximum(specific_loudness(cbr_spctrm), _np.finfo('float64').eps)
-    loud_total = loud_specific.sum(axis=0)
+    loud_total = _tools.array2d_fsum(loud_specific, axis=0)
 
     z = _np.arange(1, 25)
     return ((z * weight_factor(z)) @ cbr_spctrm) / loud_total
