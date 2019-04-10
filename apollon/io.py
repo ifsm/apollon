@@ -52,7 +52,7 @@ class ArrayEncoder(_json.JSONEncoder):
         return _json.JSONEncoder.default(self, o)
 
 
-def decode_array(_json_data: dict) -> typing.Any:
+def decode_array(json_data: dict) -> typing.Any:
     """Properly decodes numpy arrays from a JSON data stream.
 
     This method need to be called on the return value of ``json.load`` or ``json.loads``.
