@@ -16,17 +16,17 @@ Functions:
 """
 
 from contextlib import contextmanager as _contextmanager
-import json
-import pathlib
+import json as _json
+import pathlib as _pathlib
 import pickle
 import typing
 
 import numpy as _np
 
-import apollon.types as apt
+from . import types as _types
 
 
-class ArrayEncoder(json.JSONEncoder):
+class ArrayEncoder(_json.JSONEncoder):
     # pylint: disable=E0202
     # Issue: False positive for E0202 (method-hidden) #414
     # https://github.com/PyCQA/pylint/issues/414
@@ -49,10 +49,10 @@ class ArrayEncoder(json.JSONEncoder):
                    '__dtype__': o.dtype.str,
                    'data': o.tolist()}
             return out
-        return json.JSONEncoder.default(self, o)
+        return _json.JSONEncoder.default(self, o)
 
 
-def decode_array(json_data: dict) -> typing.Any:
+def decode_array(_json_data: dict) -> typing.Any:
     """Properly decodes numpy arrays from a JSON data stream.
 
     This method need to be called on the return value of ``json.load`` or ``json.loads``.
@@ -94,6 +94,29 @@ class PoissonHmmEncoder(ArrayEncoder):
         return ArrayEncoder.default(self, o)
 
 
+def dump_json(obj, path: _types.PathType = None) -> str:
+    """Write ``obj`` to JSON.
+
+    This function can handel numpy arrays.
+
+    If ``path`` is None, this fucntion returns the output of json.dump.
+    Otherwise, encoded object is written to ``path``.
+
+    Args:
+        obj  (any)         Object to be encoded.
+        path (PathType)    Output file path.
+
+    Returns:
+        (str)     FeatureSpace as JSON string if path is not None
+        (None)    If ``path`` is None.
+    """
+    if path is None:
+        return _json.dumps(obj, cls=ArrayEncoder)
+
+    path = _pathlib.Path(path)
+    with path.open('w') as json_file:
+        _json.dump(obj, json_file, cls=ArrayEncoder)
+
 
 class WavFileAccessControl:
     """Control initialization and access to the ``file`` attribute of class:``AudioData``.
@@ -112,7 +135,7 @@ class WavFileAccessControl:
 
     def __set__(self, obj, file_name):
         if obj not in self.__attribute.keys():
-            _path = pathlib.Path(file_name).resolve()
+            _path = _pathlib.Path(file_name).resolve()
             if _path.exists():
                 if _path.is_file():
                     if _path.suffix == '.wav':
@@ -149,8 +172,8 @@ def array_print_opt(*args, **kwargs):
         _np.set_printoptions(**std_options)
 
 
-def files_in_path(path: apt.PathType, ext: str = '.wav',
-                  recursive: bool = False) -> apt.PathGen:
+def files_in_path(path: _types.PathType, ext: str = '.wav',
+                  recursive: bool = False) -> _types.PathGen:
     """Generate all files with extension ``ext`` in ``path``.
 
     If `path` points to a file, it is yielded.
@@ -165,7 +188,7 @@ def files_in_path(path: apt.PathType, ext: str = '.wav',
     Yield:
         (PathGen)
     """
-    path = pathlib.Path(path)
+    path = _pathlib.Path(path)
 
     if path.exists():
         if path.is_file():
@@ -185,7 +208,7 @@ def files_in_path(path: apt.PathType, ext: str = '.wav',
         raise FileNotFoundError('Path "{}" could not be found.\n'.format(path))
 
 
-def load(path: apt.PathType) -> typing.Any:
+def load(path: _types.PathType) -> typing.Any:
     """Load a pickled file.
 
     Args:
@@ -194,14 +217,14 @@ def load(path: apt.PathType) -> typing.Any:
     Returns:
         (object) unpickled object
     """
-    path = pathlib.Path(path)
+    path = _pathlib.Path(path)
     with path.open('rb') as file:
         data = pickle.load(file)
     return data
 
 #TODO AttributeError if ext is None.
-def repath(current_path: apt.PathType, new_path: apt.PathType,
-           ext: apt.StrOrNone = None) -> apt.PathType:
+def repath(current_path: _types.PathType, new_path: _types.PathType,
+           ext: _types.StrOrNone = None) -> _types.PathType:
     """Change the path and keep the file name. Optinally change the extension, too.
 
     Args:
@@ -212,8 +235,8 @@ def repath(current_path: apt.PathType, new_path: apt.PathType,
     Returns:
         (pathlib.Path)
     """
-    current_path = pathlib.Path(current_path)
-    new_path = pathlib.Path(new_path)
+    current_path = _pathlib.Path(current_path)
+    new_path = _pathlib.Path(new_path)
 
     if not ext.startswith('.'):
         ext = '.' + ext
@@ -225,13 +248,13 @@ def repath(current_path: apt.PathType, new_path: apt.PathType,
     return new_path.joinpath(file_path)
 
 
-def save(data: typing.Any, path: apt.PathType):
+def save(data: typing.Any, path: _types.PathType):
     """Pickles data to path.
 
     Args:
         data    (Any)         Pickleable object.
         path    (str or Path) Path to safe the file.
     """
-    path = pathlib.Path(path)
+    path = _pathlib.Path(path)
     with path.open('wb') as file:
         pickle.dump(data, file)
