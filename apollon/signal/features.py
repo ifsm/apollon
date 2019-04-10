@@ -1,9 +1,13 @@
+import json as _json
+import csv as _csv
+
 import numpy as _np
 from scipy.signal import hilbert as _hilbert
 
 from .. import segment as _segment
 from .. tools import array2d_fsum
 from .. types import Array as _Array
+from .. io import ArrayEncoder
 from .  import critical_bands as _cb
 from .  roughness import roughness
 from .  tools import trim_spectrogram
@@ -101,7 +105,7 @@ def spectral_shape(inp, frqs, low: float = 50, high: float = 16000):
     skew   = skew / total_nrgy / _np.power(spread, 3)
     kurt   = kurt / total_nrgy / _np.power(spread, 4)
 
-    return centroid, spread, skew, kurt
+    return FeatureSpace(centroid=centroid, spread=spread, skewness=skew, kurtosis=kurt)
 
 
 def log_attack_time(inp: _Array, fs: int, ons_idx: _Array, wlen:float=0.05) -> _Array:
@@ -128,6 +132,33 @@ def log_attack_time(inp: _Array, fs: int, ons_idx: _Array, wlen:float=0.05) -> _
     return _np.log(mx)
 
 
+def perceptual_shape(inp: _Array, frqs: _Array) -> tuple:
+    """"""
+    cbrs = _cb.filter_bank(frqs) @ inp
+    loud_specific = _np.maximum(_cb.specific_loudness(cbrs), _np.finfo('float64').eps)
+    loud_total = array2d_fsum(loud_specific, axis=0)
+
+
+    z = _np.arange(1, 25)
+    sharp = ((z * _cb.weight_factor(z)) @ cbrs) / loud_total
+    rough = roughness(inp, frqs)
+
+    return FeatureSpace(loudness=loud_total, sharpness=sharp, roughness=rough)
+
+
+def loudness(inp: _Array, frqs: _Array) -> _Array:
+    """Calculate a measure for the perceived loudness from a spectrogram.
+
+    Args:
+        inp (ndarray)    Magnitude spectrogram.
+
+    Returns:
+        (ndarray)    Loudness
+    """
+    cbrs = _cb.filter_bank(frqs) @ inp
+    return _cb.total_loudness(cbrs)
+
+
 def sharpness(inp: _Array, frqs: _Array) -> _Array:
     """Calculate a measure for the perception of auditory sharpness from a spectrogram.
 
@@ -140,3 +171,80 @@ def sharpness(inp: _Array, frqs: _Array) -> _Array:
     """
     cbrs = _cb.filter_bank(frqs) @ inp
     return _cb.sharpness(cbrs)
+
+
+class FeatureSpace:
+    """Container class for feature vectors."""
+    def __init__(self, **kwargs):
+        self.__dict__.update(**kwargs)
+
+    def update(self, key, val):
+        self.__dict__[key] = val
+
+    def items(self):
+        return self.__dict__.items()
+
+    def keys(self):
+        return self.__dict__.keys()
+
+    def values(self):
+        return self.__dict__.values()
+
+    def as_dict(self):
+        flat_dict = {}
+        for key, val in self.__dict__.items():
+            try:
+                flat_dict[key] = val.as_dict()
+            except AttributeError:
+                flat_dict[key] = val
+        return flat_dict
+
+    def to_csv(self, path: str = None) -> None:
+        """Write FeatureSpace to csv file.
+
+        Args:
+            path (str)    Output file path.
+        """
+        features = {}
+        for name, space in self.items():
+            try:
+                features.update({feat: val for feat, val in space.items()})
+            except AttributeError:
+                features.update({name: space})
+
+        with open(path, 'w', newline='') as csv_file:
+            field_names = ['']
+            field_names.extend(features.keys())
+
+            csv_writer = _csv.DictWriter(csv_file, delimiter=',', fieldnames=field_names)
+            csv_writer.writeheader()
+
+            i = 0
+            while True:
+                try:
+                    row = {key: val[i] for key, val in features.items()}
+                    row[''] = i
+                    csv_writer.writerow(row)
+                    i += 1
+                except IndexError:
+                    break
+
+
+    def to_json(self, path: str = None) -> str:
+        """FeaturesSpace in JSON format.
+
+        If ``path`` is None, this method returns the output of json.dump method.
+        Otherwise, FeatureSpace is written to ``path``.
+
+        Args:
+            path (str)    Output file path.
+
+        Returns:
+            (str)     FeatureSpace as JSON string if path is not None
+            (None)    If ``path`` is None.
+        """
+        if path is None:
+            return _json.dumps(self.as_dict(), cls=ArrayEncoder)
+
+        with open(path, 'w') as json_file:
+            _json.dump(self.as_dict(), json_file, cls=ArrayEncoder)
