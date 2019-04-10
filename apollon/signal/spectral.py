@@ -204,6 +204,9 @@ class Spectrogram:
 
     # pylint: disable=too-many-instance-attributes, too-many-arguments
 
+    __slots__ = ('inp_size', 'fps', 'window', 'n_perseg', 'hop_size', 'n_overlap', 'n_fft',
+                 'd_frq', 'd_time', 'times', 'frqs', 'bins', 'shape')
+
     def __init__(self, inp:_Array, fps: int, window: str, n_perseg: int, hop_size: int,
                  n_fft: int = None) -> None:
         """Compute a spectrogram of the input data.
@@ -243,7 +246,7 @@ class Spectrogram:
         self.times = self._compute_time_axis(inp)
         self.frqs = _np.fft.rfftfreq(self.n_fft, 1.0/self.fps)
         self.bins = self._compute_spectrogram(inp)
-        self.shape = _SpectralShape(*_features.spectral_shape(self.power(), self.frqs))
+
 
     def _compute_time_axis(self, inp: _Array) -> _Array:
         """Compute the time axis of the spectrogram"""
@@ -288,6 +291,13 @@ class Spectrogram:
         if subband is True:
             return flux
         return flux.sum(axis=0)
+
+    def extract(self):
+        spctr = _features.spectral_shape(self.power(), self.frqs)
+        prcpt = _features.perceptual_shape(self.abs(), self.frqs)
+        tmpr = _features.FeatureSpace(flux=self.flux())
+        return _features.FeatureSpace(spectral=spctr, perceptual=prcpt, temporal=tmpr)
+
 
     def plot(self, cmap: str = 'nipy_spectral', log_frq: float = None,
              low: float = None, high: float = None, figsize: tuple = (14, 6),
@@ -362,20 +372,3 @@ def stft(inp: _Array, fps: int, window: str = 'hanning', n_perseg: int = 512, ho
 
     return Spectrogram(inp, fps, window, n_perseg, hop_size, n_fft)
 
-
-class _SpectralShape:
-    def __init__(self, centroid, spread, skewness, kurtosis):
-        self.centroid = centroid
-        self.spread = spread
-        self.skewness = skewness
-        self.kurtosis = kurtosis
-
-    def as_array(self):
-        """Return shape parameters stacked to a 2-dimensional array."""
-
-    def to_json(self):
-        """Return shape parameters as JSON-serializable object."""
-        out = {}
-        for key, value in self.__dict__.items():
-            out[key] = _json.dumps(value, cls=_io.ArrayEncoder)
-        return out
