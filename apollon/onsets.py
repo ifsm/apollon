@@ -10,7 +10,9 @@ from typing import Dict, Tuple
 from apollon import fractal as _fractal
 from apollon import segment as _segment
 from apollon import tools as _tools
-
+from . signal.spectral import stft as _stft
+from . signal.tools import trim_spectrogram as _trim_spectrogram
+from . types import Array as _Array
 
 class EnrtopyOnsetDetector:
 
@@ -65,13 +67,43 @@ class EnrtopyOnsetDetector:
                               for (i, j) in chunks.get_limits()[peaks]])
 
 
+
+class FluxOnsetDetector:
+    """Onset detection based on spectral flux."""
+
+    __slots__ = ('odf', 'peaks', 'index', 'times')
+
+    def __init__(self, inp: _Array, fps: int, n_perseg: int = 2048, window: str = 'hamming',
+                 hop_size: int = 441, smooth: int = 10):
+
+        self.odf, self.peaks = self._detect(inp, fps, window, n_perseg, hop_size)
+        self.index = self.peaks * hop_size
+        self.times = self.index / fps
+
+    def _detect(self, inp: _Array, fps: int, window: str, n_perseg: int, hop_size: int,
+                smooth: int = None):
+        """Detects onsets based on spectral flux."""
+
+        spctrgrm = _stft(inp, fps, window, n_perseg, hop_size)
+        sb_flux, sb_frqs = _trim_spectrogram(spctrgrm.flux(subband=True), spctrgrm.frqs, 80, 10000)
+        odf = sb_flux.sum(axis=0)
+
+        if smooth:
+            wh = _sps.get_window('boxcar', smooth)
+            odf = _np.convolve(self.odf, wh, mode='same')
+
+        peaks = peak_picking(odf)
+
+        return odf, peaks
+
+
 def peak_picking(odf, post_window=3, pre_window=3, alpha=.1, delta=.1):
     """Pick local maxima from a numerical time series.
-    
+
     Pick local maxima from the onset detection function `odf`, which is assumed
-    to be an one-dimensional array. Typically, `odf` is the Spectral Flux per 
+    to be an one-dimensional array. Typically, `odf` is the Spectral Flux per
     time step.
-    
+
     Params:
         odf         (np.ndarray)    Onset detection function,
                                     e.g., Spectral Flux.
@@ -79,7 +111,7 @@ def peak_picking(odf, post_window=3, pre_window=3, alpha=.1, delta=.1):
         pre_window  (int)           Window lenght to consider before now.
         alpha       (float)         Smoothing factor. Must be in ]0, 1[.
         delta       (float)         Difference to the mean.
-    
+
     Return:
         (np.ndarray)    Peak indices.
     """
@@ -94,7 +126,7 @@ def peak_picking(odf, post_window=3, pre_window=3, alpha=.1, delta=.1):
 
         cond1 = _np.all(val >= window)
         cond2 = val >= (_np.mean(window) + delta)
-        
+
         foo = max(val, alpha*g[n] + (1-alpha)*val)
         g.append(foo)
         cond3 = val >= foo
@@ -103,68 +135,6 @@ def peak_picking(odf, post_window=3, pre_window=3, alpha=.1, delta=.1):
             out.append(n)
 
     return _np.array(out)
-
-
-class FluxOnsetDetector:
-    def __init__(self, sig, fs, nseg=2048, hop=441, scale=True, smooth=True):
-
-        self.fs = fs
-        self.nseg = nseg
-        self.hop = hop
-
-        X = STFT(sig, fs, nseg=nseg, nover=nseg-hop)
-
-        rgy = _np.absolute(X).sum(axis=0)
-        odf = _np.diff(rgy)
-        if scale:
-            fval = _np.finfo('float64').eps
-            devi = _np.where(rgy[:-1]==0., fval, rgy[:-1])
-            odf /= devi
-        odf = _np.maximum(odf, 0)
-
-        if smooth:
-            if isinstance(smooth, int) and smooth > 0:
-                k = smooth
-            else:
-                k = 5
-            wh = _np.hamming(k)
-            odf = _np.convolve(odf, wh, mode='same')
-
-        self.odf = _tools.ztrans(odf)
-        self.peaks = peak_picking(odf)
-        self.index = self.peaks * self.hop
-        self.times = self.index / self.fs
-
-
-class FluxOnsetDetector2:
-    def __init__(self, sig, fs, nseg=2048, hop=441, scale=True, smooth=10):
-        fval = _np.finfo('float64').eps    # TODO move definition to apollon.constants
-        self.fs = fs
-        self.nseg = nseg
-        self.hop = hop
-
-        f, t, X = _sps.stft(sig, fs, nperseg=nseg, noverlap=nseg-hop,
-                            detrend='constant')
-
-        mag_X = _np.absolute(X)
-        stdevi = mag_X.std(axis=0)
-        stdevi = _np.where(stdevi==0., fval, stdevi)
-        d_mag_X = _np.diff(mag_X)
-        self.odf = _np.maximum(d_mag_X, 0).sum(axis=0)
-
-        if scale:
-            sm_X = mag_X[:, :-1].sum(axis=0)
-
-            scale_fact = _np.where(sm_X==0., fval, sm_X)
-            self.odf /= scale_fact
-
-        if smooth:
-            wh = _np.repeat([0., 1., 0.], smooth)
-            self.odf = _np.convolve(self.odf, wh, mode='same')
-
-        self.peaks = peak_picking(self.odf)
-        self.index = self.peaks * self.hop
-        self.times = self.index / self.fs
 
 
 def evaluate_onsets(targets:   Dict[str, _np.ndarray],
