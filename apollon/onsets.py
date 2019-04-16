@@ -1,15 +1,10 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
-
-import matplotlib.pyplot as _plt
-import numpy as _np
-import scipy.signal as _sps
 from typing import Dict, Tuple
 
-from apollon import fractal as _fractal
-from apollon import segment as _segment
-from apollon import tools as _tools
+import numpy as _np
+import scipy.signal as _sps
+
+from . import fractal as _fractal
+from . import segment as _segment
 from . signal.spectral import stft as _stft
 from . signal.tools import trim_spectrogram as _trim_spectrogram
 from . types import Array as _Array
@@ -92,7 +87,7 @@ class EntropyOnsetDetector(OnsetDetector):
             (ndarray)    Onset detection function.
         """
         segments = _segment.by_samples(inp, self.n_perseg, self.hop_size)
-        odf= _np.empty(segments.shape[0])
+        odf = _np.empty(segments.shape[0])
         for i, seg in enumerate(segments):
             emb = _fractal.embedding(seg, self.delay, self.m_dims, mode='wrap')
             odf[i] = _fractal.embedding_entropy(emb, self.bins)
@@ -125,7 +120,7 @@ class FluxOnsetDetector(OnsetDetector):
             (ndarray)    Onset detection function.
         """
         spctrgrm = _stft(inp, self.fps, self.window, self.n_perseg, self.hop_size)
-        sb_flux, sb_frqs = _trim_spectrogram(spctrgrm.flux(subband=True), spctrgrm.frqs, 80, 10000)
+        sb_flux, _ = _trim_spectrogram(spctrgrm.flux(subband=True), spctrgrm.frqs, 80, 10000)
         odf = sb_flux.sum(axis=0)
         return _np.maximum(odf, odf.mean())
 
@@ -170,7 +165,7 @@ def peak_picking(odf, post_window=10, pre_window=10, alpha=.1, delta=.1):
     return _np.array(out)
 
 
-def evaluate_onsets(targets:   Dict[str, _np.ndarray],
+def evaluate_onsets(targets: Dict[str, _np.ndarray],
                     estimates: Dict[str, _np.ndarray]) -> Tuple[float, float,
                                                                 float]:
     """Evaluate the performance of an onset detection.
@@ -187,7 +182,6 @@ def evaluate_onsets(targets:   Dict[str, _np.ndarray],
     Return:
         (p, r, f)    Tupel of precison, recall, f-measure
     """
-
     out = []
     for name, tvals in targets.items():
         od_eval = _me.onset.evaluate(tvals, estimates[name])
