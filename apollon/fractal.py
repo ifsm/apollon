@@ -122,19 +122,20 @@ def embedding(inp_sig, tau, m=2, mode='zero'):
     return out
 
 
-def pps_entropy(emb, bins):
+def embedding_entropy(emb, bins, extent=(-1, 1)):
     """Calculate entropy of given embedding unsing log_e.
 
-    Params:
-        emb    (ndarray) pps embedding.
-        bins   (int) Number of histogram bins per axis.""
+    Args:
+        emb    (ndarray)     Embedding.
+        bins   (int)         Number of histogram bins per axis.""
+        extent (tuple)       Extent per dimension
 
     Return:
         (float) Entropy of pps.
     """
-    pps, _ = _np.histogramdd(emb.T, bins=bins)
-    H = _stats.entropy(pps.flat) / _np.log(pps.size)
-    return H
+    pps, _ = _np.histogramdd(emb.T, bins, range=[extent]*emb.shape[0])
+    entropy = _stats.entropy(pps.flat) / _np.log(pps.size)
+    return entropy
 
 
 def __lorenz_system(x, y, z, s, r, b):
