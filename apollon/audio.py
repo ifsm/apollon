@@ -22,9 +22,9 @@ class AudioFile:
         """Load an audio file.
 
         Args:
-            path (str)     Path to file.
-            norm (bool)    If True, signal will be normalized ]-1, 1[.
-            mono (bool)    If True, mixdown all channels.
+            path:   Path to file.
+            norm:   If True, signal will be normalized ]-1, 1[.
+            mono:   If True, mixdown all channels.
         """
         self.file = _pathlib.Path(path)
         self.data, self.fps = _sf.read(self.file, dtype='float')
@@ -60,11 +60,11 @@ def load_audio(path, norm: bool = False, mono: bool = True) -> AudioFile:
     """Load an audio file.
 
     Params:
-        path (str)     Path to audio file.
-        norm (bool)    True if data should be normalized.
-        mono (bool)    If True, mixdown channels.
+        path:   Path to audio file.
+        norm:   True if data should be normalized.
+        mono:   If True, mixdown channels.
 
     Return:
-        (AudioFile) object.
+        Audio file representation.
     """
     return AudioFile(path, norm)
