@@ -20,32 +20,29 @@ class OnsetDetector:
     def _detect(self):
         """Detect local maxima of the onset detection function.
 
-        Args:
-            smooth (int)    Smoothing filter length in samples.
-
         Returns:
-            (ndarray)    Position of onset as index of the odf.
+            Position of onset as index of the odf.
         """
         return peak_picking(self.odf)
 
-    def index(self):
+    def index(self) -> _Array:
         """Compute onset index.
 
         Onset values are centered within the detection window.
 
         Returns:
-            (ndarray)    Onset position in samples
+            Onset position in samples
         """
         return self.peaks * self.hop_size + self.n_perseg // 2
 
-    def times(self, fps):
+    def times(self, fps: int) -> _Array:
         """Compute time code im ms for each onset give the sample rate.
 
         Args:
-            fps (int)    Sample rate.
+            fps: Sample rate.
 
         Returns:
-            (ndarray)    Time code of onsets.
+            Time code of onsets.
         """
         return self.index() / fps
 
@@ -53,17 +50,17 @@ class OnsetDetector:
 class EntropyOnsetDetector(OnsetDetector):
 
     def __init__(self, inp: _Array, delay: int = 10, m_dims: int = 3, bins: int = 10,
-                 n_perseg: int = 1024, hop_size: int = 512, smooth: int = None) -> None:
+                 n_perseg: int = 1024, hop_size: int = 512) -> None:
         """Detect onsets based on entropy maxima.
 
         Args:
-            inp      (ndarray)    Audio signal.
-            delay    (int)        Embedding delay.
-            m_dim    (int)        Embedding dimension.
-            bins     (int)        Boxes per axis.
-            n_perseg (int)        Length of segments in samples.
-            hop_size (int)        Displacement in samples.
-            smooth   (int)        Smoothing filter length.
+            inp:        Audio signal.
+            delay:      Embedding delay.
+            m_dim:      Embedding dimension.
+            bins:       Boxes per axis.
+            n_perseg:   Length of segments in samples.
+            hop_size:   Displacement in samples.
+            smooth:     Smoothing filter length.
         """
         self.delay = delay
         self.m_dims = m_dims
@@ -81,10 +78,10 @@ class EntropyOnsetDetector(OnsetDetector):
         delay embedding per segment.
 
         Args:
-            inp (ndarray)    Audio data.
+            inp:    Audio data.
 
         Returns:
-            (ndarray)    Onset detection function.
+            Onset detection function.
         """
         segments = _segment.by_samples(inp, self.n_perseg, self.hop_size)
         odf = _np.empty(segments.shape[0])
@@ -98,7 +95,7 @@ class FluxOnsetDetector(OnsetDetector):
     """Onset detection based on spectral flux."""
 
     def __init__(self, inp: _Array, fps: int, window: str = 'hamming', n_perseg: int = 2048,
-                 hop_size: int = 441, smooth: int = 10):
+                 hop_size: int = 441):
 
         self.fps = fps
         self.window = window
@@ -114,10 +111,10 @@ class FluxOnsetDetector(OnsetDetector):
         """Onset detection function based on spectral flux.
 
         Args:
-            inp (ndarray)    Audio data.
+            inp:    Audio data.
 
         Returns:
-            (ndarray)    Onset detection function.
+            Onset detection function.
         """
         spctrgrm = _stft(inp, self.fps, self.window, self.n_perseg, self.hop_size)
         sb_flux, _ = _trim_spectrogram(spctrgrm.flux(subband=True), spctrgrm.frqs, 80, 10000)
@@ -125,7 +122,8 @@ class FluxOnsetDetector(OnsetDetector):
         return _np.maximum(odf, odf.mean())
 
 
-def peak_picking(odf, post_window=10, pre_window=10, alpha=.1, delta=.1):
+def peak_picking(odf: _Array, post_window: int = 10, pre_window: int = 10, alpha: float = .1,
+                 delta: float=.1) -> _Array:
     """Pick local maxima from a numerical time series.
 
     Pick local maxima from the onset detection function `odf`, which is assumed
@@ -133,15 +131,14 @@ def peak_picking(odf, post_window=10, pre_window=10, alpha=.1, delta=.1):
     time step.
 
     Params:
-        odf         (np.ndarray)    Onset detection function,
-                                    e.g., Spectral Flux.
-        post_window (int)           Window lenght to consider after now.
-        pre_window  (int)           Window lenght to consider before now.
-        alpha       (float)         Smoothing factor. Must be in ]0, 1[.
-        delta       (float)         Difference to the mean.
+        odf:         Onset detection function, e.g., Spectral Flux.
+        post_window: Window lenght to consider after now.
+        pre_window:  Window lenght to consider before now.
+        alpha:       Smoothing factor. Must be in ]0, 1[.
+        delta:       Difference to the mean.
 
     Return:
-        (np.ndarray)    Peak indices.
+        Peak indices.
     """
     g = [0]
     out = []
@@ -170,17 +167,17 @@ def evaluate_onsets(targets: Dict[str, _np.ndarray],
                                                                 float]:
     """Evaluate the performance of an onset detection.
 
-    Params:
-        targets    (dict) of ground truth onset times, with
+    Args:
+        targets:    of ground truth onset times, with
                             keys   == file names, and
                             values == target onset times in ms.
 
-        estimates  (dict) of estimated onsets times, with
+        estimates:  of estimated onsets times, with
                             keys   == file names, and
                             values == estimated onset times in ms.
 
     Return:
-        (p, r, f)    Tupel of precison, recall, f-measure
+        Tupel of precison, recall, f-measure.
     """
     out = []
     for name, tvals in targets.items():
