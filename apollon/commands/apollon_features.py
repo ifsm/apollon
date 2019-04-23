@@ -1,31 +1,45 @@
 import argparse
+import json
 import sys
+import typing
 
 from .. audio import load_audio
-from .. io import dump_json
+from .. io import dump_json, decode_array
 from .. signal.spectral import stft
+from .. signal.features import FeatureSpace
 from .. tools import time_stamp
 from .. types import PathType
+from .. onsets import FluxOnsetDetector
 
 
-def _parse_cml(argv):
-    parser = argparse.ArgumentParser(description='Apollon feature extraction engine')
+def _rhythm_track(file_path, out_path):
+    snd = load_audio(file_path)
 
-    parser.add_argument('--rhythm', action='store_true',
-                        help='Extract features for rhythm track.')
+    out = FeatureSpace()
+    flux_onsets = FluxOnsetDetector(snd.data, snd.fps)
 
-    parser.add_argument('--timbre', action='store_true',
-                        help='Extract features for timbre track.')
+    spectrogram_params = FeatureSpace(fps=flux_onsets.fps,
+                                        n_perseg=flux_onsets.n_perseg,
+                                        hop_size=flux_onsets.hop_size,
+                                        n_fft=flux_onsets.n_fft,
+                                        window=flux_onsets.window,
+                                        cutoff=flux_onsets.cutoff)
 
-    parser.add_argument('-o', '--outpath', action='store',
-                        help='Output file path.')
+    features = FeatureSpace( peaks=flux_onsets.peaks,
+                            index=flux_onsets.index(),
+                            times=flux_onsets.times(snd.fps))
 
-    parser.add_argument('filepath', type=str, nargs=1)
-    return parser.parse_args(argv)
+    out.update('meta', {'source': file_path, 'time_stamp': time_stamp()})
+    out.update('params', spectrogram_params)
+    out.params.update('align', flux_onsets.align)
+    out.params.update('peak_picking', flux_onsets.pp_params)
+    out.update('features', features)
 
+    if out_path is None:
+        out.to_json()
+        return 0
 
-def _rhythm_track(file_path):
-    pass
+    return out.to_json(out_path)
 
 
 def _timbre_track(file_path: PathType, out_path: PathType = None) -> None:
@@ -57,22 +71,31 @@ def _timbre_track(file_path: PathType, out_path: PathType = None) -> None:
     return dump_json(out)
 
 
-def main(argv=None):
-    if argv is None:
-        argv = sys.argv
+def _export_csv(data: typing.Dict[str, typing.Any], path: PathType = None) -> None:
+    fspace = json.loads(data, object_hook=decode_array)
+    fspace = FeatureSpace(**fspace)
+    fspace.to_csv()
 
-    args = _parse_cml(argv)
+
+def main(args: argparse.Namespace) -> int:
+    if args.export:
+        if args.export == 'csv':
+            _export_csv(args.file[0], args.outpath)
+            return 0
+
+    tt_args = (args.file[0], args.outpath)
 
     if args.rhythm:
         print('Starting rhyhtm track ...')
+        return _rhythm_track(*tt_args)
 
     if args.timbre:
         print('Starting timbre track ...')
-        _args = (args.filepath[0], args.outpath)
-        return _timbre_track(*_args)
+        return _timbre_track(*tt_args)
 
     print('No extractor option specified. Exit.')
     return 123
+
 
 if __name__ == '__main__':
     sys.exit(main())
