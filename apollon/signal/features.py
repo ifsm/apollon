@@ -1,5 +1,6 @@
 import json as _json
 import csv as _csv
+import sys as _sys
 
 import numpy as _np
 from scipy.signal import hilbert as _hilbert
@@ -176,7 +177,10 @@ def sharpness(inp: _Array, frqs: _Array) -> _Array:
 class FeatureSpace:
     """Container class for feature vectors."""
     def __init__(self, **kwargs):
-        self.__dict__.update(**kwargs)
+        for key, val in kwargs.items():
+            if isinstance(val, dict):
+                val = FeatureSpace(**val)
+            self.update(key, val)
 
     def update(self, key, val):
         self.__dict__[key] = val
@@ -212,23 +216,30 @@ class FeatureSpace:
             except AttributeError:
                 features.update({name: space})
 
-        with open(path, 'w', newline='') as csv_file:
-            field_names = ['']
-            field_names.extend(features.keys())
+        field_names = ['']
+        field_names.extend(features.keys())
 
-            csv_writer = _csv.DictWriter(csv_file, delimiter=',', fieldnames=field_names)
-            csv_writer.writeheader()
+        if path is None:
+            csv_writer = _csv.DictWriter(_sys.stdout, delimiter=',', fieldnames=field_names)
+            self._write(csv_writer, features)
+        else:
+            with open(path, 'w', newline='') as csv_file:
+                csv_writer = _csv.DictWriter(csv_file, delimiter=',', fieldnames=field_names)
+                self._write(csv_writer, features)
 
-            i = 0
-            while True:
-                try:
-                    row = {key: val[i] for key, val in features.items()}
-                    row[''] = i
-                    csv_writer.writerow(row)
-                    i += 1
-                except IndexError:
-                    break
+    @staticmethod
+    def _write(csv_writer, features):
+        csv_writer.writeheader()
 
+        i = 0
+        while True:
+            try:
+                row = {key: val[i] for key, val in features.items()}
+                row[''] = i
+                csv_writer.writerow(row)
+                i += 1
+            except IndexError:
+                break
 
     def to_json(self, path: str = None) -> str:
         """FeaturesSpace in JSON format.
