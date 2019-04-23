@@ -10,7 +10,7 @@ import apollon
 from apollon import commands
 
 
-_valid_subcommand = ('features', 'onset', 'hmm', 'som')
+_valid_subcommand = ('features', 'onsets', 'hmm', 'som', 'export')
 
 
 def _parse_cml(argv):
