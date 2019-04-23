@@ -12,7 +12,8 @@ from . types import Array as _Array
 
 class OnsetDetector:
     def __init__(self):
-        pass
+        self.pp_params = {'pre_window': 10, 'post_window': 10, 'alpha': .1, 'delta': .1}
+        self.align = 'center'
 
     def _compute_odf(self):
         pass
@@ -23,7 +24,7 @@ class OnsetDetector:
         Returns:
             Position of onset as index of the odf.
         """
-        return peak_picking(self.odf)
+        return peak_picking(self.odf, **self.pp_params)
 
     def index(self) -> _Array:
         """Compute onset index.
@@ -33,7 +34,18 @@ class OnsetDetector:
         Returns:
             Onset position in samples
         """
-        return self.peaks * self.hop_size + self.n_perseg // 2
+        left = self.peaks * self.hop_size
+
+        if self.align == 'left':
+            return left
+
+        if self.align == 'center':
+            return left + self.n_perseg // 2
+
+        if self.align == 'right':
+            return left + self.n_perseg
+
+        raise ValueError('Unknown alignment method `{}`.'.format(pp_params['align']))
 
     def times(self, fps: int) -> _Array:
         """Compute time code im ms for each onset give the sample rate.
@@ -50,7 +62,7 @@ class OnsetDetector:
 class EntropyOnsetDetector(OnsetDetector):
 
     def __init__(self, inp: _Array, delay: int = 10, m_dims: int = 3, bins: int = 10,
-                 n_perseg: int = 1024, hop_size: int = 512) -> None:
+                 n_perseg: int = 1024, hop_size: int = 512, pp_params = None) -> None:
         """Detect onsets based on entropy maxima.
 
         Args:
@@ -62,12 +74,16 @@ class EntropyOnsetDetector(OnsetDetector):
             hop_size:   Displacement in samples.
             smooth:     Smoothing filter length.
         """
+        super().__init__()
+
         self.delay = delay
         self.m_dims = m_dims
         self.bins = bins
         self.n_perseg = n_perseg
         self.hop_size = hop_size
-        self.smooth = smooth
+
+        if pp_params is not None:
+            self.pp_params = pp_params
 
         self.odf = self._odf(inp)
         self.peaks = self._detect()
@@ -95,13 +111,24 @@ class FluxOnsetDetector(OnsetDetector):
     """Onset detection based on spectral flux."""
 
     def __init__(self, inp: _Array, fps: int, window: str = 'hamming', n_perseg: int = 2048,
-                 hop_size: int = 441):
+                 hop_size: int = 441, cutoff=(80, 10000), n_fft = None, pp_params = None):
+
+        super().__init__()
 
         self.fps = fps
         self.window = window
         self.n_perseg = n_perseg
         self.hop_size = hop_size
-        self.smooth = smooth
+
+        if n_fft is None:
+            self.n_fft = n_perseg
+        else:
+            self.n_fft = n_fft
+
+        self.cutoff = cutoff
+
+        if pp_params is not None:
+            self.pp_params = pp_params
 
         self.odf = self._odf(inp)
         self.peaks = self._detect()
@@ -117,7 +144,7 @@ class FluxOnsetDetector(OnsetDetector):
             Onset detection function.
         """
         spctrgrm = _stft(inp, self.fps, self.window, self.n_perseg, self.hop_size)
-        sb_flux, _ = _trim_spectrogram(spctrgrm.flux(subband=True), spctrgrm.frqs, 80, 10000)
+        sb_flux, _ = _trim_spectrogram(spctrgrm.flux(subband=True), spctrgrm.frqs, *self.cutoff)
         odf = sb_flux.sum(axis=0)
         return _np.maximum(odf, odf.mean())
 
