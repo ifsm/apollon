@@ -24,4 +24,4 @@ of the main app. You may invoke the using
 ```apollon features --timbre audio_file [-o output_file]```
 
 #### 2.1.2 Rhythm track
-```apollon features --rhythm audio_file [- output_file]```
+```apollon features --rhythm audio_file [-o output_file]```
