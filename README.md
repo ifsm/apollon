@@ -8,9 +8,11 @@ Apollon is a tool for music modelling. It comprises
 ## 1. Installation
 Download apollon or clone this repository. Navigate the packages root directory
 and install apollon using pip.
-
-```cd path/to/apollon
-pip install .```
+```
+cd path/to/apollon
+pip install .
+```
+Note that the period on the end of the last line is necessary.
 
 ## 2. Commandline tools
 Apollon comes with several commandline utilities implemented as subcommands 
