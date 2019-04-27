@@ -1,30 +1,17 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
+"""
+apollon/_defaults.py --  Defaut definitions
 
-"""apollon defaut definitions"""
+Copyright (C) 2019 Michael Blaß
+michael.blass@uni-hamburg.de
+"""
 
-# Time stamp format
-time_stamp_fmt = '%Y-%m-%d %H:%M:%S'
+TM_FMT = '%Y-%m-%d %H:%M:%S'
 
-# possible guessing methods for the inital Poisson means
-lambda_guess_methods = ['quantile', 'linear']
+PP_SIGNAL = {'linewidth': 1, 'linestyle': 'solid', 'color': 'k', 'alpha': .5,
+             'zorder': 0}
 
-# standard plot styles
-class plot_params:
-		signal = {'linewidth':1,
-				  'linestyle':'solid',
-				  'color':'k',
-				  'alpha':.5,
-				  'zorder':0}
+PP_SIG_ONS = {'linewidth': 2, 'linestyle': 'solid', 'color': 'C1',
+              'alpha': .9, 'zorder': 0}
 
-		sig_ons = {'linewidth':2,
-				  'linestyle':'solid',
-				  'color':'C1',
-				  'alpha':.9,
-				  'zorder':0}
-
-		onset = {'linewidth':3,
-				 'linestyle':'dashed',
-				 'color':'C1',
-				 'alpha':.9,
-				 'zorder':10}
+PP_ONSETS = {'linewidth': 3, 'linestyle': 'dashed', 'color': 'C1', 'alpha': .9,
+             'zorder': 10}
