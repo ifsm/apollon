@@ -1,4 +1,9 @@
 """
+apollon/audio.py -- Wrapper classes for audio data.
+
+Copyrigth (C) 2019  Michael Blaß
+michael.blass@uni-hamburg.de
+
 Classes:
     AudioFile   Representation of an audio file.
 
@@ -17,15 +22,15 @@ from . types import Array as _Array
 
 class AudioFile:
     """Representation of an audio file.
-    """
-    def __init__(self, path: str, norm: bool = False, mono: bool = True) -> None:
-        """Load an audio file.
 
         Args:
             path:   Path to file.
             norm:   If True, signal will be normalized ]-1, 1[.
             mono:   If True, mixdown all channels.
-        """
+    """
+    def __init__(self, path: str, norm: bool = False, mono: bool = True) -> None:
+        """Load an audio file."""
+
         self.file = _pathlib.Path(path)
         self.data, self.fps = _sf.read(self.file, dtype='float')
         self.size = self.data.shape[0]
@@ -35,7 +40,6 @@ class AudioFile:
 
         if norm:
             self.data = normalize(self.data)
-
 
     def plot(self):
         fig = plt.figure(figsize=(14, 7))
@@ -59,7 +63,7 @@ class AudioFile:
 def load_audio(path, norm: bool = False, mono: bool = True) -> AudioFile:
     """Load an audio file.
 
-    Params:
+    Args:
         path:   Path to audio file.
         norm:   True if data should be normalized.
         mono:   If True, mixdown channels.
