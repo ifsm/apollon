@@ -1,7 +1,7 @@
 """
 apollon/audio.py -- Wrapper classes for audio data.
 
-Copyrigth (C) 2019  Michael Blaß
+Copyrigth (C) 2018  Michael Blaß
 michael.blass@uni-hamburg.de
 
 Classes:
@@ -12,12 +12,11 @@ Functions:
 """
 import pathlib as _pathlib
 
-import numpy as _np
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as _plt
 import soundfile as _sf
 
-from apollon.signal.tools import normalize
-from . types import Array as _Array
+from . signal import tools as _ast
+from . types import PathType
 
 
 class AudioFile:
@@ -28,7 +27,7 @@ class AudioFile:
             norm:   If True, signal will be normalized ]-1, 1[.
             mono:   If True, mixdown all channels.
     """
-    def __init__(self, path: str, norm: bool = False, mono: bool = True) -> None:
+    def __init__(self, path: PathType, norm: bool = False, mono: bool = True) -> None:
         """Load an audio file."""
 
         self.file = _pathlib.Path(path)
@@ -39,11 +38,12 @@ class AudioFile:
             self.data = self.data.sum(axis=1) / self.data.shape[1]
 
         if norm:
-            self.data = normalize(self.data)
+            self.data = _ast.normalize(self.data)
 
-    def plot(self):
-        fig = plt.figure(figsize=(14, 7))
-        ax1 = fig.add_subplot(1,1,1)
+    def plot(self) -> None:
+        """Plot audio as wave form."""
+        fig = _plt.figure(figsize=(14, 7))
+        ax1 = fig.add_subplot(1, 1, 1)
         ax1.plot(self.data)
 
     def __str__(self):
@@ -60,7 +60,7 @@ class AudioFile:
         return self.data[item]
 
 
-def load_audio(path, norm: bool = False, mono: bool = True) -> AudioFile:
+def load_audio(path: PathType, norm: bool = False, mono: bool = True) -> AudioFile:
     """Load an audio file.
 
     Args:
@@ -71,4 +71,4 @@ def load_audio(path, norm: bool = False, mono: bool = True) -> AudioFile:
     Return:
         Audio file representation.
     """
-    return AudioFile(path, norm)
+    return AudioFile(path, norm, mono)
