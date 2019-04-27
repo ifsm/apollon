@@ -26,11 +26,17 @@ from . types import Array as _Array
 
 
 class OnsetDetector:
+    """Onset detection base class.
+
+    Subclasses have to implement an __init__ method to take in custom arguments. It necessarily has to call
+    the base classes __init__ method. Additionally, subclasses have to implement a custom onset detection
+    function named _odf. This method should return an one-dimensional ndarray.
+    """
     def __init__(self):
         self.pp_params = {'pre_window': 10, 'post_window': 10, 'alpha': .1, 'delta': .1}
         self.align = 'center'
 
-    def _compute_odf(self):
+    def _odf(self, inp: _Array) -> _Array:
         pass
 
     def _detect(self):
@@ -75,20 +81,19 @@ class OnsetDetector:
 
 
 class EntropyOnsetDetector(OnsetDetector):
+    """Detect onsets based on entropy maxima.
 
+    Args:
+        inp:        Audio signal.
+        delay:      Embedding delay.
+        m_dim:      Embedding dimension.
+        bins:       Boxes per axis.
+        n_perseg:   Length of segments in samples.
+        hop_size:   Displacement in samples.
+        smooth:     Smoothing filter length.
+    """
     def __init__(self, inp: _Array, delay: int = 10, m_dims: int = 3, bins: int = 10,
                  n_perseg: int = 1024, hop_size: int = 512, pp_params = None) -> None:
-        """Detect onsets based on entropy maxima.
-
-        Args:
-            inp:        Audio signal.
-            delay:      Embedding delay.
-            m_dim:      Embedding dimension.
-            bins:       Boxes per axis.
-            n_perseg:   Length of segments in samples.
-            hop_size:   Displacement in samples.
-            smooth:     Smoothing filter length.
-        """
         super().__init__()
 
         self.delay = delay
@@ -123,7 +128,13 @@ class EntropyOnsetDetector(OnsetDetector):
 
 
 class FluxOnsetDetector(OnsetDetector):
-    """Onset detection based on spectral flux."""
+    """Onset detection based on spectral flux.
+
+    Args:
+        inp:
+        stft_params:    Parameters for the STFT
+        pp_params:      Peak picking paraneters
+    """
 
     def __init__(self, inp: _Array, fps: int, window: str = 'hamming', n_perseg: int = 2048,
                  hop_size: int = 441, cutoff=(80, 10000), n_fft = None, pp_params = None):
@@ -204,22 +215,21 @@ def peak_picking(odf: _Array, post_window: int = 10, pre_window: int = 10, alpha
     return _np.array(out)
 
 
-def evaluate_onsets(targets: Dict[str, _np.ndarray],
-                    estimates: Dict[str, _np.ndarray]) -> Tuple[float, float,
-                                                                float]:
-    """Evaluate the performance of an onset detection.
+def evaluate_onsets(targets: Dict[str, _np.ndarray], estimates: Dict[str, _np.ndarray])
+                    -> Tuple[float, float, float]:
+    """Evaluate onset detection performance.
+
+    This function uses the mir_eval package for evaluation.
 
     Args:
-        targets:    of ground truth onset times, with
-                            keys   == file names, and
-                            values == target onset times in ms.
+        targets:    Ground truth onset times, with dict keys being file names,
+                    and values being target onset time codes in ms.
 
-        estimates:  of estimated onsets times, with
-                            keys   == file names, and
-                            values == estimated onset times in ms.
+        estimates:  Estimated onsets times, with dictkeys being file names,
+                    and values being the estimated onset time codes in ms.
 
     Return:
-        Tupel of precison, recall, f-measure.
+        Precison, recall, f-measure.
     """
     out = []
     for name, tvals in targets.items():
