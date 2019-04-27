@@ -1,3 +1,18 @@
+"""
+apollon/onsets.py -- Onset detection routines.
+
+Copyrigth (C) 2019  Michael Blaß
+michael.blass@uni-hamburg.de
+
+Classes:
+    OnsetDetector           Base class for onset detection.
+    EntropyOnsetDetector    Onset detection based on phase pace entropy estimation.
+    FluxOnsetDetector       Onset detection based on spectral flux.
+
+Functions:
+    peak_picking            Identify local peaks in time series.
+    evaluate_onsets         Evaluation of onset detection results given ground truth.
+"""
 from typing import Dict, Tuple
 
 import numpy as _np
