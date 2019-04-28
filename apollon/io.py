@@ -1,6 +1,7 @@
-"""apollon/IO.py
+"""apollon/io.py -- General I/O functionallity.
 
-Tools for file access.
+Copyright (C) 2019 Michael Blaß
+michael.blass@uni-hamburg.de
 
 Classes:
     ArrayEncoder            Serialize numpy array to JSON.
@@ -14,7 +15,6 @@ Functions:
     repath                  Change path but keep file name.
     save                    Pickle some data.
 """
-
 from contextlib import contextmanager as _contextmanager
 import json as _json
 import pathlib as _pathlib
@@ -222,9 +222,8 @@ def load(path: _types.PathType) -> typing.Any:
         data = pickle.load(file)
     return data
 
-#TODO AttributeError if ext is None.
 def repath(current_path: _types.PathType, new_path: _types.PathType,
-           ext: _types.StrOrNone = None) -> _types.PathType:
+           ext: str = None) -> _types.PathType:
     """Change the path and keep the file name. Optinally change the extension, too.
 
     Args:
