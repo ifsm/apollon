@@ -15,18 +15,18 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
 import pathlib
-from typing import Any, Dict, Generator, Iterable, List, Tuple, Union
+from typing import (Any, Dict, Generator, Iterable, List, Optional,
+                    Tuple, Union)
 
 
-Array = Iterable
+Array = Iterable    # pylint: disable = C0103
 
-ArrayOrStr  = Union[Array, str]
-IterOrNone  = Union[Iterable, None]
-FloatOrNone = Union[float, None]
-StrOrNone   = Union[str, None]
+ArrayOrStr = Union[Array, str]
+IterOrNone = Union[Iterable, None]
 
-ParserType = Tuple[Dict[str, Any], List[str]]
-PathType   = Union[str, pathlib.Path]
-PathGen    = Generator[PathType, None, None]
+ParamsType = Dict[str, Any]
+ParameterSet = Optional[ParamsType]
+ParserType = Tuple[ParamsType, List[str]]
+PathType = Union[str, pathlib.Path]
+PathGen = Generator[PathType, None, None]
