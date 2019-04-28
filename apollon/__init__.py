@@ -1,3 +1,10 @@
+"""
+apollon/__init__.py -- Main package initialization.
+
+Copyright (C) 2019 Michael Blaß
+michael.blass@uni-hamburg.de
+"""
+
 import os as _os
 import pkg_resources as _pkg
 
