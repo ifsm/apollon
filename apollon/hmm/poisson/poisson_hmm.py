@@ -59,7 +59,7 @@ class PoissonHmm:
                  init_delta: _at.ArrayOrStr = 'stationary',
                  g_dirichlet: _at.IterOrNone = None,
                  d_dirichlet: _at.IterOrNone = None,
-                 fill_diag: _at.FloatOrNone = .8,
+                 fill_diag: float = .8,
                  verbose: bool = True):
 
         """Initialize PoissonHMM
@@ -134,7 +134,7 @@ class _HyperParams:
                  init_delta: _at.ArrayOrStr,
                  gamma_dp: _at.IterOrNone = None,
                  delta_dp: _at.IterOrNone = None,
-                 fill_diag: _at.FloatOrNone = None):
+                 fill_diag: float = None):
         """Check and save model hyper parameters.
 
         Args:
@@ -193,7 +193,7 @@ class _HyperParams:
 
     @staticmethod
     def _assert_gamma(_gamma: _at.ArrayOrStr, gamma_dp: _at.IterOrNone,
-                      diag_val: _at.FloatOrNone) -> _np.ndarray:
+                      diag_val: float) -> _np.ndarray:
         """Assure that `_gamma` fits requirements for Poisson transition probability matirces.
 
         Args:
