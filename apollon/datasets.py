@@ -18,7 +18,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import collections as _collections
 import os.path
+
 import numpy as _np
+
 from apollon.__init__ import APOLLON_PATH
 
 
