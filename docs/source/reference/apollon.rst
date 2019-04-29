@@ -27,7 +27,6 @@ Submodules
    apollon.datasets
    apollon.decorators
    apollon.exceptions
-   apollon.extract
    apollon.fractal
    apollon.io
    apollon.onsets

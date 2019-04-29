@@ -11,6 +11,7 @@ Submodules
 
 .. toctree::
 
+   apollon.commands.apollon_export
    apollon.commands.apollon_features
    apollon.commands.apollon_onsets
 

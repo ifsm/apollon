@@ -3,17 +3,22 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Apollon feature extraction framework!
-=====================================
+Welcome to the documentation of the apollon feature extraction framework!
+=========================================================================
+*apollon* is a feature extraction and modelling frame work for music data
+analysis. It handles low-level audio feature extraction, their aggreagation
+using Hidden Markov models, and comparison by means of the Self-Organizing Map.
+See the :doc:`starters` chapter for gentle introduction to the mentioned
+concepts.
+
+Contents
+========
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
 
-   modules
-
-Indices and tables
-==================
-
+   installation
+   starters
+   
 * :ref:`genindex`
 * :ref:`modindex`
