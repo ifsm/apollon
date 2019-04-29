@@ -137,7 +137,7 @@ class FluxOnsetDetector(OnsetDetector):
     """
 
     def __init__(self, inp: _Array, fps: int, window: str = 'hamming', n_perseg: int = 2048,
-                 hop_size: int = 441, cutoff=(80, 10000), n_fft = None, pp_params = None):
+            hop_size: int = 441, cutoff=(80, 10000), n_fft: int = None, pp_params = None):
 
         super().__init__()
 
@@ -215,8 +215,7 @@ def peak_picking(odf: _Array, post_window: int = 10, pre_window: int = 10, alpha
     return _np.array(out)
 
 
-def evaluate_onsets(targets: Dict[str, _np.ndarray], estimates: Dict[str, _np.ndarray])
-                    -> Tuple[float, float, float]:
+def evaluate_onsets(targets: Dict[str, _np.ndarray], estimates: Dict[str, _np.ndarray]) -> Tuple[float, float, float]:
     """Evaluate onset detection performance.
 
     This function uses the mir_eval package for evaluation.
