@@ -1,0 +1,6 @@
+apollon
+numpy
+scipy
+matplotlib
+soundfile
+https://gitlab.rrz.uni-hamburg.de/bal7668/hmm
