@@ -1,8 +1,8 @@
 """
-tools.py
+apollon/tools.py -- Common tool library.
 
-Every day tools.
-
+Copyrigth (C) 2019  Michael Blaß
+michael.blass@uni-hamburg.de
 
 Functions:
     assert_array        Raise if array does not match given params.
@@ -20,18 +20,17 @@ Functions:
     within_any          Test wether val is in any of windows.
     array2d_fsum        Sum array entry with machine precision.
 """
+import datetime as _dt
+import math as _math
+from typing import Any, Tuple
 
-
-from datetime import datetime as _datetime
-import typing as _typing
-from . types import Array as _Array
 import numpy as _np
-import math
-from apollon import _defaults
-from apollon import types as apt
+
+from . import _defaults
+from . types import Array as _Array
 
 
-def assert_array(arr: _np.ndarray, ndim: int, size: int,     # pylint: disable=R0913
+def assert_array(arr: _Array, ndim: int, size: int,     # pylint: disable=R0913
                  lower_bound: float = -_np.inf,
                  upper_bound: float = _np.inf,
                  name: str = 'arr'):
@@ -64,7 +63,7 @@ def assert_array(arr: _np.ndarray, ndim: int, size: int,     # pylint: disable=R
                           'be <= {}.'.format(name, upper_bound)))
 
 
-def jsonify(inp: _typing.Any):
+def jsonify(inp: Any):
     """Returns a representation of ``inp`` that can be serialized to JSON.
 
     This method passes through Python objects of type dict, list, str, int
@@ -74,10 +73,10 @@ def jsonify(inp: _typing.Any):
     on error.
 
     Args:
-        inp (Any)    Input to jsonify.
+        inp:    Input to be jsonified.
 
     Returns:
-        (dict)  jsonified  input.
+        Jsonified  input.
     """
     valid_types = (dict, list, tuple, str, int, float)
     valid_vals = (True, False, None)
@@ -95,7 +94,7 @@ def jsonify(inp: _typing.Any):
 
 
 #TODO Move to better place
-def L1_Norm(arr2d: _np.ndarray) -> float:
+def L1_Norm(arr2d: _Array) -> float:
     """Compute the L_1 norm of input vector `x`.
 
     This implementation is generally faster than np.norm(x, ord=1).
@@ -215,12 +214,12 @@ def standardize(x: _np.ndarray) -> _np.ndarray:
     return (x - x.mean(axis=0)) / x.std(axis=0)
 
 
-def time_stamp():
+def time_stamp() -> str:
     """Return default time stamp."""
-    return _datetime.now().strftime(_defaults.time_stamp_fmt)
+    return _dt.datetime.now().strftime(_defaults.time_stamp_fmt)
 
 
-def within(val: float, bounds: _typing.Tuple[float, float]) -> bool:
+def within(val: float, bounds: Tuple[float, float]) -> bool:
     """Return True if x is in window.
 
     Args:
@@ -232,13 +231,13 @@ def within(val: float, bounds: _typing.Tuple[float, float]) -> bool:
     return bounds[0] <= val <= bounds[1]
 
 
-def within_any(val: float, windows: _np.ndarray) -> bool:
+def within_any(val: float, windows: _Array) -> bool:
     """Return True if x is in any of the given windows"""
     a = windows[:, 0] <= val
     b = val <= windows[:, 1]
     c = _np.logical_and(a, b)
 
-    return np.any(c)
+    return _np.any(c)
 
 
 def array2d_fsum(arr: _Array, axis: int = 0) -> _Array:
@@ -248,4 +247,4 @@ def array2d_fsum(arr: _Array, axis: int = 0) -> _Array:
     else:
         vals = arr
 
-    return _np.array([math.fsum(ax_slice) for ax_slice in vals])
+    return _np.array([_math.fsum(ax_slice) for ax_slice in vals])
