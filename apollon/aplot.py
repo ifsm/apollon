@@ -24,8 +24,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as _np
 from scipy import stats as _stats
 
-from apollon._defaults import plot_params as _plot_params
-from apollon.audio import _AudioData
+from . import _defaults
 
 
 def _new_figure(**kwargs):
@@ -182,14 +181,14 @@ def marginal_distr(x, lambda_, delta, figsize=(10, 4), bins=20, legend=True):
 
 def onsets(x, fs, onset_times, figsize=(10, 5), **kwargs):
     ax = signal(x, fs, figsize=figsize, **kwargs)
-    ax.vlines(onset_times, -1, 1, **_plot_params.onset)
+    ax.vlines(onset_times, -1, 1, **_defaults.PP_ONSETS)
     return ax
 
 
 
 def onset_decoding(sig, odx, dec):
     '''Plot sig and and onsetes color coded regarding dec.'''
-    ax = signal(sig, params=_plot_params.sig_ons)
+    ax = signal(sig, params=_defaults.PP_SIG_ONS)
     lc = max(dec) + 1
     colors = _np.linspace(0, 1, lc)
     ax.vlines(odx, -1, 1, linewidths=3, linestyle='dashed',
@@ -212,7 +211,7 @@ def signal(x, fs, xaxis_scale='seconds', figsize=(10, 4), params=None, **kwargs)
 
     ax.set_ylabel('Amplitude')
 
-    params = _plot_params.signal
+    params = _defaults.PP_SIGNAL
     ax.plot(t, x, **params)
 
     return ax
