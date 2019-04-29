@@ -216,7 +216,7 @@ def standardize(x: _np.ndarray) -> _np.ndarray:
 
 def time_stamp() -> str:
     """Return default time stamp."""
-    return _dt.datetime.now().strftime(_defaults.time_stamp_fmt)
+    return _dt.datetime.now().strftime(_defaults.TIME_STAMP_FMT)
 
 
 def within(val: float, bounds: Tuple[float, float]) -> bool:

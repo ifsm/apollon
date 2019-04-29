@@ -5,7 +5,7 @@ Copyright (C) 2019 Michael Blaß
 michael.blass@uni-hamburg.de
 """
 
-TM_FMT = '%Y-%m-%d %H:%M:%S'
+TIME_STAMP_FMT = '%Y-%m-%d %H:%M:%S'
 
 PP_SIGNAL = {'linewidth': 1, 'linestyle': 'solid', 'color': 'k', 'alpha': .5,
              'zorder': 0}
