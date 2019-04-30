@@ -3,4 +3,4 @@ numpy
 scipy
 matplotlib
 soundfile
-https://gitlab.rrz.uni-hamburg.de/bal7668/hmm
+https://gitlab.rrz.uni-hamburg.de/bal7668/hmm/-/archive/master/hmm-master.zip
