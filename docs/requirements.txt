@@ -2,4 +2,5 @@ numpy
 scipy
 matplotlib
 soundfile
+sphinxcontrib_apidoc
 https://gitlab.rrz.uni-hamburg.de/bal7668/hmm/-/archive/master/hmm-master.zip
