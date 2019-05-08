@@ -26,23 +26,38 @@ from . types import Array as _Array
 
 
 Limits = Optional[Tuple[int, int]]
-FigType = Optional[_plt.Figure]
+MplFig = Optional[_plt.Figure]
 FigSize = Tuple[float, float]
 SubplotPos = Optional[Tuple[int, int, int]]
 
 
-def _new_axis(spines: str = 'nice', xlim: Limits = None, ylim: Limits = None,
-              ticks_offset: Tuple[float, float] = (10, 10), fig: FigType = None,
-              sp_pos: SubplotPos = None, axison: bool = True, **kwargs) -> tuple:
+def _nice_spines(ax, offset: int = 10) -> None:
+    """Display only left and bottom spine and displace them.
+
+    Note:
+        Increasing ``offset`` may breaks the layout. Since the spine is moved,
+        so is the axis label, which is in turn forced out of the figure's bounds.
+
+    Args:
+        ax:        Axes to be modified.
+        offset:    Move the spines ``offset`` pixels in the negative direction.
+    """
+    ax.spines['left'].set_position(('outward', offset))
+    ax.spines['bottom'].set_position(('outward', offset))
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.xaxis.set_ticks_position('bottom')
+    ax.yaxis.set_ticks_position('left')
+
+
+def _new_axis(spines: str = 'nice', fig: MplFig = None, sp_pos: SubplotPos = None,
+              axison: bool = True, **kwargs) -> tuple:
     """Create a new figure with a single axis and fancy spines.
 
-    All kwargs are passed on to _plt.figure().
+    All ``kwargs`` are passed on to _plt.figure().
 
     Args:
         spines:          Plot mode for spines. Either 'nice' or 'standard'.
-        xlim:            Data extent on abscissae.
-        ylim:            Data extent on ordinate.
-        ticks_offset:    Distance of ticks in percet of data extent.
         fig:             Existing figure.
         sp_pos:          Position of the axis in the figure.
         axison:          Draw spines if True.
@@ -53,44 +68,25 @@ def _new_axis(spines: str = 'nice', xlim: Limits = None, ylim: Limits = None,
 
     # pylint: disable=too-many-arguments
 
+    if 'figsize' not in kwargs:
+        kwargs['figsize'] = (10, 4)
+
     fig = _plt.figure(**kwargs) if fig is None else fig
 
     if sp_pos is None:
         sp_pos = (1, 1, 1)
     ax = fig.add_subplot(*sp_pos)
 
-    if axison:
-        if spines == 'nice':
-            # adjust spines positions
-            ax.spines['left'].set_position(('outward', 10))
-            ax.spines['bottom'].set_position(('outward', 10))
+    if not axison:
+        ax.axison = False
+    elif spines == 'nice':
+        _nice_spines(ax, offset=10)
 
-            # Hide right and top spines
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-
-            # Set ticks
-            if xlim is not None:
-                step_size = (xlim[1] - xlim[0]) * ticks_offset[0] / 100
-                ticks = _np.arange(xlim[0], xlim[1]+1, step_size)
-                ax.set_xticks(ticks)
-
-            if ylim is not None:
-                step_size = (ylim[1] - ylim[0]) * ticks_offset[1] / 100
-                ticks = _np.arange(ylim[0], ylim[1]+1, step_size)
-                ax.set_yticks(ticks)
-
-            # Show ticks on left and bottom spines, only
-            ax.xaxis.set_ticks_position('bottom')
-            ax.yaxis.set_ticks_position('left')
-
-        return fig, ax
-
-    ax.axison = False
+    _plt.subplots_adjust(top=.95, bottom=.15)
     return fig, ax
 
 
-def _new_axis_3d(fig=None, **kwargs) -> tuple:
+def _new_axis_3d(fig: MplFig = None, **kwargs) -> tuple:
     """Create a 3d cartesian coordinate system.
 
     Args:
@@ -105,27 +101,28 @@ def _new_axis_3d(fig=None, **kwargs) -> tuple:
     return fig, ax_3d
 
 
-def signal(values: _Array, fps: int, xaxis_scale: str = 'seconds', fig_size: FigSize = (10, 4),
-           **kwargs) -> tuple:
+def signal(values: _Array, fps: int = None, time_scale: str = 'seconds', **kwargs) -> tuple:
     """Plot time series with constant sampling interval
 
     Args:
-        values:    Values of the time series.
-        fps:       Sampling frequency in samples.
+        values:        Values of the time series.
+        fps:           Sampling frequency in samples.
+        time_scale:    Seconds or samples.
 
     Returns:
-        Figure and Axes.
+        Figure and axes.
     """
-    fig, ax = _new_axis(fig_size=fig_size, **kwargs)
+    fig, ax = _new_axis(**kwargs)
+    domain = _np.arange(values.size, dtype=float)
 
-    if xaxis_scale == 'seconds':
-        domain = _np.arange(0, values.size, dtype=float) / fps
-        ax.set_xlabel('Time [s]')
+    if time_scale == 'seconds':
+        domain /= fps
+        ax.set_xlabel('t [s]')
+        ax.set_ylabel(r'x[$t$]')
     else:
-        domain = _np.arange(values.size)
-        ax.set_xlabel('Time [samples]')
+        ax.set_xlabel('n [samples]')
+        ax.set_ylabel(r'x[$n$]')
 
-    ax.set_ylabel('Amplitude')
     ax.plot(domain, values, **_defaults.PP_SIGNAL)
 
     return fig, ax
@@ -184,7 +181,7 @@ def fourplot(data: _Array, lag: int = 1) -> tuple:
 
 
 def marginal_distr(train_data: _Array, state_means: _Array, stat_dist: _Array, bins: int = 20,
-                   fig_size: Tuple[float, float] = (10, 4), legend: bool = True) -> tuple:
+                   legend: bool = True, **kwargs) -> tuple:
     """Plot the marginal distribution of a PoissonHMM.
 
     Args:
@@ -198,7 +195,7 @@ def marginal_distr(train_data: _Array, state_means: _Array, stat_dist: _Array, b
 
     # pylint: disable=too-many-arguments, too-many-locals
 
-    _, ax = _new_axis(figsize=fig_size)
+    _, ax = _new_axis(**kwargs)
     _ = ax.hist(train_data, normed=True, alpha=.2, bins=bins)
 
     for i, (mean_val, stat_prob) in enumerate(zip(state_means, stat_dist)):
@@ -215,34 +212,35 @@ def marginal_distr(train_data: _Array, state_means: _Array, stat_dist: _Array, b
     return ax
 
 
-def onsets(odf: _Array, onset_index: _Array, fig_size: FigSize = (10, 5), **kwargs) -> None:
+def onsets(odf: _Array, onset_index: _Array, **kwargs) -> tuple:
     """Indicate onsets on a time series.
 
     Args:
         odf:            Onset detection function or an arbitrary time series.
         onset_index:    Onset indices relative to ``odf``.
-        fig_size:       Width and heigth of figure.
 
     Returns:
         Figure and axes.
     """
-    fig, ax = signal(odf, fps=None, figsize=fig_size, **kwargs)
+    fig, ax = signal(odf, fps=None, **kwargs)
     ax.vlines(onset_index, -1, 1, **_defaults.PP_ONSETS)
     return fig, ax
 
 
-def onset_decoding(odf: _Array, onset_index: _Array, decoding: _Array, cmap='viridis') -> tuple:
+def onset_decoding(odf: _Array, onset_index: _Array, decoding: _Array,
+                   cmap='viridis', **kwargs) -> tuple:
     """Plot sig and and onsetes color coded regarding dec.
 
     Args:
         odf:            Onset detection function or an arbitrary time series.
         onset_index:    Onset indices relative to ``odf``.
         decoding:       State codes in [0, ..., n].
+        cmap:           Colormap for onsets.
 
     Returns:
         Figure and axes.
     """
-    fig, ax = onsets(odf, onset_index)
+    fig, ax = onsets(odf, onset_index, **kwargs)
     color_space = getattr(_cm, cmap)(_np.linspace(0, 1, decoding.max()+1))
     ax.vlines(onset_index, -1, 1, linewidths=3, linestyle='dashed',
               colors=color_space(decoding))
