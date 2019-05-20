@@ -2,10 +2,6 @@
 # Copyright (C) 2019 Michael Blaß
 # michael.blass@uni-hamburg.de
 
-#!python3
-# -*- coding: utf-8 -*-
-
-
 """apollon/som/topologies.py
 
 (c) Michael Blaß 2016

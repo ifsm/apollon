@@ -2,9 +2,6 @@
 # Copyright (C) 2019 Michael Blaß
 # michael.blass@uni-hamburg.de
 
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 """apollon/som/uttilites.py
 
 (c) Michael Blaß, 2016
