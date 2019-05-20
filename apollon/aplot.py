@@ -6,7 +6,6 @@
 aplot.py -- General plotting routines.
 
 Functions:
-    _new_figure         Create new (fig, ax) tuple.
     fourplot            Create a four plot of time a signal.
     marginal_distr      Plot the marginal distribution of a PoissonHMM.
     onsets              Plot onsets over a signal.
