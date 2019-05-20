@@ -13,7 +13,6 @@ Subpackages
 
     apollon.commands
     apollon.hmm
-    apollon.interactive
     apollon.signal
     apollon.som
 
@@ -25,8 +24,6 @@ Submodules
    apollon.aplot
    apollon.audio
    apollon.datasets
-   apollon.decorators
-   apollon.exceptions
    apollon.fractal
    apollon.io
    apollon.onsets
