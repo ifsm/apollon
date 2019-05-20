@@ -175,6 +175,12 @@ class FluxOnsetDetector(OnsetDetector):
         odf = sb_flux.sum(axis=0)
         return _np.maximum(odf, odf.mean())
 
+    def params(self) -> dict:
+        _params = ('window', 'n_perseg', 'hop_size', 'n_fft', 'pp_params', 'align')
+        out = {param: getattr(self, param) for param in _params}
+        out['cutoff'] = {'lower': self.cutoff[0], 'upper': self.cutoff[1]}
+        return out
+
 
 def peak_picking(odf: _Array, post_window: int = 10, pre_window: int = 10, alpha: float = .1,
                  delta: float=.1) -> _Array:
