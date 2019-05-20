@@ -16,11 +16,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import pathlib
-from typing import (Any, Dict, Generator, Iterable, List, Optional,
-                    Tuple, Union)
+from typing import (Any, Dict, Generator, Iterable, List, Optional, Tuple, Union)
+import numpy as _np    # type: ignore
 
-
-Array = Iterable    # pylint: disable = C0103
+Array = _np.ndarray    # pylint: disable = C0103
 
 ArrayOrStr = Union[Array, str]
 IterOrNone = Union[Iterable, None]
