@@ -1,4 +1,8 @@
-"""apollon/fractal.py   (c) Michael Blaß 2017
+# Licensed under the terms of the BSD-3-Clause license.
+# Copyright (C) 2019 Michael Blaß
+# michael.blass@uni-hamburg.de
+
+"""apollon/fractal.py
 
 Tools for estimating fractal dimensions.
 

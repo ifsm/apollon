@@ -1,8 +1,9 @@
+# Licensed under the terms of the BSD-3-Clause license.
+# Copyright (C) 2019 Michael Blaß
+# michael.blass@uni-hamburg.de
+
 """
 apollon/tools.py -- Common tool library.
-
-Copyrigth (C) 2019  Michael Blaß
-michael.blass@uni-hamburg.de
 
 Functions:
     assert_array        Raise if array does not match given params.

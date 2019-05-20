@@ -1,7 +1,8 @@
-"""apollon/io.py -- General I/O functionallity.
+# Licensed under the terms of the BSD-3-Clause license.
+# Copyright (C) 2019 Michael Blaß
+# michael.blass@uni-hamburg.de
 
-Copyright (C) 2019 Michael Blaß
-michael.blass@uni-hamburg.de
+"""apollon/io.py -- General I/O functionallity.
 
 Classes:
     ArrayEncoder            Serialize numpy array to JSON.

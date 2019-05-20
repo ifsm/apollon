@@ -1,8 +1,9 @@
+# Licensed under the terms of the BSD-3-Clause license.
+# Copyright (C) 2019 Michael Blaß
+# michael.blass@uni-hamburg.de
+
 """
 aplot.py -- General plotting routines.
-
-Copyright (C) 2018-2019 Michael Blaß
-michael.blass@uni-hamburg.de
 
 Functions:
     _new_figure         Create new (fig, ax) tuple.
