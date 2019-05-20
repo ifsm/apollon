@@ -95,28 +95,24 @@ class PoissonHmmEncoder(ArrayEncoder):
         return ArrayEncoder.default(self, o)
 
 
-def dump_json(obj, path: _types.PathType = None) -> str:
+def dump_json(obj, path: _types.PathType = None) -> None:
     """Write ``obj`` to JSON.
 
     This function can handel numpy arrays.
 
-    If ``path`` is None, this fucntion returns the output of json.dump.
-    Otherwise, encoded object is written to ``path``.
+    If ``path`` is None, this fucntion writes to stdout.  Otherwise, encoded
+    object is written to ``path``.
 
     Args:
         obj  (any)         Object to be encoded.
         path (PathType)    Output file path.
-
-    Returns:
-        (str)     FeatureSpace as JSON string if path is not None
-        (None)    If ``path`` is None.
     """
     if path is None:
-        return _json.dumps(obj, cls=ArrayEncoder)
-
-    path = _pathlib.Path(path)
-    with path.open('w') as json_file:
-        _json.dump(obj, json_file, cls=ArrayEncoder)
+        print(_json.dumps(obj, cls=ArrayEncoder))
+    else:
+        path = _pathlib.Path(path)
+        with path.open('w') as json_file:
+            _json.dump(obj, json_file, cls=ArrayEncoder)
 
 
 class WavFileAccessControl:

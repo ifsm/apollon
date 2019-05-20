@@ -29,7 +29,7 @@ def _rhythm_track(file_path, out_path):
                                         window=flux_onsets.window,
                                         cutoff=flux_onsets.cutoff)
 
-    features = FeatureSpace( peaks=flux_onsets.peaks,
+    features = FeatureSpace(peaks=flux_onsets.peaks,
                             index=flux_onsets.index(),
                             times=flux_onsets.times(snd.fps))
 
@@ -50,12 +50,8 @@ def _timbre_track(file_path: PathType, out_path: PathType = None) -> None:
     """Produce features for the timbre track with standard parameters.
 
     Args:
-        file_path (PathType)    Path to input file.
-        out_path  (PathType)    Path to output file.
-
-    Returns:
-        None    If ``out_path`` is not None
-        (str)   JSON encoded features, otherwise.
+        file_path: Path to input file.
+        out_path:  Path to output file.
     """
     snd = load_audio(file_path)
     spctrgr = stft(snd.data, snd.fps, n_perseg=1024, hop_size=512)
@@ -69,10 +65,7 @@ def _timbre_track(file_path: PathType, out_path: PathType = None) -> None:
     out['params'] = {param: getattr(spctrgr, param) for param in spectrogram_params}
     out['features'] = features.as_dict()
 
-    if out_path is not None:
-        dump_json(out, out_path)
-        return 0
-    return dump_json(out)
+    dump_json(out, out_path)
 
 
 def _export_csv(data: typing.Dict[str, typing.Any], path: PathType = None) -> None:
