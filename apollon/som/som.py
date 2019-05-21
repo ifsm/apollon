@@ -14,7 +14,7 @@ from scipy.spatial import distance as _distance
 from apollon.io import save as _save
 from apollon.som import utilities as _utilities
 from apollon.som import defaults as _defaults
-from apollon.aplot import _new_figure, _new_axis, _new_axis_3d
+from apollon.aplot import _new_axis, _new_axis_3d
 
 
 class _som_base:
@@ -341,7 +341,7 @@ class _som_base:
 
 
     def inspect(self):
-        fig = _new_figure(figsize=(12, 5))
+        fig = _plt.figure(figsize=(12, 5))
         ax1 = _new_axis(sp_pos=(1, 3, 1), fig=fig)
         ax2 = _new_axis(sp_pos=(1, 3, 2), fig=fig)
         ax3 = _new_axis(sp_pos=(1, 3, 3), fig=fig)
