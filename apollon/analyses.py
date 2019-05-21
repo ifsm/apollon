@@ -13,14 +13,6 @@ from . types import Array as _Array
 from . onsets import FluxOnsetDetector
 from . import segment
 
-def hmm(data: _Array, m_states: int = None): -> dict:
-    """Perform HMM analysis
-
-    If ``m_states`` is ``None``, hmms will be retrained until
-    an optimum is found.
-    """
-    if m_states is None:
-        rmm = PoissonHmm(data, m_states)
 def rhythm_track(file_path: PathType) -> dict:
     """Perform rhythm track analysis of given audio file.
 
