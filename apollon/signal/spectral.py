@@ -94,76 +94,6 @@ class _Spectrum_Base:
                              n=self.n, window=self.window)
 
 
-class _Spectrum(_Spectrum_Base):
-    def __init__(self, spectral_data, sr, n, window=None, *args, **kwargs):
-        self.bins = spectral_data
-        self.sr = sr
-        self.n = n
-        self.window = window
-        self.freqs = _np.fft.rfftfreq(self.n, 1/self.sr)
-
-    def __getitem__(self, key):
-        return self.bins[key]
-
-    def __len__(self):
-        return self.length
-
-    def __repr__(self):
-        return 'Spectrum(bins={}, sr={}, n={}, window={})'.format(self.bins,
-                                                                  self.sr,
-                                                                  self.n,
-                                                                  self.window)
-
-    def centroid(self):
-        """Return spectral centroid."""
-        powspc = self.power()
-        return (self.freqs * powspc).sum() / powspc.sum()
-
-    def __abs__(self):
-        return _np.absolute(self.bins)
-
-    def abs(self):
-        """Return magnitude spectrum."""
-        return self.__abs__()
-
-    def power(self):
-        """Retrun power spectrum."""
-        return _np.square(self.abs())
-
-    def phase(self):
-        """Return phase spectrum."""
-        return _np.angle(self.bins)
-
-    def plot(self, db=True, fmt='-', logfreq=False):
-        """Plot magnitude spectrum.
-
-        Params:
-            db         (bool) set True to plot amplitudes db-scaled.
-            fmt        (str) matplotlib linestyle string.
-            logfreq    (bool) set True to log-scale .x axis.
-        """
-        fig, ax = _plt.subplots(1)
-
-        if logfreq:
-            plot_function = ax.semilogx
-        else:
-            plot_function = ax.plot
-
-        if db:
-            plot_function(self.freqs, 20*_np.log10(self.mag()),
-                          fmt, lw=2, alpha=.7)
-            ax.set_ylabel(r'Amplitude [dB]')
-        else:
-            plot_function(self.freqs, self.mag(),
-                          fmt, lw=2, alpha=.7)
-            ax.set_ylabel(r'Amplitude')
-
-        ax.set_xlabel(r'Frequency [Hz]')
-        ax.grid()
-
-        if not _plt.isinteractive():
-            fig.show()
-
 
 def fft(sig, window=None, n_fft=None):
     """Return the Discrete Fourier Transform for real input.
@@ -203,6 +133,58 @@ def fft(sig, window=None, n_fft=None):
     return bins.squeeze()
 
 
+class Spectrum(_Spectrum_Base):
+
+    def __init__(self, inp: _Array, fps: int, n_fft: int = None,
+                 window: str = None):
+
+        self.fps = fps
+        self.n_fft = inp.shape[-1] if n_fft is None else n_fft
+        self.window = window
+        self.bins = fft(inp, self.window, self.n_fft)
+        self.frqs = _np.fft.rfftfreq(self.n_fft, 1.0/self.fps)
+
+    def __getitem__(self, key):
+        return self.bins[key]
+
+    def __len__(self):
+        return self.length
+
+    def __repr__(self):
+        return ('Spectrum(fps={}, n_fft={}, window={})'
+                .format(self.bins, self.fps, self.n_fft, self.window))
+
+    def params(self) -> dict:
+        return {'fps': self.fps, 'n_fft': self.n_fft, 'window': self.window}
+
+    def centroid(self, power=True):
+        if power is True:
+            inp = self.power()
+        else:
+            inp = self.abs()
+        return _features.spectral_centroid(inp, self.frqs)
+
+    def extract(self):
+        spctr = _features.spectral_shape(self.power().T, self.frqs)
+        prcpt = _features.perceptual_shape(self.abs().T, self.frqs)
+        return _features.FeatureSpace(spectral=spctr, perceptual=prcpt)
+
+    def __abs__(self):
+        return _np.absolute(self.bins)
+
+    def abs(self):
+        """Return magnitude spectrum."""
+        return self.__abs__()
+
+    def power(self):
+        """Retrun power spectrum."""
+        return _np.square(self.__abs__())
+
+    def phase(self):
+        """Return phase spectrum."""
+        return _np.angle(self.bins)
+
+
 class Spectrogram:
     """Compute a spectrogram from an one-dimensional input signal."""
 
@@ -211,7 +193,7 @@ class Spectrogram:
     __slots__ = ('inp_size', 'fps', 'window', 'n_perseg', 'hop_size', 'n_overlap', 'n_fft',
                  'd_frq', 'd_time', 'times', 'frqs', 'bins', 'shape')
 
-    def __init__(self, inp:_Array, fps: int, window: str, n_perseg: int, hop_size: int,
+    def __init__(self, inp: _Array, fps: int, window: str, n_perseg: int, hop_size: int,
                  n_fft: int = None) -> None:
         """Compute a spectrogram of the input data.
 
@@ -228,9 +210,6 @@ class Spectrogram:
             n_perseg (int)        Number of samples per DFT.
             hop_size (int)        Number of samples to shift the window.
             n_fft    (int)        Number of FFT bins.
-
-        Returns:
-            (Spectrogram)
         """
         self.inp_size = inp.size
         self.fps = fps
@@ -302,6 +281,9 @@ class Spectrogram:
         tmpr = _features.FeatureSpace(flux=self.flux())
         return _features.FeatureSpace(spectral=spctr, perceptual=prcpt, temporal=tmpr)
 
+    def params(self):
+        return {'window': self.window, 'n_perseg': self.n_perseg,
+                'hop_size': self.hop_size, 'n_fft': self.n_fft}
 
     def plot(self, cmap: str = 'nipy_spectral', log_frq: float = None,
              low: float = None, high: float = None, figsize: tuple = (14, 6),

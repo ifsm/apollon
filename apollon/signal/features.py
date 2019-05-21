@@ -139,6 +139,9 @@ def log_attack_time(inp: _Array, fs: int, ons_idx: _Array, wlen:float=0.05) -> _
 
 def perceptual_shape(inp: _Array, frqs: _Array) -> tuple:
     """"""
+    if inp.ndim < 2:
+        inp = inp[:, None]
+
     cbrs = _cb.filter_bank(frqs) @ inp
     loud_specific = _np.maximum(_cb.specific_loudness(cbrs), _np.finfo('float64').eps)
     loud_total = array2d_fsum(loud_specific, axis=0)
