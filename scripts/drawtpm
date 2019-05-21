@@ -17,13 +17,12 @@ def main(argv=None):
 
     opts, args = _parse_cmd(argv)
     in_file = Path(args[0])
-    if opts.out_file is None:
-        nf = '.'.join([in_file.stem, opts.file_type])
-        opts.out_file = in_file.with_name(nf)
 
     tpm = load(in_file)
     fig, ax, img = graph.draw_matrix(tpm.round(3).astype(float))
-    graph.save_hmmfig(fig, str(opts.out_file))
+    graph.save_hmmfig(fig, in_file.stem+'_matrix.jpg')
+    #fig, ax, img = graph.draw_network(tpm.round(3).astype(float))
+    #graph.save_hmmfig(fig, in_file.stem+'_network.jpg')
 
     return 0
 
@@ -35,14 +34,6 @@ def _parse_cmd(argv):
     parser.add_option('-v', '--verbose', action='store_true',
                       dest='verbose', default=False,
                       help='Be a little more verbose.')
-
-    parser.add_option('-o', '--out', action='store',
-                      dest='out_file', type='string',
-                      help='Specify an output destination.')
-
-    parser.add_option('-t', '--type', action='store',
-                      dest='file_type', type='string', default='png',
-                      help='Outfile type. [pdf, png, jpg]')
 
     opts, args = parser.parse_args()
 
