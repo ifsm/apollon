@@ -1,4 +1,4 @@
-#! python3
+#!/usr/bin/env python3
 
 import numpy as np
 from optparse import OptionParser
@@ -21,9 +21,8 @@ def main(argv=None):
         nf = '.'.join([in_file.stem, opts.file_type])
         opts.out_file = in_file.with_name(nf)
 
-    phmm = load(in_file)
-    print(len(phmm.theta))
-    fig, ax = graph.draw(*phmm.theta)
+    tpm = load(in_file)
+    fig, ax, img = graph.draw_matrix(tpm.round(3).astype(float))
     graph.save_hmmfig(fig, str(opts.out_file))
 
     return 0

@@ -214,7 +214,7 @@ def draw_matrix(tpm):
     cbar = ax.figure.colorbar(img, ax=ax)
     cbar.ax.set_ylabel('Probability', rotation=-90, va="bottom")
 
-    # major ticks 
+    # major ticks
     ax.set_xticks(np.arange(nx))
     ax.set_yticks(np.arange(ny))
     ax.tick_params(which='major', top=True, bottom=False,
@@ -260,6 +260,4 @@ def save_hmmfig(fig, path, **kwargs):
         path    (str)       Path to save file.
     """
     fig.savefig(fname=path,
-                bbox_extra_artists=(fig.axes[0].legend_,),
-                bbox_inches='tight', **kwargs)
-
+                bbox_extra_artists=(fig.axes[0].legend_,))
