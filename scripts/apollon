@@ -19,8 +19,9 @@ _valid_subcommand = ('features', 'onsets', 'hmm', 'som', 'export')
 
 def _parse_cml(argv):
     parser = argparse.ArgumentParser('Apollon main app')
-    parser.add_argument('--version', action='version', version=apollon.__version__,
-                        help='Display apollon version.')
+    parser.add_argument(
+        '--version', action='version', version=apollon.__version__,
+        help='Display apollon version.')
 
     subparsers = parser.add_subparsers()
     sp_features = _create_subparser_features(subparsers)
@@ -30,16 +31,23 @@ def _parse_cml(argv):
 
 def _create_subparser_features(subparsers):
     sp_features = subparsers.add_parser('features', help='')
-    sp_features.add_argument('--rhythm', action='store_true',
-                             help='Extract features for rhythm track.')
+    sp_features.add_argument(
+        '--rhythm', action='store_true',
+        help='Extract features for rhythm track.')
 
-    sp_features.add_argument('--timbre', action='store_true',
-                             help='Extract features for timbre track.')
+    sp_features.add_argument(
+        '--timbre', action='store_true',
+        help='Extract features for timbre track.')
 
-    sp_features.add_argument('--export', type=str, action='store')
+    sp_features.add_argument(
+        '--pitch', action='store_true',
+        help='Extract pitch track features')
 
-    sp_features.add_argument('-o', '--outpath', action='store',
-                             help='Output file path.')
+    sp_features.add_argument(
+        '--export', type=str, action='store')
+
+    sp_features.add_argument(
+        '-o', '--outpath', action='store', help='Output file path.')
 
     sp_features.add_argument('file', type=str, nargs=1)
     sp_features.set_defaults(func=commands.apollon_features.main)
