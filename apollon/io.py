@@ -169,42 +169,6 @@ def array_print_opt(*args, **kwargs):
         _np.set_printoptions(**std_options)
 
 
-def files_in_path(path: _types.PathType, ext: str = '.wav',
-                  recursive: bool = False) -> _types.PathGen:
-    """Generate all files with extension ``ext`` in ``path``.
-
-    If `path` points to a file, it is yielded.
-    If `path` points to a directory, all files with suffix `ext`
-    are yielded.
-
-    Args:
-        path        (PathType) Path to audio file or folder of audio files.
-        ext   (str)      The file type.
-        recursive   (bool)     If True, recursively visite all subdirs of `path`.
-
-    Yield:
-        (PathGen)
-    """
-    path = _pathlib.Path(path)
-
-    if path.exists():
-        if path.is_file():
-            if path.suffix == ext:
-                yield path.resolve()
-            else:
-                raise FileNotFoundError(f'File ``{path}`` is not a ``{ext}`` file.\n')
-        else:
-            name_pattern = '*'.join(ext)
-            if recursive:
-                for filepath in path.rglob(name_pattern):
-                    yield filepath.resolve()
-            else:
-                for filepath in path.glob(name_pattern):
-                    yield filepath.resolve()
-    else:
-        raise FileNotFoundError('Path "{}" could not be found.\n'.format(path))
-
-
 def load(path: _types.PathType) -> typing.Any:
     """Load a pickled file.
 
