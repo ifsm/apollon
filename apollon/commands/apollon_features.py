@@ -11,12 +11,13 @@ import typing
 from .. import analyses
 from .. types import PathType
 from .. import io
+from .. signal.features import FeatureSpace
 
 def _export_csv(
         data: typing.Dict[str, typing.Any],
         path: PathType = None) -> None:
     """"""
-    fspace = json.loads(data, object_hook=decode_array)
+    fspace = json.loads(data, object_hook=io.decode_array)
     fspace = FeatureSpace(**fspace)
     fspace.to_csv()
 
