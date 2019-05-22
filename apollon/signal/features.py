@@ -26,11 +26,11 @@ def spectral_centroid(inp: _Array, frqs: _Array) -> _Array:
     arrays will be promoted.
 
     Args:
-        inp  (ndarray)    Input. Each row is assumend FFT bins scaled by `freqs`.
-        frqs (ndarray)    One-dimensional array of FFT frequencies.
+        inp:   Input data. Each row is assumend FFT bins scaled by `freqs`.
+        frqs:  One-dimensional array of FFT frequencies.
 
     Returns:
-        (ndarray or scalar)    Spectral centroid frequency.
+        Array of Spectral centroid frequencies.
     """
     inp = _np.atleast_2d(inp).astype('float64')
 
@@ -45,11 +45,11 @@ def spectral_flux(inp: _Array, delta:float=1.0) -> _Array:
     """Estimate the spectral flux
 
     Args:
-        inp   (ndarray)    Input. Each row is assumend FFT bins.
-        delta (float)      Sample spacing.
+        inp:    Input data. Each row is assumend FFT bins.
+        delta:  Sample spacing.
 
     Returns:
-        (ndarray)    Spectral flux.
+        Array of Spectral flux.
     """
     inp = _np.atleast_2d(inp).astype('float64')
     return _np.maximum(_np.gradient(inp, delta, axis=-1), 0).squeeze()
@@ -82,15 +82,14 @@ def spectral_shape(inp, frqs, low: float = 50, high: float = 16000):
     the distribution.
 
     Args:
-        inp  (ndarray)    Input spectrum or spectrogram.
-        frqs (ndarray)    Frequency axis.
-        low  (float)      Lower cutoff frequency.
-        high (float)      Upper cutoff frequency.
+        inp:   Input spectrum or spectrogram.
+        frqs:  Frequency axis.
+        low:  Lower cutoff frequency.
+        high:  Upper cutoff frequency.
 
     Returns:
-        (tuple)    (centroid, spread, skewness, kurtosis)
+        Spectral centroid, spread, skewness, and kurtosis.
     """
-
     if inp.ndim < 2:
         inp = inp[:, None]
 
@@ -116,20 +115,20 @@ def spectral_shape(inp, frqs, low: float = 50, high: float = 16000):
 
 
 def log_attack_time(inp: _Array, fs: int, ons_idx: _Array, wlen:float=0.05) -> _Array:
-    """Estimate the attack time of each onset an return is logarithm.
+    """Estimate the attack time of each onset and return its logarithm.
 
     This function estimates the attack time as the duration between the
     onset and the local maxima of the magnitude of the Hilbert transform
     of the local window.
 
     Args:
-        inp     (ndarray)    Input signal.
-        fs      (int)        Sampling frequency.
-        ons_idx (ndarray)    Sample indices of onsets.
-        wlen    (float)      Local window length in samples.
+        inp:      Input signal.
+        fs:       Sampling frequency.
+        ons_idx:  Sample indices of onsets.
+        wlen:     Local window length in samples.
 
     Returns:
-        (ndarray)    Logarithm of the attack time.
+        Logarithm of the attack time.
     """
     wlen = int(fs * wlen)
     segs = _segment.by_onsets(inp, wlen, ons_idx)
@@ -140,7 +139,11 @@ def log_attack_time(inp: _Array, fs: int, ons_idx: _Array, wlen:float=0.05) -> _
 
 
 def perceptual_shape(inp: _Array, frqs: _Array) -> tuple:
-    """"""
+    """Extracts psychoacoustical features from the spectrum.
+
+    Returns:
+        Loudness, roughness, and sharpness.
+    """
     if inp.ndim < 2:
         inp = inp[:, None]
 
@@ -160,10 +163,10 @@ def loudness(inp: _Array, frqs: _Array) -> _Array:
     """Calculate a measure for the perceived loudness from a spectrogram.
 
     Args:
-        inp (ndarray)    Magnitude spectrogram.
+        inp:  Magnitude spectrogram.
 
     Returns:
-        (ndarray)    Loudness
+        Loudness
     """
     cbrs = _cb.filter_bank(frqs) @ inp
     return _cb.total_loudness(cbrs)
@@ -173,11 +176,11 @@ def sharpness(inp: _Array, frqs: _Array) -> _Array:
     """Calculate a measure for the perception of auditory sharpness from a spectrogram.
 
     Args:
-        inp  (ndarray)    Two-dimensional input array. Assumed to be an magnitude spectrogram.
-        frqs (ndarray)    Frequency axis of the spectrogram.
+        inp:   Two-dimensional input array. Assumed to be an magnitude spectrogram.
+        frqs:  Frequency axis of the spectrogram.
 
     Returns:
-        (ndarray)    Sharpness for each time instant of the spectragram.
+        Sharpness for each time instant of the spectragram.
     """
     cbrs = _cb.filter_bank(frqs) @ inp
     return _cb.sharpness(cbrs)
