@@ -41,7 +41,7 @@ def spectral_centroid(inp: _Array, frqs: _Array) -> _Array:
     return _np.divide(weighted_nrgy, total_nrgy)
 
 
-def spectral_flux(inp: _Array, delta:float=1.0) -> _Array:
+def spectral_flux(inp: _Array, delta: float = 1.0) -> _Array:
     """Estimate the spectral flux
 
     Args:
@@ -55,7 +55,7 @@ def spectral_flux(inp: _Array, delta:float=1.0) -> _Array:
     return _np.maximum(_np.gradient(inp, delta, axis=-1), 0).squeeze()
 
 
-def spectral_shape(inp, frqs, low: float = 50, high: float = 16000):
+def spectral_shape(inp: _Array, frqs: _Array, low: float = 50, high: float = 16000):
     """Compute low-level spectral shape descriptors.
 
     This function computes the first four central moments of
