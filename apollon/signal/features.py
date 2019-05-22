@@ -2,10 +2,14 @@
 # Copyright (C) 2019 Michael Blaß
 # michael.blass@uni-hamburg.de
 
+"""
+apollon/signal/features.py -- Feature extraction routines
+"""
+
 import json as _json
 import csv as _csv
 import sys as _sys
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as _np
 from scipy.signal import hilbert as _hilbert
@@ -55,7 +59,8 @@ def spectral_flux(inp: _Array, delta: float = 1.0) -> _Array:
     return _np.maximum(_np.gradient(inp, delta, axis=-1), 0).squeeze()
 
 
-def spectral_shape(inp: _Array, frqs: _Array, low: float = 50, high: float = 16000):
+def spectral_shape(inp: _Array, frqs: _Array, cf_low: float = 50,
+                   cf_high: float = 16000) -> FeatureSpace:
     """Compute low-level spectral shape descriptors.
 
     This function computes the first four central moments of
@@ -82,10 +87,10 @@ def spectral_shape(inp: _Array, frqs: _Array, low: float = 50, high: float = 160
     the distribution.
 
     Args:
-        inp:   Input spectrum or spectrogram.
-        frqs:  Frequency axis.
-        low:  Lower cutoff frequency.
-        high:  Upper cutoff frequency.
+        inp:      Input spectrum or spectrogram.
+        frqs:     Frequency axis.
+        cf_low:   Lower cutoff frequency.
+        cf_high:  Upper cutoff frequency.
 
     Returns:
         Spectral centroid, spread, skewness, and kurtosis.
@@ -93,7 +98,7 @@ def spectral_shape(inp: _Array, frqs: _Array, low: float = 50, high: float = 160
     if inp.ndim < 2:
         inp = inp[:, None]
 
-    vals, frqs = trim_spectrogram(inp, frqs, 50, 16000)
+    vals, frqs = trim_spectrogram(inp, frqs, cf_low, cf_high)
 
     total_nrgy = array2d_fsum(vals)
     total_nrgy[total_nrgy == 0.0] = 1.0    # Total energy is zero iff input signal is all zero.
@@ -104,17 +109,18 @@ def spectral_shape(inp: _Array, frqs: _Array, low: float = 50, high: float = 160
     deviation = frqs[:, None] - centroid
 
     spread = array2d_fsum(_np.power(deviation, 2) * vals)
-    skew   = array2d_fsum(_np.power(deviation, 3) * vals)
-    kurt   = array2d_fsum(_np.power(deviation, 4) * vals)
+    skew = array2d_fsum(_np.power(deviation, 3) * vals)
+    kurt = array2d_fsum(_np.power(deviation, 4) * vals)
 
     spread = _np.sqrt(spread / total_nrgy)
-    skew   = skew / total_nrgy / _np.power(spread, 3)
-    kurt   = kurt / total_nrgy / _np.power(spread, 4)
+    skew = skew / total_nrgy / _np.power(spread, 3)
+    kurt = kurt / total_nrgy / _np.power(spread, 4)
 
     return FeatureSpace(centroid=centroid, spread=spread, skewness=skew, kurtosis=kurt)
 
 
-def log_attack_time(inp: _Array, fs: int, ons_idx: _Array, wlen:float=0.05) -> _Array:
+def log_attack_time(inp: _Array, fps: int, ons_idx: _Array,
+                    wlen: float = 0.05) -> _Array:
     """Estimate the attack time of each onset and return its logarithm.
 
     This function estimates the attack time as the duration between the
@@ -123,22 +129,21 @@ def log_attack_time(inp: _Array, fs: int, ons_idx: _Array, wlen:float=0.05) -> _
 
     Args:
         inp:      Input signal.
-        fs:       Sampling frequency.
+        fps:      Sampling frequency.
         ons_idx:  Sample indices of onsets.
         wlen:     Local window length in samples.
 
     Returns:
         Logarithm of the attack time.
     """
-    wlen = int(fs * wlen)
+    wlen = int(fps * wlen)
     segs = _segment.by_onsets(inp, wlen, ons_idx)
-    mx = _np.absolute(_hilbert(segs)).argmax(axis=1) / fs
-    mx[mx == 0.0] = 1.0
+    attack_time = _np.absolute(_hilbert(segs)).argmax(axis=1) / fps
+    attack_time[attack_time == 0.0] = 1.0
+    return _np.log(attack_time)
 
-    return _np.log(mx)
 
-
-def perceptual_shape(inp: _Array, frqs: _Array) -> tuple:
+def perceptual_shape(inp: _Array, frqs: _Array) -> FeatureSpace:
     """Extracts psychoacoustical features from the spectrum.
 
     Returns:
@@ -148,12 +153,13 @@ def perceptual_shape(inp: _Array, frqs: _Array) -> tuple:
         inp = inp[:, None]
 
     cbrs = _cb.filter_bank(frqs) @ inp
-    loud_specific = _np.maximum(_cb.specific_loudness(cbrs), _np.finfo('float64').eps)
+    loud_specific = _np.maximum(_cb.specific_loudness(cbrs),
+                                _np.finfo('float64').eps)
     loud_total = array2d_fsum(loud_specific, axis=0)
 
 
-    z = _np.arange(1, 25)
-    sharp = ((z * _cb.weight_factor(z)) @ cbrs) / loud_total
+    zfn = _np.arange(1, 25)
+    sharp = ((zfn * _cb.weight_factor(zfn)) @ cbrs) / loud_total
     rough = roughness(inp, frqs)
 
     return FeatureSpace(loudness=loud_total, sharpness=sharp, roughness=rough)
@@ -195,6 +201,12 @@ class FeatureSpace:
             self.update(key, val)
 
     def update(self, key: str, val: Any) -> None:
+        """Update the FeatureSpace.
+
+        Args:
+            key:  Field name.
+            val:  Field value.
+        """
         self.__dict__[key] = val
 
     def items(self) -> List[Tuple[str, Any]]:
@@ -231,12 +243,10 @@ class FeatureSpace:
                 flat_dict[key] = val
         return flat_dict
 
-    def to_csv(self, path: str = None) -> str:
+    def to_csv(self, path: str = None) -> None:
         """Write FeatureSpace to csv file.
 
-        If ``path`` is ``None``, this method returns of the data of the
-        ``FeatureSpace`` as comma seperated values. Otherwise, data is
-        written to ``path``.
+        If ``path`` is ``None``, comma separated values are written stdout.
 
         Args:
             path:  Output file path.
@@ -277,7 +287,7 @@ class FeatureSpace:
             except IndexError:
                 break
 
-    def to_json(self, path: str = None) -> str:
+    def to_json(self, path: str = None) -> Optional[str]:
         """Convert FeaturesSpace to JSON.
 
         If ``path`` is ``None``, this method returns of the data of the
@@ -296,3 +306,5 @@ class FeatureSpace:
 
         with open(path, 'w') as json_file:
             _json.dump(self.as_dict(), json_file, cls=ArrayEncoder)
+
+        return None
