@@ -27,4 +27,4 @@ of the main app. You may invoke the using
 ```apollon features --rhythm audio_file [-o output_file]```
 
 ## 3. Documentation
-Full [documentation](apollon.readthedocs.io) is available on readthedocs.
+Full [documentation](https://apollon.readthedocs.io) is available on readthedocs.
