@@ -5,6 +5,7 @@
 import json as _json
 import csv as _csv
 import sys as _sys
+from typing import Any, Dict, List, Tuple
 
 import numpy as _np
 from scipy.signal import hilbert as _hilbert
@@ -16,6 +17,7 @@ from .. io import ArrayEncoder
 from .  import critical_bands as _cb
 from .  roughness import roughness
 from .  tools import trim_spectrogram
+
 
 def spectral_centroid(inp: _Array, frqs: _Array) -> _Array:
     """Estimate the spectral centroid frequency.
@@ -189,19 +191,35 @@ class FeatureSpace:
                 val = FeatureSpace(**val)
             self.update(key, val)
 
-    def update(self, key, val):
+    def update(self, key: str, val: Any) -> None:
         self.__dict__[key] = val
 
-    def items(self):
-        return self.__dict__.items()
+    def items(self) -> List[Tuple[str, Any]]:
+        """Provides the the FeatureSpace's items.
 
-    def keys(self):
-        return self.__dict__.keys()
+        Returns:
+            List of (key, value) pairs.
+        """
+        return list(self.__dict__.items())
 
-    def values(self):
-        return self.__dict__.values()
+    def keys(self) -> List[str]:
+        """Provides the FeatureSpaces's keys.
 
-    def as_dict(self):
+        Returns:
+            List of keys.
+        """
+        return list(self.__dict__.keys())
+
+    def values(self) -> List[Any]:
+        """Provides the FeatureSpace's values.
+
+        Returns:
+            List of values.
+        """
+        return list(self.__dict__.values())
+
+    def as_dict(self) -> Dict[str, Any]:
+        """Returns the FeatureSpace converted to a dict."""
         flat_dict = {}
         for key, val in self.__dict__.items():
             try:
@@ -210,11 +228,19 @@ class FeatureSpace:
                 flat_dict[key] = val
         return flat_dict
 
-    def to_csv(self, path: str = None) -> None:
+    def to_csv(self, path: str = None) -> str:
         """Write FeatureSpace to csv file.
 
+        If ``path`` is ``None``, this method returns of the data of the
+        ``FeatureSpace`` as comma seperated values. Otherwise, data is
+        written to ``path``.
+
         Args:
-            path (str)    Output file path.
+            path:  Output file path.
+
+        Returns:
+            FeatureSpace as csv-formatted string if ``path`` is ``None``,
+            else ``None``.
         """
         features = {}
         for name, space in self.items():
@@ -249,17 +275,18 @@ class FeatureSpace:
                 break
 
     def to_json(self, path: str = None) -> str:
-        """FeaturesSpace in JSON format.
+        """Convert FeaturesSpace to JSON.
 
-        If ``path`` is None, this method returns the output of json.dump method.
-        Otherwise, FeatureSpace is written to ``path``.
+        If ``path`` is ``None``, this method returns of the data of the
+        ``FeatureSpace`` in JSON format. Otherwise, data is written to
+        ``path``.
 
         Args:
-            path (str)    Output file path.
+            path:  Output file path.
 
         Returns:
-            (str)     FeatureSpace as JSON string if path is not None
-            (None)    If ``path`` is None.
+            FeatureSpace as JSON-formatted string if path is not ``None``,
+            else ``None``.
         """
         if path is None:
             return _json.dumps(self.as_dict(), cls=ArrayEncoder)
