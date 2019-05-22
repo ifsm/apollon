@@ -82,7 +82,7 @@ def jsonify(inp: Any):
     valid_types = (dict, list, tuple, str, int, float)
     valid_vals = (True, False, None)
 
-    xx = [isintance(inp, v_type) for v_type in valid_types]
+    xx = [isinstance(inp, v_type) for v_type in valid_types]
     yy = [inp is v_vals for v_vals in valid_vals]
 
     if any(xx) or any(yy):
@@ -95,12 +95,12 @@ def jsonify(inp: Any):
 
 
 #TODO Move to better place
-def L1_Norm(arr2d: _Array) -> float:
+def L1_Norm(arr: _Array) -> float:
     """Compute the L_1 norm of input vector `x`.
 
-    This implementation is generally faster than np.norm(x, ord=1).
+    This implementation is generally faster than np.norm(arr, ord=1).
     """
-    return _np.abs(x).sum(axis=0)
+    return _np.abs(arr).sum(axis=0)
 
 
 def normalize(arr, mode='array'):
