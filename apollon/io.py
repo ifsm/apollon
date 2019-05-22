@@ -197,12 +197,11 @@ def repath(current_path: _types.PathType, new_path: _types.PathType,
     """
     current_path = _pathlib.Path(current_path)
     new_path = _pathlib.Path(new_path)
-
-    if not ext.startswith('.'):
-        ext = '.' + ext
-
     file_path = current_path.stem
+
     if ext is not None:
+        if not ext.startswith('.'):
+            ext = '.' + ext
         file_path.join(ext)
 
     return new_path.joinpath(file_path)
