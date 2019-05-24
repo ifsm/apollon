@@ -25,6 +25,7 @@ def _parse_cml(argv):
 
     subparsers = parser.add_subparsers()
     sp_features = _create_subparser_features(subparsers)
+    sp_hmm = _create_subparser_hmm(subparsers)
 
     return parser.parse_args(argv[1:])
 
@@ -55,12 +56,35 @@ def _create_subparser_features(subparsers):
     return sp_features
 
 
+def _create_subparser_hmm(subparsers):
+    sp_hmm = subparsers.add_parser('hmm', help='Train HMMs')
+
+    sp_hmm.add_argument(
+        'track_file', type=str, action='store',
+        help='Path to track file.')
+
+    sp_hmm.add_argument(
+        'feature_path', type=str, action='store',
+        help='Specifies feature within track file.')
+
+    sp_hmm.add_argument(
+        '-m', '--mstates', type=int, action='store',  default=4,
+        help='Number of HMM states.')
+
+    sp_hmm.add_argument(
+        '-o', '--outpath', type=str, action='store',
+        help='Output file path.')
+
+    sp_hmm.set_defaults(func=commands.apollon_hmm.main)
+    return sp_hmm
+
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv
 
     args = _parse_cml(argv)
-    args.func(args)
+    return args.func(args)
 
 
 if __name__ == '__main__':
