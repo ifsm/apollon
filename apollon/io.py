@@ -48,7 +48,7 @@ class ArrayEncoder(_json.JSONEncoder):
         if isinstance(o, _np.ndarray):
             out = {'__ndarray__': True,
                    '__dtype__': o.dtype.str,
-                   'data': o.tolist()}
+                   'data': o.astype('float64').tolist()}
             return out
         return _json.JSONEncoder.default(self, o)
 
