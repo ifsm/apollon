@@ -15,6 +15,5 @@ Submodules
    apollon.signal.features
    apollon.signal.filter
    apollon.signal.spectral
-   apollon.signal.test
    apollon.signal.tools
 

@@ -21,6 +21,7 @@ Submodules
 
 .. toctree::
 
+   apollon.analyses
    apollon.aplot
    apollon.audio
    apollon.datasets
