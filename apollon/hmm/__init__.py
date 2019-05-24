@@ -2,6 +2,4 @@
 # Copyright (C) 2019 Michael Blaß
 # michael.blass@uni-hamburg.de
 
-__all__ = ('PoissonHmm')
-
 from . poisson.poisson_hmm import PoissonHmm
