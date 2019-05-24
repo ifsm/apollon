@@ -36,17 +36,20 @@ def main(argv=None) -> int:
     if hmm is None:
         return 10
 
-    out_path = pathlib.Path(argv.outpath)
-    if not out_path.suffix:
-        out_path.joinpath(argv.feature_path.replace('.', '_')+'.hmm')
+    default_fname = argv.feature_path.replace('.', '_') + '.hmm'
+    if argv.outpath is None:
+        out_path = pathlib.Path(default_fname)
+    else:
+        out_path = pathlib.Path(argv.outpath)
+        if not out_path.suffix:
+            out_path = out_path.joinpath(default_fname)
+        if not out_path.parent.is_dir():
+            print('Error. Path "{!s}" does not exist.'.format(out_path.parent))
+            return 10
+    print(out_path)
 
-    if not out_path.parent.is_dir():
-        print('Error. Path "{!s}" does not exist.'.format(path.parent))
-        return 10
-
-    io.dump_json(hmm, out_path)
+    #io.dump_json(hmm.to_dict(), out_path)
     return 0
-
 
 
 def _train_n_hmm(data: _Array, m_states: int, n_trails: int):
