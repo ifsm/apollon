@@ -92,15 +92,15 @@ class _som_base:
         self.trajectories = []
 
     def get_winners(self, data, argax=1):
-        '''Get the best matching neurons for every vector in data.
+        """Get the best matching neurons for every vector in data.
 
-           Params:
-                data    (np.array) Input data set
-                argax   (int) Axis used for minimization 1=x, 0=y.
+            Args:
+                data:  Input data set
+                argax: Axis used for minimization 1=x, 0=y.
 
-            Return:
-                (np.array, np.ndarray) Indices of bmus and min dists.
-        '''
+            Returna:
+                Indices of bmus and min dists.
+        """
         # TODO: if the distance between an input vector and more than one lattice
         #       neuro is the same, choose winner randomly.
 
@@ -125,7 +125,7 @@ class _som_base:
 
 
     def _init_st_mat(self):
-        '''Initialize the weights with stochastic matrices.
+        """Initialize the weights with stochastic matrices.
 
         The rows of each n by n stochastic matrix are sampes drawn from the
         Dirichlet distribution, where n is the number of rows and cols of the
@@ -134,7 +134,7 @@ class _som_base:
         The square root n of the weight vectors' size must be element of the
         natural numbers, so that the weight vector is reshapeable to a square
         matrix.
-        '''
+        """
         # check for square matrix
         d = _np.sqrt(self.dw)
         is_not_qm = bool(d - int(d))
@@ -154,22 +154,29 @@ class _som_base:
 
 
     def calibrate(self, data, targets):
-        '''Retriev for every map unit the best matching vector of the input
-           data set. Save its target value at the map units position on a
-           new array called `calibration`.
+        """Retriev for every map unit the best matching vector of the input
+        data set. Save its target value at the map units position on a
+        new array called `calibration`.
 
-           Params:
-            data    (2d array) Input data set.
-            targets (1d array) Target labels.
-        '''
+        Args:
+            data:     Input data set.
+            targets:  Target labels.
+        """
         bmiv, err = self.get_winners(data, argax=0)
         self._cmap = targets[bmiv]
         self.isCalibrated = True
 
 
     def plot_calibration(self, lables=None, ax=None, cmap='plasma', **kwargs):
-        # TODO: add params to docstring
-        '''Plot calibrated map.'''
+        """Plot calibrated map.
+
+        Args:
+            labels:
+            ax
+            cmap:
+
+        Returns:
+        """
         if not self.isCalibrated:
             raise ValueError('Map not calibrated.')
         else:
@@ -185,19 +192,19 @@ class _som_base:
 
     def plot_datamap(self, data, targets, interp='None', marker=False,
                      cmap='viridis', **kwargs):
-        '''Represent the input data on the map by retrieving the best
-           matching unit for every element in `data`. Mark each map unit
-           with the corresponding target value.
+        """Represent the input data on the map by retrieving the best
+        matching unit for every element in `data`. Mark each map unit
+        with the corresponding target value.
 
-           Params:
-                data    (2d-array) Input data set.
-                targets (array) Class labels or values.
-                interp  (str) matplotlib interpolation method name.
-                marker  (bool) Plot markers in bmu position if True.
+        Args:
+            data:    Input data set.
+            targets: Class labels or values.
+            interp:  matplotlib interpolation method name.
+            marker:  Plot markers in bmu position if True.
 
-           Return:
-                (AxesSubplot) axis, umatrix, bmu_xy
-        '''
+        Returns:
+           axis, umatrix, bmu_xy
+        """
         ax, udm = self.plot_umatrix(interp=interp, cmap=cmap, **kwargs)
 
         #
@@ -231,18 +238,20 @@ class _som_base:
 
 
     def plot_umatrix(self, interp='None', cmap='viridis', ax=None, **kwargs):
-        """ Plot unified distance matrix.
+        """Plot unified distance matrix.
 
-        The unified distance matrix (udm) allows to visualize weight matrices of
-        high dimensional weight vectors. The entries (x, y) of the udm correspond to the arithmetic mean of the distances between weight vector (x, y) and its 4-neighbourhood.
+        The unified distance matrix (udm) allows to visualize weight matrices
+        of high dimensional weight vectors. The entries (x, y) of the udm
+        correspondto the arithmetic mean of the distances between weight
+        vector (x, y) and its 4-neighbourhood.
 
-       Params:
-           w        (int) Neighbourhood width.
-           interp   (str) matplotlib interpolation method name.
-           ax       (plt.Axis) Provide custom axis object.
+        Args:
+            w:        Neighbourhood width.
+            interp:   matplotlib interpolation method name.
+            ax:       Provide custom axis object.
 
-       Return:
-           (AxesSubplot, np.array) the axis, umatrix
+       Returns:
+           axis, umatrix
         """
         if ax is None:
             ax = _new_axis(xlim=(0, self.dx), ylim=(0, self.dy), **kwargs)
@@ -256,15 +265,15 @@ class _som_base:
 
 
     def plot_umatrix3d(self, w=1, cmap='viridis', **kwargs):
-        '''Plot the umatrix in 3d. The color on each unit (x, y) represents its
+        """Plot the umatrix in 3d. The color on each unit (x, y) represents its
            mean distance to all direct neighbours.
 
-           Params:
-               w            (int) Neighbourhood width.
-               **kwargs     Pass keywors to _new_axis_3d.
-           Return:
-               (Axes3DSubplot, np.array) the axis, umatrix
-        '''
+        Args:
+            w: Neighbourhood width.
+
+        Returns:
+            axis, umatrix
+        """
         fig, ax = _new_axis_3d(**kwargs)
         udm = _utilities.umatrix(self.weights, self.shape, metric=self.metric)
         X, Y = _np.mgrid[:self.dx, :self.dy]
@@ -273,12 +282,12 @@ class _som_base:
 
 
     def plot_features(self, figsize=(8, 8)):
-        """ Values of each feature of the weight matrix per map unit.
+        """Values of each feature of the weight matrix per map unit.
 
         This works currently ony for feature vectors of len dw**2.
 
-        Params:
-            figsize (tuple)    Size of figure.
+        Args:
+            Size of figure.
         """
         d = _np.sqrt(self.dw).astype(int)
         rweigths = self.weights.reshape(self.dims)
@@ -290,20 +299,20 @@ class _som_base:
 
 
     def plot_whist(self, interp='None', ax=None, **kwargs):
-        '''Plot the winner histogram.
+        """Plot the winner histogram.
 
-           The darker the color on position (x, y) the more often neuron (x, y)
-           was choosen as winner. The number of winners at edge neuros is
-           magnitudes of order higher than on the rest of the map. Thus, the
-           histogram is shown in log-mode.
+        The darker the color on position (x, y) the more often neuron (x, y)
+        was choosen as winner. The number of winners at edge neuros is
+        magnitudes of order higher than on the rest of the map. Thus, the
+        histogram is shown in log-mode.
 
-           Params:
-               interp    (str) matplotlib interpolation method name.
-               ax        (plt.Axis) Provide custom axis object.
+        Args:
+            interp: matplotlib interpolation method name.
+            ax:     Provide custom axis object.
 
-           Return:
-               (AxesSubplot) the axis.
-        '''
+        Returns:
+            The axis.
+        """
         if ax is None:
             ax = _new_axis(xlim=(0, self.dx), ylim=(0, self.dy), **kwargs)
         ax.imshow(_np.log1p(self.whist.reshape(self.dx, self.dy)),
@@ -312,23 +321,23 @@ class _som_base:
 
 
     def save(self, path):
-        '''Save som object to file using pickle.
+        """Save som object to file using pickle.
 
-        Params:
-            path    (str) Save SOM to this path.
-        '''
+        Args:
+            path: Save SOM to this path.
+        """
         _save(self, path)
 
 
     def transform(self, data, flat=True):
         """Transform input data to feature space.
 
-        Params:
-            data    (ndarray) 2d array of shape (N_vect, N_features).
-            flat    (bool) Return flat index of True else 2d multi index.
+        Args:
+            data:  2d array of shape (N_vect, N_features).
+            flat:  Return flat index of True else 2d multi index.
 
-        Return:
-            pos    (ndarray) Position of each data item in the feature space.
+        Returns:
+            Position of each data item in the feature space.
         """
         bmu, err = self.get_winners(data)
 
@@ -379,7 +388,7 @@ class SelfOrganizingMap(_som_base):
             # update activation map
             self.whist[bm_units] += 1
             self.trajectories.append(bm_units)
-            
+
             # get bmu's multi index
             bmu_midx = _np.unravel_index(bm_units, self.shape)
 
@@ -415,9 +424,9 @@ class SelfOrganizingMap(_som_base):
         """Feed the whole data set to the network and update once
            after each iteration.
 
-           Params:
-               data    (2d array) Input data set.
-               verbose (bool) Print verbose messages if True.
+        Args:
+            data:    Input data set.
+            verbose: Print verbose messages if True.
         """
         # main loop
         for (c_iter, c_nhr) in \
@@ -437,9 +446,9 @@ class SelfOrganizingMap(_som_base):
         """Randomly feed the data to the network and update after each
            data item.
 
-           Params:
-               data    (2d array) Input data set.
-               verbose (bool) Print verbose messages if True.
+        Args:
+            data:     Input data set.
+            verbose:  Print verbose messages if True.
         """
         # main loop
         for (c_iter, c_eta, c_nhr) in \
@@ -481,26 +490,26 @@ class SelfOrganizingMap(_som_base):
 class DotSom(_som_base):
     def __init__(self, dims=(10, 10, 3), eta=.8, nh=8, n_iter=10,
                  metric='euclidean', mode=None, init_distr='uniform', seed=None):
-        """
-        This SOM assumes a stationary PoissonHMM on each unit. The weight vector
+        """ This SOM assumes a stationary PoissonHMM on each unit. The weight vector
         represents the HMMs distribution parameters in the following order
         [lambda1, ..., lambda_m, gamma_11, ... gamma_mm]
-        Params:
+
+        Args:
             dims    (tuple) dx, dy, m
         """
         super().__init__(dims, eta, nh, n_iter, metric, mode, init_distr, seed)
         self._neighbourhood = self.nh_gaussian_L2
 
     def get_winners(self, data, argax=1):
-        '''Get the best matching neurons for every vector in data.
+        """Get the best matching neurons for every vector in data.
 
-           Params:
-                data    (np.array) Input data set
-                argax   (int) Axis used for minimization 1=x, 0=y.
+        Args:
+            data:  Input data set
+            argax: Axis used for minimization 1=x, 0=y.
 
-            Return:
-                (np.array, np.ndarray) Indices of bmus and min dists.
-        '''
+        Returns:
+            Indices of bmus and min dists.
+        """
         # TODO: if the distance between an input vector and more than one lattice
         #       neuro is the same, choose winner randomly.
 
