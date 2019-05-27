@@ -1,7 +1,7 @@
-apollon.hmm.poisson\_hmm\_old module
+apollon.commands.apollon\_hmm module
 ====================================
 
-.. automodule:: apollon.hmm.poisson_hmm_old
+.. automodule:: apollon.commands.apollon_hmm
     :members:
     :undoc-members:
     :show-inheritance:

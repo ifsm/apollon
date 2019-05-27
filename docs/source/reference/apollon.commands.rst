@@ -13,5 +13,6 @@ Submodules
 
    apollon.commands.apollon_export
    apollon.commands.apollon_features
+   apollon.commands.apollon_hmm
    apollon.commands.apollon_onsets
 

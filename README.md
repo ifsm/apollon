@@ -25,3 +25,6 @@ of the main app. You may invoke the using
 
 #### 2.1.2 Rhythm track
 ```apollon features --rhythm audio_file [-o output_file]```
+
+## 3. Documentation
+Full [documentation](https://apollon.readthedocs.io) is available on readthedocs.

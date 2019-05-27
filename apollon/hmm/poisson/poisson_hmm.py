@@ -102,6 +102,18 @@ class PoissonHmm:
     def score(self, X: _Array):
         """Compute the log-likelihood of `X` under this HMM."""
 
+    def to_dict(self):
+        """Returns HMM parameters as dict."""
+        attrs = ('hyper_params', 'init_params', 'params',
+                 'quality', 'success')
+        out = {}
+        for key in attrs:
+            try:
+                out[key] = getattr(self, key).__dict__
+            except AttributeError:
+                out[key] = getattr(self, key)
+        return out
+
 
 class _HyperParams:
 
@@ -110,8 +122,6 @@ class _HyperParams:
 
     """Check and save model hyper parameters. Meant for compositional and internal only use.
     """
-    __slots__ = ['m_states', 'init_lambda_meth', 'init_gamma_meth', 'init_delta_meth', 'gamma_dp',
-                 'delta_dp', 'fill_diag']
 
     def __init__(self,
                  m_states: int,
@@ -269,13 +279,11 @@ class _HyperParams:
 
 
     def __str__(self):
-        vals = []
-        for slot in self.__slots__:
-            vals.append(getattr(self, slot))
-        return str(vals)
+        return str(list(self.__dict__.items()))
 
     def __repr__(self):
-        items = ('\t{}={!r}'.format(attr, getattr(self, attr)) for attr in self.__slots__)
+        items = ('\t{}={!r}'.format(name, attr)
+                 for name, attr in self.__dict__.items())
         return '_HyerParameters(\n{})'.format(',\n'.join(items))
 
 
