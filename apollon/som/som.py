@@ -15,7 +15,7 @@ from apollon.io import save as _save
 from apollon.som import utilities as _utilities
 from apollon.som import defaults as _defaults
 from apollon.aplot import _new_axis, _new_axis_3d
-
+from apollon import aplot as aplot
 
 class _som_base:
     def __init__(self, dims, eta, nhr, n_iter, metric, mode, init_distr, seed=None):
@@ -254,7 +254,7 @@ class _som_base:
            axis, umatrix
         """
         if ax is None:
-            ax = _new_axis(xlim=(0, self.dx), ylim=(0, self.dy), **kwargs)
+            fig, ax = aplot._new_axis()
         udm = _utilities.umatrix(self.weights, self.shape, metric=self.metric)
 
         ax.set_title('Unified distance matrix')
