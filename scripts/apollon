@@ -60,8 +60,8 @@ def _create_subparser_hmm(subparsers):
     sp_hmm = subparsers.add_parser('hmm', help='Train HMMs')
 
     sp_hmm.add_argument(
-        'track_file', type=str, action='store',
-        help='Path to track file.')
+        'track_files', type=str, action='store', nargs='+',
+        help='Path to track file or path to file of paths')
 
     sp_hmm.add_argument(
         'feature_path', type=str, action='store',
