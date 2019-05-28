@@ -148,8 +148,8 @@ class _som_base:
         _np.fill_diagonal(alpha, 1000)
 
         # sample from dirichlet distributions
-        st_matrix = _np.hstack(_stats.dirichlet.rvs(alpha=a, size=self.n_N)
-                               for a in alpha)
+        st_matrix = _np.hstack([_stats.dirichlet.rvs(alpha=a, size=self.n_N)
+                               for a in alpha])
         return st_matrix
 
 
