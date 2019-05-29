@@ -181,7 +181,7 @@ class _som_base:
             raise ValueError('Map not calibrated.')
         else:
             if ax is None:
-                ax = _new_axis(xlim=(0, self.dx), ylim=(0, self.dy), **kwargs)
+                fig, ax = _new_axis()
             ax.set_title('Calibration')
             ax.set_xlabel('# units')
             ax.set_ylabel('# units')
@@ -227,7 +227,7 @@ class _som_base:
     def plot_qerror(self, ax=None, **kwargs):
         """Plot quantization error."""
         if ax is None:
-            ax = _new_axis(**kwargs)
+            fig, ax = _new_axis(**kwargs)
 
         ax.set_title('Quantization Errors per iteration')
         ax.set_xlabel('# interation')
@@ -314,7 +314,7 @@ class _som_base:
             The axis.
         """
         if ax is None:
-            ax = _new_axis(xlim=(0, self.dx), ylim=(0, self.dy), **kwargs)
+            fig, ax = _new_axis(**kwargs)
         ax.imshow(_np.log1p(self.whist.reshape(self.dx, self.dy)),
                   vmin=0, cmap='Greys', interpolation=interp, origin='lower')
         return ax
