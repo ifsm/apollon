@@ -69,9 +69,7 @@ def _train_n_hmm(data: _Array, m_states: int, n_trails: int):
             trails.append(hmm)
 
     if len(trails) == 0:
-        print('Error. Could not train HMM.')
-        exit(10)
-
+        return None
     return min(trails, key=lambda hmm: abs(hmm.quality.nll))
 
 
@@ -83,6 +81,9 @@ def main(argv=None) -> int:
         track_data = _load_track_file(trf)
         feature = _parse_feature(track_data, argv.feature_path)
         hmm = _train_n_hmm(feature, argv.mstates, 5)
+        if hmm is None:
+            print('Error. Could not train HMM on {}'.format(trf))
+            continue
         out_path = _generate_outpath(trf, argv.outpath, argv.feature_path)
         io.dump_json(hmm.to_dict(), out_path)
     return 0
