@@ -4,27 +4,27 @@
 
 import argparse
 import json
+import pickle
 import sys
-import typing
 
-from .. import analyses
-from .. types import PathType
-from .. import io
+import numpy as np
+from apollon import io
 
 
 def main(argv=None) -> int:
     if argv is None:
         argv = sys.argv
 
-    som_path = pathlib.Path(argv.som_path)
-    hmm_path = pathlib.Path(argv.hmm_path)
+    with open(argv.som_file, 'rb') as fobj:
+        som = pickle.load(fobj)
 
-    with som_path.open('r') as fobj:
-        som = json.load(fobj, object_hook=io.decode_array)
+    for hmm in argv.hmm_files:
+        with open(hmm, 'r') as fobj:
+            hmm = json.load(fobj, object_hook=io.decode_array)
+        gamma_ = hmm['params']['gamma_'].astype('float64').flatten()
 
-    with hmm_path.open('r') as fobj:
-        hmm = json.load(fobj, object_hool=io.decode_array)
-
+        flat_idx, err = som.get_winners(gamma_)
+        print(np.unravel_index(flat_idx, som.shape))
     return 0
 
 

@@ -85,7 +85,7 @@ def _create_subparser_position(subparsers):
                         help='Map coordinate of input.')
 
     sp_position.add_argument(
-        'som_file', type=str, action='store', nargs=1,
+        'som_file', type=str, action='store',
         help='Path to SOM file.')
 
     sp_position.add_argument(
