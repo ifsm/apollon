@@ -92,7 +92,6 @@ def main(argv=None) -> int:
     for trf in argv.track_files:
         track_data = _load_track_file(trf)
         feature = _parse_feature(track_data, argv.feature_path)
-        print(feature)
         hmm = _train_n_hmm(feature, argv.mstates, 5)
         if hmm is None:
             print('Error. Could not train HMM on {}'.format(trf))
