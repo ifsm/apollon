@@ -14,6 +14,7 @@ import typing
 from .. import io
 from .. hmm import PoissonHmm
 from .. types import Array as _Array
+from .. import tools
 
 
 def _load_track_file(track_file: str) -> dict:
@@ -31,7 +32,7 @@ def _parse_feature(track_data: dict, feature_path: str) -> _Array:
         except KeyError:
             print('Error. Invalid node "{}" in feature path.'.format(key))
             exit(10)
-    return feature
+    return _scaling(feature, key)
 
 
 def _generate_outpath(in_path, out_path: str, feature_path: str) -> None:
@@ -49,6 +50,18 @@ def _generate_outpath(in_path, out_path: str, feature_path: str) -> None:
     return out_path
 
 
+def _scaling(data: _Array, feature: str) -> _Array:
+    features1000 = ['skewness', 'kurtosis', 'loudness',
+                    'roughness', 'sharpness']
+    if feature == 'centroid' or feature == 'spread':
+        out = data.round.astype(int)
+    elif feature in features1000:
+        out = tools.scale(data, 1, 1000)
+    else:
+        raise ValueError('Unknown feature: {}'.format(feature))
+    return out.round().astype(int)
+
+
 def _train_n_hmm(data: _Array, m_states: int, n_trails: int):
     """Trains ``n_trails`` HMMs each initialized with a random tpm.
 
@@ -60,11 +73,10 @@ def _train_n_hmm(data: _Array, m_states: int, n_trails: int):
     Returns:
         Best model regarding to log-likelihood.
     """
-    feat = data.round().astype(int)
     trails = []
     for i in range(n_trails):
-        hmm = PoissonHmm(feat, m_states, init_gamma='softmax')
-        hmm.fit(feat)
+        hmm = PoissonHmm(data, m_states, init_gamma='softmax')
+        hmm.fit(data)
         if hmm.success:
             trails.append(hmm)
 
@@ -80,6 +92,7 @@ def main(argv=None) -> int:
     for trf in argv.track_files:
         track_data = _load_track_file(trf)
         feature = _parse_feature(track_data, argv.feature_path)
+        print(feature)
         hmm = _train_n_hmm(feature, argv.mstates, 5)
         if hmm is None:
             print('Error. Could not train HMM on {}'.format(trf))
