@@ -24,41 +24,25 @@ def _load_track_file(track_file: str) -> dict:
     return track_data
 
 
-def _parse_feature(track_data: dict, feature_path: str) -> _Array:
-    feature = track_data
+def _parse_feature_file(track_file: str, feature_path: str) -> _Array:
+    feature = _load_track_file(track_file)
     for key in feature_path.split('.'):
         try:
             feature = feature[key]
         except KeyError:
-            print('Error. Invalid node "{}" in feature path.'.format(key))
+            print('Error. Node "{}" not in "{}".'.format(key, track_file))
             exit(10)
     return _scaling(feature, key)
 
-
-def _generate_outpath(in_path, out_path: str, feature_path: str) -> None:
-    in_path = pathlib.Path(in_path)
-    default_fname = '{}.hmm'.format(in_path.stem)
-    if out_path is None:
-        out_path = pathlib.Path(default_fname)
-    else:
-        out_path = pathlib.Path(out_path)
-        if not out_path.suffix:
-            out_path = out_path.joinpath(default_fname)
-        if not out_path.parent.is_dir():
-            print('Error. Path "{!s}" does not exist.'.format(out_path.parent))
-            exit(10)
-    return out_path
 
 
 def _scaling(data: _Array, feature: str) -> _Array:
     features1000 = ['skewness', 'kurtosis', 'loudness',
                     'roughness', 'sharpness']
-    if feature == 'centroid' or feature == 'spread':
-        out = data.round.astype(int)
-    elif feature in features1000:
+    if feature in features1000:
         out = tools.scale(data, 1, 1000)
     else:
-        raise ValueError('Unknown feature: {}'.format(feature))
+        out = data
     return out.round().astype(int)
 
 
@@ -90,13 +74,12 @@ def main(argv=None) -> int:
         argv = sys.argv
 
     for trf in argv.track_files:
-        track_data = _load_track_file(trf)
-        feature = _parse_feature(track_data, argv.feature_path)
+        feature = _parse_feature_file(trf, argv.feature_path)
         hmm = _train_n_hmm(feature, argv.mstates, 5)
         if hmm is None:
             print('Error. Could not train HMM on {}'.format(trf))
             continue
-        out_path = _generate_outpath(trf, argv.outpath, argv.feature_path)
+        out_path = io.generate_outpath(trf, argv.outpath, 'hmm')
         io.dump_json(hmm.to_dict(), out_path)
     return 0
 

@@ -69,6 +69,39 @@ def decode_array(json_data: dict) -> typing.Any:
     return json_data
 
 
+def generate_outpath(in_path: str, out_path: str = None,
+                     suffix: str = None) -> str:
+    """Generates file paths for feature und HMM output files.
+
+    If ``out_path`` is ``None``, the basename of ``in_path`` is taken
+    with the extension replaced by ``suffix``.
+
+    Args:
+        in_path:   Path to file under analysis.
+        out_path:  Commandline argument.
+        suffix:    File extension.
+
+    Returns:
+        Valid output path.
+    """
+    in_path = _pathlib.Path(in_path)
+    if suffix is None:
+        default_fname = '{}'.format(in_path.stem)
+    else:
+        default_fname = '{}.{}'.format(in_path.stem, suffix)
+
+    if out_path is None:
+        out_path = _pathlib.Path(default_fname)
+    else:
+        out_path = _pathlib.Path(out_path)
+        if not out_path.suffix:
+            out_path = out_path.joinpath(default_fname)
+        if not out_path.parent.is_dir():
+            print('Error. Path "{!s}" does not exist.'.format(out_path.parent))
+            exit(10)
+    return out_path
+
+
 class PoissonHmmEncoder(ArrayEncoder):
     """JSON encoder for PoissonHmm.
     """

@@ -13,32 +13,24 @@ from .. types import PathType
 from .. import io
 from .. signal.features import FeatureSpace
 
-def _export_csv(
-        data: typing.Dict[str, typing.Any],
-        path: PathType = None) -> None:
-    """"""
-    fspace = json.loads(data, object_hook=io.decode_array)
-    fspace = FeatureSpace(**fspace)
-    fspace.to_csv()
 
+def main(argv: dict = None) -> int:
+    if argv is None:
+        argv = sys.argv
 
-def main(args: argparse.Namespace) -> int:
-    if args.export:
-        if args.export == 'csv':
-            _export_csv(args.file[0], args.outpath)
-            return 0
+    for path in argv.files:
+        track_data = {}
+        if argv.rhythm:
+            track_data['rhythm'] = analyses.rhythm_track(path)
 
-    track_data = {}
-    if args.rhythm:
-        track_data['rhythm'] = analyses.rhythm_track(args.file[0])
+        if argv.timbre:
+            track_data['timbre'] = analyses.timbre_track(path)
 
-    if args.timbre:
-        track_data['timbre'] = analyses.timbre_track(args.file[0])
+        if argv.pitch:
+            track_data['pitch'] = analyses.pitch_track(path)
 
-    if args.pitch:
-        track_data['pitch'] = analyses.pitch_track(args.file[0])
-
-    io.dump_json(track_data, args.outpath)
+        out_path = io.generate_outpath(path, argv.outpath, 'feat')
+        io.dump_json(track_data, out_path)
 
     return 0
 

@@ -230,9 +230,13 @@ def spectral_shape(inp: _Array, frqs: _Array, cf_low: float = 50,
     skew = array2d_fsum(_np.power(deviation, 3) * vals)
     kurt = array2d_fsum(_np.power(deviation, 4) * vals)
 
-    spread = _np.sqrt(spread / total_nrgy)
-    skew = skew / total_nrgy / _np.power(spread, 3)
-    kurt = kurt / total_nrgy / _np.power(spread, 4)
+    spread = _np.sqrt(spread/total_nrgy)
+    zero_spread = spread == 0
+
+    skew = _np.divide(skew/total_nrgy, _np.power(spread, 3), where=~zero_spread)
+    kurt = _np.divide(kurt/total_nrgy, _np.power(spread, 4), where=~zero_spread)
+    skew[zero_spread] = 0
+    kurt[zero_spread] = 0
 
     return FeatureSpace(centroid=centroid, spread=spread, skewness=skew, kurtosis=kurt)
 

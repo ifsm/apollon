@@ -51,7 +51,10 @@ def _create_subparser_features(subparsers):
     sp_features.add_argument(
         '-o', '--outpath', action='store', help='Output file path.')
 
-    sp_features.add_argument('file', type=str, nargs=1)
+    sp_features.add_argument(
+        'files', type=str, nargs='+',
+        help='Auio files.')
+
     sp_features.set_defaults(func=commands.apollon_features.main)
 
     return sp_features
