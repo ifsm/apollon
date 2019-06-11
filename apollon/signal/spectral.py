@@ -164,8 +164,8 @@ class Spectrum(_Spectrum_Base):
             inp = self.abs()
         return _features.spectral_centroid(inp, self.frqs)
 
-    def extract(self):
-        spctr = _features.spectral_shape(self.power().T, self.frqs)
+    def extract(self, cf_low: float = 50, cf_high: float = 10000):
+        spctr = _features.spectral_shape(self.power().T, self.frqs, cf_low, cf_high)
         prcpt = _features.perceptual_shape(self.abs().T, self.frqs)
         return _features.FeatureSpace(spectral=spctr, perceptual=prcpt)
 
@@ -275,8 +275,8 @@ class Spectrogram:
             return flux
         return flux.sum(axis=0)
 
-    def extract(self):
-        spctr = _features.spectral_shape(self.power(), self.frqs)
+    def extract(self, cf_low: float = 50, cf_high: float = 10000):
+        spctr = _features.spectral_shape(self.power(), self.frqs, cf_low, cf_high)
         prcpt = _features.perceptual_shape(self.abs(), self.frqs)
         tmpr = _features.FeatureSpace(flux=self.flux())
         return _features.FeatureSpace(spectral=spctr, perceptual=prcpt, temporal=tmpr)
