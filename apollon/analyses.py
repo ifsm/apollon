@@ -13,6 +13,13 @@ from . types import Array as _Array
 from . onsets import FluxOnsetDetector
 from . import segment
 
+class ShortPiece(Exception):
+    pass
+
+def _check_duration(snd, min_sec):
+    if (snd.size / snd.fps) < min_sec:
+        raise ShortPiece('Input duration less than {} s.'.format(min_sec))
+
 def rhythm_track(file_path: PathType) -> dict:
     """Perform rhythm track analysis of given audio file.
 
@@ -21,8 +28,12 @@ def rhythm_track(file_path: PathType) -> dict:
 
     Returns:
         Rhythm track parameters and data.
+
+    Raises:
+        ShortPiece
     """
     snd = load_audio(file_path)
+    _check_duration(snd, 30)
     snd_cut = snd[snd.fps*2:-snd.fps*5]
     onsets = FluxOnsetDetector(snd_cut, snd.fps)
     segs = segment.by_onsets(snd_cut, 2**11, onsets.index())
@@ -55,6 +66,7 @@ def timbre_track(file_path: PathType) -> dict:
         Timbre track parameters and data.
     """
     snd = load_audio(file_path)
+    _check_duration(snd, 30)
     snd_cut = snd[snd.fps*2:-snd.fps*5]
     spctrgr = stft(snd_cut, snd.fps, n_perseg=2048, hop_size=204)
 
