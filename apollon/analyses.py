@@ -23,8 +23,9 @@ def rhythm_track(file_path: PathType) -> dict:
         Rhythm track parameters and data.
     """
     snd = load_audio(file_path)
-    onsets = FluxOnsetDetector(snd.data, snd.fps)
-    segs = segment.by_onsets(snd.data, 2**11, onsets.index())
+    snd_cut = snd[snd.fps*2:-snd.fps*5]
+    onsets = FluxOnsetDetector(snd_cut, snd.fps)
+    segs = segment.by_onsets(snd_cut, 2**11, onsets.index())
     spctr = Spectrum(segs, snd.fps, window='hamming')
 
     onsets_features = {
@@ -37,7 +38,7 @@ def rhythm_track(file_path: PathType) -> dict:
         'meta': {'source': file_path, 'time_stamp': time_stamp()},
         'params': {'onsets': onsets.params(), 'spectrum': spctr.params()},
         'features': {'onsets': onsets_features,
-                     'spectrum': spctr.extract().as_dict()}
+                     'spectrum': spctr.extract(cf_low=100, cf_high=9000).as_dict()}
     }
 
 
@@ -54,7 +55,8 @@ def timbre_track(file_path: PathType) -> dict:
         Timbre track parameters and data.
     """
     snd = load_audio(file_path)
-    spctrgr = stft(snd.data, snd.fps, n_perseg=1024, hop_size=512)
+    snd_cut = snd[snd.fps*2:-snd.fps*5]
+    spctrgr = stft(snd_cut, snd.fps, n_perseg=2048, hop_size=204)
 
     track_data = {
         'meta': {'source': file_path, 'time_stamp':time_stamp()},
