@@ -41,6 +41,17 @@ class AudioFile:
         if norm:
             self.data = _ast.normalize(self.data)
 
+    def cut(self, start, n_samples):
+        """Cut a segment of length ``n_samples`` form data, beginning
+        at ``start``.
+
+        Args:
+            start:      Sample index to start.
+            n_samples:  Number of samples to cut.
+        """
+        self.data = self.data[start:start+n_samples]
+        self.size = self.data.shape[0]
+
     def plot(self) -> None:
         """Plot audio as wave form."""
         fig = _plt.figure(figsize=(14, 7))
