@@ -38,7 +38,8 @@ def main(argv: dict = None) -> int:
         argv = sys.argv
 
     args = itertools.product(argv.files, [argv])
-    with multiprocessing.Pool(processes=12) as pool:
+    n_processes = multiprocessing.cpu_count()
+    with multiprocessing.Pool(processes=n_processes) as pool:
         pool.starmap(_feature_extraction, args)
     return 0
 
