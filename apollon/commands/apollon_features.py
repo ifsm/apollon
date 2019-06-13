@@ -47,6 +47,7 @@ def main(argv: dict = None) -> int:
     n_processes = 3 
     with multiprocessing.Pool(processes=n_processes) as pool:
         pool.starmap(_feature_extraction, args)
+    logging.info('--- JOB DONE ---'
     return 0
 
 
