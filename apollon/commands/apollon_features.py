@@ -6,11 +6,11 @@
 import argparse
 import itertools
 import json
-import multiprocessing
 import sys
 import typing
 import soundfile as sf
 import logging
+import time
 
 from .. import analyses
 from .. types import PathType
@@ -43,35 +43,36 @@ def main(argv: dict = None) -> int:
     if argv is None:
         argv = sys.argv
 
-    args = itertools.product(argv.files, [argv])
-    n_processes = 3
-    with multiprocessing.Pool(processes=n_processes) as pool:
-        pool.starmap(_feature_extraction, args)
+    timer_total = time.time()
+    for path in argv.files:
+        logging.info('Loading {}'.format(path))
+        print('Processing: {}'.format(path), end=' ... ')
+        timer_start = time.time()
+
+        if _check_audio(path) != 0:
+            return 10
+
+        snd = load_audio(path)
+        snd.cut(snd.fps*2, snd.size-(snd.fps*5))
+
+        track_data = {}
+        if argv.rhythm:
+            track_data['rhythm'] = analyses.rhythm_track(snd)
+
+        if argv.timbre:
+            track_data['timbre'] = analyses.timbre_track(snd)
+
+        if argv.pitch:
+            track_data['pitch'] = analyses.pitch_track(snd)
+
+        out_path = io.generate_outpath(path, argv.outpath, 'feat')
+        io.dump_json(track_data, out_path)
+        timer_stop = time.time()
+        print('Done in {:.5} s.'.format(timer_stop-timer_start))
+
     logging.info('--- JOB DONE ---')
+    print('Job done. Total time: {:.5} s.'.format(time.time()-timer_total))
     return 0
-
-
-def _feature_extraction(path, args) -> None:
-    logging.info('Loading {}'.format(path))
-
-    if _check_audio(path) != 0:
-        return 10
-
-    snd = load_audio(path)
-    snd.cut(snd.fps*2, snd.size-(snd.fps*5))
-
-    track_data = {}
-    if args.rhythm:
-        track_data['rhythm'] = analyses.rhythm_track(snd)
-
-    if args.timbre:
-        track_data['timbre'] = analyses.timbre_track(snd)
-
-    if args.pitch:
-        track_data['pitch'] = analyses.pitch_track(snd_cut, snd.fps)
-
-    out_path = io.generate_outpath(path, args.outpath, 'feat')
-    io.dump_json(track_data, out_path)
 
 
 if __name__ == '__main__':
