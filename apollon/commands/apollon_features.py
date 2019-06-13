@@ -46,7 +46,7 @@ def main(argv: dict = None) -> int:
     timer_total = time.time()
     for path in argv.files:
         logging.info('Loading {}'.format(path))
-        print('Processing: {}'.format(path), end=' ... ')
+        print('Processing: {}'.format(path), end=' ... ', flush=True)
         timer_start = time.time()
 
         if _check_audio(path) != 0:
@@ -68,7 +68,7 @@ def main(argv: dict = None) -> int:
         out_path = io.generate_outpath(path, argv.outpath, 'feat')
         io.dump_json(track_data, out_path)
         timer_stop = time.time()
-        print('Done in {:.5} s.'.format(timer_stop-timer_start))
+        print('Done in {:.5} s.'.format(timer_stop-timer_start), flush=True)
 
     logging.info('--- JOB DONE ---')
     print('Job done. Total time: {:.5} s.'.format(time.time()-timer_total))
