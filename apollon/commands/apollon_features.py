@@ -9,7 +9,8 @@ import json
 import multiprocessing
 import sys
 import typing
-import soundfile
+import soundfile as sf
+import logging
 
 from .. import analyses
 from .. types import PathType
@@ -27,13 +28,18 @@ class BadSampleRate(Exception):
 def _check_audio(path):
     snd_info = sf.info(path)
     if snd_info.duration < 30:
-        raise ShortPiece('Duration of {} is less than {} s.'.format(path, 30))
+        logging.error('Piece to short: {}'.format(path))
+        # raise ShortPiece('Duration of {} is less than {} s.'.format(path, 30))
+        return 10
 
     if snd_info.samplerate != 44100:
-        raise BadSampleRate('Sample rate of {} Hz cannot be processed'.format(snd_info.samplerate))
-
+        logging.error('Bad sample rate: {}'.format(path))
+        # raise BadSampleRate('Sample rate of {} Hz cannot be processed'.format(snd_info.samplerate))
+        return 10
+    return 0
 
 def main(argv: dict = None) -> int:
+    logging.basicConfig(filename='fe.log', filemode='w', level=logging.DEBUG)
     if argv is None:
         argv = sys.argv
 
@@ -45,17 +51,20 @@ def main(argv: dict = None) -> int:
 
 
 def _feature_extraction(path, args) -> None:
-    _check_audio(snd)
+    logging.info('Loading {}'.format(path))
+
+    if _check_audio(path) != 0:
+        return 10
+
     snd = load_audio(path)
     snd.cut(snd.fps*2, snd.size-(snd.fps*5))
-    snd_cut = snd[snd.fps*2:-snd.fps*5]
 
     track_data = {}
     if args.rhythm:
-        track_data['rhythm'] = analyses.rhythm_track(snd_cut, snd.fps)
+        track_data['rhythm'] = analyses.rhythm_track(snd)
 
     if args.timbre:
-        track_data['timbre'] = analyses.timbre_track(snd_cut, snd.fps)
+        track_data['timbre'] = analyses.timbre_track(snd)
 
     if args.pitch:
         track_data['pitch'] = analyses.pitch_track(snd_cut, snd.fps)
