@@ -59,7 +59,7 @@ def _train_n_hmm(data: _Array, m_states: int, n_trails: int):
     """
     trails = []
     for i in range(n_trails):
-        hmm = PoissonHmm(data, m_states, init_gamma='softmax')
+        hmm = PoissonHmm(data, m_states, init_lambda='hist', init_gamma='softmax')
         hmm.fit(data)
         if hmm.success:
             trails.append(hmm)
