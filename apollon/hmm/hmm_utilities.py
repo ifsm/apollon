@@ -120,12 +120,31 @@ def assert_st_val(val: float):
 class StateDependentMeansInitializer:
     """Initializer methods for state-dependent vector of means."""
 
-    methods = ('linear', 'quantile', 'random')
+    methods = ('hist', 'linear', 'quantile', 'random')
+
+    @staticmethod
+    def hist(data: _np.ndarray, m_states: int) -> _np.ndarray:
+        """Initialize state-dependent means based on a histogram of ``data``.
+
+        The histogram is calculated with ten bins. The centers of the
+        ``m_states`` most frequent bins are returned as estimates of lambda.
+
+        Args:
+            data:     Input data.
+            m_states: Number of states.
+
+        Returns:
+            Lambda estimates.
+        """
+        frqs, bin_edges = _np.histogram(data, bins=10)
+        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+        return _np.sort(bin_centers[frqs.argsort()[::-1]][:m_states])
+
 
     @staticmethod
     def linear(X: _np.ndarray, m: int) -> _np.ndarray:
         """Initialize state-dependent means with `m` linearily spaced values
-        from ]min(data), max(data)[.
+        from [min(data), max(data)].
 
             Args:
                 X    (np.ndarray)   Input data.
@@ -134,8 +153,7 @@ class StateDependentMeansInitializer:
             Returns:
                 (np.ndarray)    Initial state-dependent means of shape (m, ).
         """
-        bordered_space = _np.linspace(X.min(), X.max(), m+2)
-        return bordered_space[1:-1]
+        return _np.linspace(X.min(), X.max(), m)
 
 
     @staticmethod
