@@ -11,6 +11,8 @@ import pathlib
 import sys
 import typing
 
+import numpy as np
+
 from .. import io
 from .. hmm import PoissonHmm
 from .. types import Array as _Array
@@ -61,19 +63,19 @@ def _train_n_hmm(data: _Array, m_states: int, n_trails: int):
     for i in range(n_trails):
         hmm = PoissonHmm(data, m_states, init_lambda='hist', init_gamma='softmax')
         hmm.fit(data)
-        if hmm.success and not _np.isnan(hmm.quality.nll):
+        if hmm.success and not np.isnan(hmm.quality.nll):
             trails.append(hmm)
 
     for i in range(n_trails):
         hmm = PoissonHmm(data, m_states, init_lambda='linear', init_gamma='softmax')
         hmm.fit(data)
-        if hmm.success and not _np.isnan(hmm.quality.nll):
+        if hmm.success and not np.isnan(hmm.quality.nll):
             trails.append(hmm)
 
     for i in range(n_trails):
         hmm = PoissonHmm(data, m_states, init_lambda='quantile', init_gamma='softmax')
         hmm.fit(data)
-        if hmm.success and not _np.isnan(hmm.quality.nll):
+        if hmm.success and not np.isnan(hmm.quality.nll):
             trails.append(hmm)
 
     if len(trails) == 0:
