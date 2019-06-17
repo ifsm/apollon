@@ -5,9 +5,6 @@
 #include <math.h>
 
 
-double _roughness (double d_frq, double amp_1, double amp_2);
-
-
 static PyObject *
 ext_roughness (PyObject *self, PyObject *args)
 {
@@ -20,6 +17,7 @@ ext_roughness (PyObject *self, PyObject *args)
     npy_intp      *shape    = NULL;
     size_t         n_times  = 0;
     size_t         n_frqs   = 0;
+    double         frq_rmax = 33.0f;
 
     if (!PyArg_ParseTuple (args, "OO", &py_spectrogram, &py_frqs))
     {
@@ -55,7 +53,6 @@ ext_roughness (PyObject *self, PyObject *args)
     double *amp_data = PyArray_DATA (spctrgrm);
     double *frq_data = PyArray_DATA (frqs);
     double *r_data   = PyArray_DATA (rghnss);
-
     for (size_t t = 0; t < n_times; t++)
     {
         r_data[t] = 0.0f;
@@ -69,7 +66,10 @@ ext_roughness (PyObject *self, PyObject *args)
                 {
                     break;
                 }
-                r_data[t] += _roughness (d_frq, amp_data[i*n_times+t], amp_data[j*n_times+t]);
+                double amps = amp_data[i*n_times+t] * amp_data[j*n_times+t];
+		double fr1 = d_frq / (frq_rmax * exp (-1.0));
+		double fr2 = exp (-d_frq / frq_rmax);
+		r_data[t] += amps * fr1 * fr2;
             }
         }
     }
@@ -78,12 +78,6 @@ ext_roughness (PyObject *self, PyObject *args)
     return (PyObject *) rghnss;
 }
 
-
-double _roughness (double d_frq, double amp_1, double amp_2)
-{
-    double frq_rmax = 33.0f;
-    return amp_1 * amp_2 * (d_frq / (frq_rmax * exp (-1.0))) * exp (-d_frq/frq_rmax);
-}
 
 
 static PyMethodDef
