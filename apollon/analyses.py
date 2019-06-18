@@ -6,7 +6,6 @@ import logging
 
 from . io import dump_json, decode_array
 from . signal.spectral import stft, Spectrum
-from . signal.features import FeatureSpace
 from . tools import time_stamp
 from . types import PathType
 from . types import Array as _Array

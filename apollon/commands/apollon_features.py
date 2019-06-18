@@ -15,7 +15,6 @@ import time
 from .. import analyses
 from .. types import PathType
 from .. import io
-from .. signal.features import FeatureSpace
 from .. audio import load_audio
 
 class ShortPiece(Exception):

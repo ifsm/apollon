@@ -167,7 +167,7 @@ class Spectrum(_Spectrum_Base):
     def extract(self, cf_low: float = 50, cf_high: float = 16000):
         spctr = _features.spectral_shape(self.power().T, self.frqs, cf_low, cf_high)
         prcpt = _features.perceptual_shape(self.abs().T, self.frqs, cf_low, cf_high)
-        return _features.FeatureSpace(spectral=spctr, perceptual=prcpt)
+        return container.FeatureSpace(spectral=spctr, perceptual=prcpt)
 
     def __abs__(self):
         return _np.absolute(self.bins)
@@ -278,8 +278,8 @@ class Spectrogram:
     def extract(self, cf_low: float = 50, cf_high: float = 10000):
         spctr = _features.spectral_shape(self.power(), self.frqs, cf_low, cf_high)
         prcpt = _features.perceptual_shape(self.abs(), self.frqs)
-        tmpr = _features.FeatureSpace(flux=self.flux())
-        return _features.FeatureSpace(spectral=spctr, perceptual=prcpt, temporal=tmpr)
+        tmpr = container.FeatureSpace(flux=self.flux())
+        return container.FeatureSpace(spectral=spctr, perceptual=prcpt, temporal=tmpr)
 
     def params(self):
         return {'window': self.window, 'n_perseg': self.n_perseg,
