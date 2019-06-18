@@ -6,7 +6,6 @@ import logging
 
 from . io import dump_json, decode_array
 from . signal.spectral import stft, Spectrum
-from . signal.features import FeatureSpace
 from . tools import time_stamp
 from . types import PathType
 from . types import Array as _Array
@@ -31,7 +30,7 @@ def rhythm_track(snd: AudioFile) -> dict:
     logging.info('Starting rhythm track for {!s}'.format(snd.file))
     onsets = FluxOnsetDetector(snd.data, snd.fps)
     segs = segment.by_onsets(snd.data, 2**11, onsets.index())
-    spctr = Spectrum(segs, snd.fps, window='hamming')
+    spctr = Spectrum(segs, snd.fps, window='hamming', n_fft=2**15)
 
     onsets_features = {
         'peaks': onsets.peaks,
