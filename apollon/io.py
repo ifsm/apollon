@@ -158,7 +158,7 @@ def load_json(path: _types.PathType = None) -> None:
     """
     path = _pathlib.Path(path)
     with path.open('r') as fobj:
-        data = json.load(fobj, object_hook=decode_array)
+        data = _json.load(fobj, object_hook=decode_array)
     return container.FeatureSpace(**data)
 
 
