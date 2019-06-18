@@ -264,7 +264,8 @@ def log_attack_time(inp: _Array, fps: int, ons_idx: _Array,
     return _np.log(attack_time)
 
 
-def perceptual_shape(inp: _Array, frqs: _Array) -> FeatureSpace:
+def perceptual_shape(inp: _Array, frqs: _Array, cf_low: float = 50,
+                     cf_high: float = 16000) -> FeatureSpace:
     """Extracts psychoacoustical features from the spectrum.
 
     Returns:
@@ -281,7 +282,7 @@ def perceptual_shape(inp: _Array, frqs: _Array) -> FeatureSpace:
 
     zfn = _np.arange(1, 25)
     sharp = ((zfn * _cb.weight_factor(zfn)) @ cbrs) / loud_total
-    rough = roughness(inp, frqs)
+    rough = hrough(inp, frqs)
 
     return FeatureSpace(loudness=loud_total, sharpness=sharp, roughness=rough)
 
@@ -299,7 +300,8 @@ def loudness(inp: _Array, frqs: _Array) -> _Array:
     return _cb.total_loudness(cbrs)
 
 
-def hrough(bins: _Array, frqs: float, min_intensity: float = -48):
+def hrough(bins: _Array, frqs: float, cf_low: float = 50,
+           cf_high: float  = 16000, min_intensity: float = -48) -> _Array:
     """Calculate Helmholtz Roughness from spectrogram.
 
     Helmholtz Roughness assumes that the maximal roughness
@@ -311,6 +313,8 @@ def hrough(bins: _Array, frqs: float, min_intensity: float = -48):
     Args:
         bins:   Input spectral magnitudes.
         frqs:   Frequency axis of spectrogram.
+        cf_low: Lower frequency bound.
+        cf_high: Upper requenc bound.
         min_intensity:  Intensity threshold in dB.
 
     Returns:
@@ -327,7 +331,14 @@ def hrough(bins: _Array, frqs: float, min_intensity: float = -48):
     bins[logspc < min_intensity] = 0
 
     rr = _np.zeros(bins.shape[1])
-    for i in range(50, 16000, max_bin):
+
+    if cf_high + max_bin < bins.shape[0]:
+        upper_limit = cf_high
+    else:
+        upper_limit = bins.shape[0]
+
+    upper_limit = cf_high if cf_high + max_bin < bins.shape[0] else bins.shape[0]
+    for i in range(cf_low, upper_limit, max_bin):
         amps = bins[i] * bins[i+1:i+max_bin]
         rr += _np.sum(amps * r_curve.reshape(-1, 1), axis=0)
     return rr

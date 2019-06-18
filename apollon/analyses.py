@@ -31,7 +31,7 @@ def rhythm_track(snd: AudioFile) -> dict:
     logging.info('Starting rhythm track for {!s}'.format(snd.file))
     onsets = FluxOnsetDetector(snd.data, snd.fps)
     segs = segment.by_onsets(snd.data, 2**11, onsets.index())
-    spctr = Spectrum(segs, snd.fps, window='hamming')
+    spctr = Spectrum(segs, snd.fps, window='hamming', n_fft=2**15)
 
     onsets_features = {
         'peaks': onsets.peaks,
