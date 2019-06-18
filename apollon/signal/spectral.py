@@ -21,6 +21,7 @@ from scipy.signal import get_window as _get_window
 from . import features as _features
 from . import tools as _tools
 from .. types import Array as _Array
+from .. import container
 
 
 class _Spectrum_Base:

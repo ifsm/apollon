@@ -74,6 +74,5 @@ def timbre_track(snd: AudioFile) -> dict:
         'params': {'spectrogram': spctrgr.params()},
         'features': spctrgr.extract(cf_low=50, cf_high=15000).as_dict()
     }
-    print(spctrgr.params())
     logging.info('Done with timbre track for {!s}.'.format(snd.file))
     return track_data
