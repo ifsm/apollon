@@ -19,7 +19,6 @@ from .. tools import array2d_fsum
 from .. types import Array as _Array
 from .. io import ArrayEncoder
 from .  import critical_bands as _cb
-from .  roughness import roughness
 from .  tools import trim_spectrogram
 
 
@@ -298,6 +297,40 @@ def loudness(inp: _Array, frqs: _Array) -> _Array:
     """
     cbrs = _cb.filter_bank(frqs) @ inp
     return _cb.total_loudness(cbrs)
+
+
+def hrough(bins: _Array, frqs: float, min_intensity: float = -48):
+    """Calculate Helmholtz Roughness from spectrogram.
+
+    Helmholtz Roughness assumes that the maximal roughness
+    occures at frequency distance of 33 Hz independently of
+    the frequency und consideration. Hence, the input spctrogram
+    should have sufficiently high frequency resolution.
+
+
+    Args:
+        bins:   Input spectral magnitudes.
+        frqs:   Frequency axis of spectrogram.
+        min_intensity:  Intensity threshold in dB.
+
+    Returns:
+        Roughness per spectrogram time instant.
+    """
+    d_frq = frqs[1] -  frqs[0]
+    max_bin = int(round(50 // d_frq))
+
+    frange = frqs[1:max_bin] / (33.5 * _np.exp(-1))
+    fdecay = _np.exp(-frqs[1:max_bin] / 33.5)
+    r_curve = frange * fdecay
+
+    logspc = 20 * _np.log10(bins/bins.max())
+    bins[logspc < min_intensity] = 0
+
+    rr = _np.zeros(bins.shape[1])
+    for i in range(50, 16000, max_bin):
+        amps = bins[i] * bins[i+1:i+max_bin]
+        rr += _np.sum(amps * r_curve.reshape(-1, 1), axis=0)
+    return rr
 
 
 def sharpness(inp: _Array, frqs: _Array) -> _Array:
