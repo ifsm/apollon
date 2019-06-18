@@ -54,6 +54,11 @@ def rhythm_track(snd: AudioFile) -> dict:
 def timbre_track(snd: AudioFile) -> dict:
     """Perform timbre track analysis of given audio file.
 
+    The timbre track extracts audio features related the perception
+    of timbre with  high frequency resolution of 1.35 Hz given 44,1 kHz
+    sampling frequency.
+
+    the FFT is set to 
     Args:
         snd:  Sound data.
         fps:  Sample rate.
@@ -62,7 +67,7 @@ def timbre_track(snd: AudioFile) -> dict:
         Timbre track parameters and data.
     """
     logging.info('Starting timbre track for {!s}.'.format(snd.file))
-    spctrgr = stft(snd.data, snd.fps, n_perseg=2048, hop_size=204)
+    spctrgr = stft(snd.data, snd.fps, n_perseg=2**15, hop_size=2**14)
 
     track_data = {
         'meta': {'source': str(snd.file.absolute()),
