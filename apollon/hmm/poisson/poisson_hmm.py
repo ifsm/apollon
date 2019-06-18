@@ -307,6 +307,9 @@ class _InitParams:
         if isinstance(hy_params.init_lambda_meth, _np.ndarray):
             return hy_params.init_lambda_meth.copy()
 
+        if hy_params.init_lambda_meth == 'hist':
+            return _utils.StateDependentMeansInitializer.hist(X, hy_params.m_states)
+
         if hy_params.init_lambda_meth == 'linear':
             return _utils.StateDependentMeansInitializer.linear(X, hy_params.m_states)
 

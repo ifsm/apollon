@@ -221,23 +221,23 @@ def repath(current_path: _types.PathType, new_path: _types.PathType,
     """Change the path and keep the file name. Optinally change the extension, too.
 
     Args:
-        current_path (str or Path)  The path to change.
-        new_path     (str or Path)  The new path.
-        ext          (str or None)  Change file extension if ``ext`` is not None.
+        current_path:  The path to change.
+        new_path:      The new path.
+        ext:           Change file extension if ``ext`` is not None.
 
     Returns:
-        (pathlib.Path)
+        New path.
     """
     current_path = _pathlib.Path(current_path)
     new_path = _pathlib.Path(new_path)
-    file_path = current_path.stem
+    stem = current_path.stem
 
-    if ext is not None:
-        if not ext.startswith('.'):
-            ext = '.' + ext
-        file_path.join(ext)
-
-    return new_path.joinpath(file_path)
+    if ext is None:
+        new_path = new_path.joinpath(current_path.name)
+    else:
+        ext = ext if ext.startswith('.') else '.' + ext
+        new_path = new_path.joinpath(current_path.stem + ext)
+    return new_path
 
 
 def save(data: typing.Any, path: _types.PathType):

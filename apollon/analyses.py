@@ -2,6 +2,7 @@
 # Copyright (C) 2019 Michael Blaß
 # michael.blass@uni-hamburg.de
 
+import logging
 
 from . io import dump_json, decode_array
 from . signal.spectral import stft, Spectrum
@@ -27,23 +28,26 @@ def rhythm_track(snd: AudioFile) -> dict:
     Raises:
         ShortPiece
     """
-
-    onsets = FluxOnsetDetector(snd, fps)
-    segs = segment.by_onsets(snd, 2**11, onsets.index())
-    spctr = Spectrum(segs, fps, window='hamming')
+    logging.info('Starting rhythm track for {!s}'.format(snd.file))
+    onsets = FluxOnsetDetector(snd.data, snd.fps)
+    segs = segment.by_onsets(snd.data, 2**11, onsets.index())
+    spctr = Spectrum(segs, snd.fps, window='hamming')
 
     onsets_features = {
         'peaks': onsets.peaks,
         'index': onsets.index(),
-        'times': onsets.times(fps)
+        'times': onsets.times(snd.fps)
     }
 
     track_data = {
-        'meta': {'source': snd.file.absolute(), 'time_stamp': time_stamp()},
+        'meta': {'source': str(snd.file.absolute()),
+                 'time_stamp': time_stamp()},
         'params': {'onsets': onsets.params(), 'spectrum': spctr.params()},
         'features': {'onsets': onsets_features,
-                     'spectrum': spctr.extract(cf_low=100, cf_high=9000).as_dict()}
+                     'spectrum':
+                      spctr.extract(cf_low=100, cf_high=9000).as_dict()}
     }
+    logging.info('Done with rhythm track for {!s}.'.format(snd.file))
     return track_data
 
 
@@ -57,11 +61,14 @@ def timbre_track(snd: AudioFile) -> dict:
     Returns:
         Timbre track parameters and data.
     """
-    spctrgr = stft(snd_cut, fps, n_perseg=2048, hop_size=204)
+    logging.info('Starting timbre track for {!s}.'.format(snd.file))
+    spctrgr = stft(snd.data, snd.fps, n_perseg=2048, hop_size=204)
 
     track_data = {
-        'meta': {'source': file_path, 'time_stamp':time_stamp()},
+        'meta': {'source': str(snd.file.absolute()),
+                 'time_stamp':time_stamp()},
         'params': {'spectrogram': spctrgr.params()},
         'features': spctrgr.extract(cf_low=50, cf_high=15000).as_dict()
     }
+    logging.info('Done with timbre track for {!s}.'.format(snd.file))
     return track_data
