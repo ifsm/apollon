@@ -92,8 +92,16 @@ def _create_subparser_position(subparsers):
         help='Path to SOM file.')
 
     sp_position.add_argument(
-        'hmm_files', type=str, action='store', nargs='+',
-        help='Path to hmm files.')
+        'objective_files', type=str, action='store', nargs='+',
+        help='Path to objective files.')
+
+    sp_position.add_argument(
+        '--rt', action='store_true', default=False,
+        help='Compute SOM position for rhythm track.')
+
+    sp_position.add_argument(
+        '--tt', action='store_true', default=False,
+        help='Compute SOM position for timbr track.')
 
     sp_position.set_defaults(func=commands.apollon_position.main)
     return sp_position

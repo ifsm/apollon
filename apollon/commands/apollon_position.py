@@ -3,28 +3,54 @@
 # michael.blass@uni-hamburg.de
 
 import argparse
-import json
+import pathlib
 import pickle
 import sys
-
+import pandas as pd
 import numpy as np
-from apollon import io
-
+from .. import io
+from .. tools import standardize
+from .. som.utilities import get_winner
 
 def main(argv=None) -> int:
     if argv is None:
         argv = sys.argv
+    
+    weights = io.load(argv.som_file)
 
-    with open(argv.som_file, 'rb') as fobj:
-        som = pickle.load(fobj)
+    if argv.rt:
+        for hmm in argv.objective_files:
+            hmm = io.load_json(hmm)
+            gamma_ = hmm.params.gamma_.astype('float64').flatten()
+            flat_idx= get_winner(weights, gamma_)
+            print(np.unravel_index(flat_idx, (30, 30)))
 
-    for hmm in argv.hmm_files:
-        with open(hmm, 'r') as fobj:
-            hmm = json.load(fobj, object_hook=io.decode_array)
-        gamma_ = hmm['params']['gamma_'].astype('float64').flatten()
+    elif argv.tt:
+        sfm_path = pathlib.Path(argv.som_file).parent
+        sfm_path = sfm_path.joinpath('timbre_track.sfm')
+        sfm = pd.read_csv(sfm_path, index_col=0)
+        sfm = sfm.values
 
-        flat_idx, err = som.get_winners(gamma_)
-        print(np.unravel_index(flat_idx, som.shape))
+        for feat in argv.objective_files:
+            feat = io.load_json(feat)
+            feat = feat.timbre.features
+            timbre_vector = np.array([
+                feat.spectral.centroid.sum(),
+                feat.spectral.spread.sum(),
+                feat.spectral.skewness.sum(),
+                feat.spectral.kurtosis.sum(),
+                feat.temporal.flux.sum(),
+                feat.perceptual.roughness.sum(),
+                feat.perceptual.sharpness.sum(),
+                feat.perceptual.loudness.sum()])
+            
+            updated_sfm = np.vstack((sfm, timbre_vector))
+            timbre_vector = standardize(updated_sfm)[-1]
+            flat_idx = get_winner(weights, timbre_vector)
+            print(np.unravel_index(flat_idx, (25, 25)))
+    else:
+        print('Error. Need track info.')
+        return -10
     return 0
 
 
