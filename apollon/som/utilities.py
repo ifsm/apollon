@@ -52,6 +52,17 @@ def decrease_expo(start, step, stop=1):
             yield start * _np.exp(b*x)
 
 
+def get_winner(weights, test_vector, metric='euclidean'):
+    if test_vector.ndim == 1:
+        d = _distance.cdist(test_vector[None, :], weights, metric=metric)
+        return _np.argmin(d)
+    elif data.ndim == 2:
+        ds = _distance.cdist(test_vector, weights, metric=metric)
+        return _np.argmin(ds, axis=1)
+    else:
+        raise ValueError('Wrong dimension of input data: {}'.format(data.ndim))
+
+
 def umatrix(weights, dxy, metric='euclidean'):
     """ Compute unified distance matrix.
 
