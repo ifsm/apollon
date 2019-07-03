@@ -93,6 +93,9 @@ class FeatureSpace:
                 csv_writer = _csv.DictWriter(csv_file, delimiter=',', fieldnames=field_names)
                 self._write(csv_writer, features)
 
+    def __getitem__(self, key):
+        return self.__dict__[key]
+
     @staticmethod
     def _write(csv_writer, features):
         csv_writer.writeheader()
