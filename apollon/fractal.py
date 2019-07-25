@@ -7,139 +7,128 @@
 Tools for estimating fractal dimensions.
 
 Function:
-    corr_dim           Estimate correlation dimension.
-    embdedding         Pseudo-phase space embdedding.
     lorenz_attractor   Simulate Lorenz system.
-    pps_entropy        Entropy of pps embdedding.
 """
+from typing import Tuple
 
-import numpy as _np
+import numpy as np
 from scipy import stats as _stats
-from scipy.spatial import distance as _distance
+from scipy.spatial import distance
+
+from . types import Array
 
 
-def correlation_dimension(data, tau, m, r, mode='cut', fit_n_points=10):
-    """Compute an estimate of the correlation dimension D_2.
+def delay_embedding(inp: Array, delay: int, m_dim: int) -> Array:
+    """Compute a delay embedding of the `inp`.
 
-    TODO:
-        - Implement algo for linear region detection
-        - Implement orbital delay parameter \gamma
-        - Implement multiprocessing
-        - Find a way to use L_\inf norm with distance.pdist
-
-    Args:
-        data    (1d array)  Input time series.
-        tau     (int)       Reconstruction delay.
-        m       (iterable)  of embedding dimensions
-        r       (iterable)  of radii
-        mode    (str)       See doc of `embedding`.
-
-    Returns:
-        lCrm    (array) Logarithm of correlation sums given r_i.
-        lr      (array) Logarithm of radii.
-        d2      (float) Estimate of correlation dimension.
-    """
-    N = data.size
-    sd = data.std()
-
-    M = len(m)
-
-    lr = _np.log(r)
-    Nr = len(r)
-
-    # output arrays
-    lCrm = _np.zeros((M, Nr))    # Log correlation sum given `r` at dimension `m`
-    D2m = _np.zeros(M)           # Corr-dim estimate at embdedding `m`
-
-    # iterate over each dimension dimensions
-    for i, mi in enumerate(m):
-
-        # compute embedding
-        emb = embedding(data, tau, mi, mode)
-
-        # compute distance matrix
-        # we should use L_\inf norm here
-        pairwise_distances = _distance.squareform(
-            _distance.pdist(emb.T, metric='euclidean'))
-
-        # compute correlation sums
-        Cr = _np.array([_np.sum(pairwise_distances < ri) for ri in r],
-                       dtype=float)
-        Cr *= 1 / (N * (N-1))
-
-        # transform sums to log domain
-        lCrm[i] = _np.log(Cr)
-
-        # fit 1d polynominal in the of range of s +- n
-        cde, inter = _np.polyfit(lr, lCrm[i], 1)
-        D2m[i] = cde
-
-    return lCrm, lr, D2m
-
-
-def embedding(inp_sig, tau, m=2, mode='zero'):
-    """Generate n-dimensional pseudo-phase space embedding.
+    This method makes a hard cut at the upper bound of `inp` and
+    does not perform zero padding to match the input size.
 
     Params:
-        inp_sig    (iterable) Input signal.
-        tau        (int) Time shift.
-        m          (int) Embedding dimensions.
-        mode       (str) Either `zero` for zero padding,
-                                `wrap` for wrapping the signal around, or
-                                `cut`, which cuts the signal at the edges.
-                         Note: In cut-mode, each dimension is only
-                               len(sig) - tau * (m - 1) samples long.
-    Return:
-        (np.ndarray) of shape
-                        (m, len(inp_sig)) in modes 'wrap' or 'zeros', or
-                        (m, len(sig) - tau * (m - 1)) in cut-mode.
+        inp:   One-dimensional input vector.
+        delay: Vector delay in samples.
+        m_dim: Number of embedding dimension.
+
+    Returns:
+        Two-dimensional delay embedding array in which the nth row
+        represents the  n * `delay` samples delayed vector.
     """
-    inp_sig = _np.atleast_1d(inp_sig)
-    N = len(inp_sig)
-
-    if mode == 'zero':
-        # perform zero padding
-        out = _np.zeros((m, N))
-        out[0] = inp_sig
-        for i in range(1, m):
-            out[i, tau*i:] = inp_sig[:-tau*i]
-
-    elif mode == 'wrap':
-        # wraps the signal around at the bounds
-        out = _np.empty((m, N))
-        for i in range(m):
-            out[i] = _np.roll(inp_sig, i*tau)
-
-    elif mode == 'cut':
-        # cut every index beyond the bounds
-        Nm = N - tau * (m-1)    # number of vectors
-        if Nm < 1:
-            raise ValueError('Embedding params to large for input.')
-        out = _np.empty((m, Nm))
-        for i in range(m):
-            off = N - i * tau
-            out[i] = inp_sig[off-Nm:off]
-
-    else:
-        raise ValueError('Unknown mode `{}`.'.format(pad))
-
-    return out
+    max_idx = inp.size - ((m_dim-1)*delay)
+    emb_vects = np.empty((max_idx, m_dim))
+    for i in range(max_idx):
+        emb_vects[i] = inp[i:i+m_dim*delay:delay]
+    return emb_vects
 
 
-def embedding_entropy(emb, bins, extent=(-1, 1)):
-    """Calculate entropy of given embedding unsing log_e.
+def embedding_dists(inp: Array, delay: int, m_dim: int,
+                    metric: str = 'sqeuclidean') -> Array:
+    """Perfom a delay embedding and return the pairwaise distances
+    of the delayed vectors.
 
-    Args:
-        emb    (ndarray)     Embedding.
-        bins   (int)         Number of histogram bins per axis.""
-        extent (tuple)       Extent per dimension
+    The returned vector is the flattend upper triangle of the distance
+    matrix.
 
-    Return:
-        (float) Entropy of pps.
+    Params:
+        inp:    One-dimensional input vector.
+        delay:  Vector delay in samples.
+        m_dim   Number of embedding dimension.
+        metric: Metric to use.
+
+    Returns:
+        Flattened upper triangle of the distance matrix.
     """
-    pps, _ = _np.histogramdd(emb.T, bins, range=[extent]*emb.shape[0])
-    entropy = _stats.entropy(pps.flat) / _np.log(pps.size)
-    return entropy
+    emb_vects = delay_embedding(inp, delay, m_dim)
+    return distance.pdist(emb_vects, metric)
+
+
+def correlation_hist(data: Array, delay: int, m_dim: int, n_bins: int,
+                     metric: str = 'sqeuclidean') -> Tuple[Array, Array]:
+    """Compute histogram of distances in a delay embedding.
+
+    Bin sizes increase logarithmically between the minimal and maximal
+    distance in the embedding.
+
+    Params:
+        data:    One-dimensional input vector.
+        delay:  Vector delay in samples.
+        m_dim   Number of embedding dimension.
+        n_bins: Number of histogram bins.
+        metric: Metric to use.
+
+    Returns:
+        Uupper bin edges and number of points per bin.
+    """
+    dists = embedding_dists(data, delay, m_dim, metric)
+    rr = np.geomspace(dists.min(), dists.max(), n_bins)
+    cs, rr = np.histogram(dists, rr, density=True)
+    return rr[1:], cs
+
+
+def log_correlation_sum(rr: Array, cs: Array) -> Tuple[Array, Array]:
+    "Transform"
+    return np.log(rr), np.log(cs.cumsum() / cs.sum())
+
+
+def correlation_dimension(data: Array, delay: int, m_dim: int, n_bins: int,
+        metric: str = 'sqeuclidean', debug: bool = False) -> float:
+    """Compute an estimate of the fractal correlation dimension of `data`.
+
+    Params:
+        inp:    One-dimensional input vector.
+        delay:  Vector delay in samples.
+        m_dim   Number of embedding dimension.
+        metric: Metric to use.
+        debug:  If True, plot visualisation of the estimation process.
+
+    Returns:
+        Estimate of the correlation dimension.
+    """
+    rr, cs = correlation_hist(data, delay, m_dim, n_bins, metric)
+    lr, lc = log_correlation_sum(rr, cs)
+
+    lsb = n_bins//3
+    usb = n_bins*2//3
+
+    search = slice(n_bins//3, n_bins*2//3)
+
+    scaling_start = lsb + cs[search].argmax()
+    scaling_stop = scaling_start + 10
+
+    scaling = slice(scaling_start, scaling_stop)
+
+    if debug:
+        import matplotlib.pyplot as plt
+        plt.plot(lr, lc)
+
+        vlines(lr[lsb], lc.min(), lc.max(), colors='r')
+        vlines(lr[usb], lc.min(), lc.max(), colors='r')
+
+        vlines(lr[scaling_start], lc.min(), lc.max())
+        vlines(lr[scaling_stop], lc.min(), lc.max())
+        plt.show()
+
+    cdim, err = np.polyfit(lr[scaling], lc[scaling], 1)
+    return cdim
 
 
 def __lorenz_system(x, y, z, s, r, b):
