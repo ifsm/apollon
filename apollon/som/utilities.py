@@ -56,7 +56,7 @@ def get_winner(weights, test_vector, metric='euclidean'):
     if test_vector.ndim == 1:
         d = _distance.cdist(test_vector[None, :], weights, metric=metric)
         return _np.argmin(d)
-    elif data.ndim == 2:
+    elif test_vector.ndim == 2:
         ds = _distance.cdist(test_vector, weights, metric=metric)
         return _np.argmin(ds, axis=1)
     else:
