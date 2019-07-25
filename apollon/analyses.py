@@ -23,9 +23,6 @@ def rhythm_track(snd: AudioFile) -> dict:
 
     Returns:
         Rhythm track parameters and data.
-
-    Raises:
-        ShortPiece
     """
     logging.info('Starting rhythm track for {!s}'.format(snd.file))
     onsets = FluxOnsetDetector(snd.data, snd.fps)
@@ -57,7 +54,6 @@ def timbre_track(snd: AudioFile) -> dict:
     of timbre with  high frequency resolution of 1.35 Hz given 44,1 kHz
     sampling frequency.
 
-    the FFT is set to 
     Args:
         snd:  Sound data.
         fps:  Sample rate.
