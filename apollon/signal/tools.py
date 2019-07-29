@@ -182,33 +182,36 @@ def normalize(sig):
     """
     return sig / _np.max(_np.absolute(sig), axis=0)
 
-    
-def sinusoid(f, amps=1, fs=9000, length=1, retcomps=False):
+
+def sinusoid(frqs, amps=1, fps: int = 9000, length: float = 1,
+             noise: float = None, retcomps: bool = False) -> _Array:
     """Generate sinusoidal signal.
 
     Params:
-        f       (iterable) Component frequencies.
-        amps    (int or interable) Amplitude of each component in f.
-                    If `amps` is an integer each component of f will be
-                    scaled according to `amps`. If `amps` is an iterable
-                    each frequency will be scaled with the respective amplitude.
-        fs      (int) Sample rate.
-        length  (number) Length of signal in seconds.
-        retcomps(bool) If True return the components of the signal,
-                    otherwise return the sum.
+        frqs:    Component frequencies.
+        amps:    Amplitude of each component in ``frqs``.  If ``amps`` is an
+                 integer, each component of ``frqs`` is scaled according to
+                 ``amps``. If ``amps` iis an iterable each frequency is scaled
+                 by the respective amplitude.
+        fps:     Sample rate.
+        length:  Length of signal in seconds.
+        comps:   If True, return the components of the signal,
+                 else return the sum.
 
     Return:
-        (ndarray)   Sinusoidal signal.
+        Array of signals.
     """
-    f = _np.atleast_1d(f)
+    frqs = _np.atleast_1d(frqs)
     amps = _np.atleast_1d(amps)
 
-    if f.shape == amps.shape or amps.size == 1:
-        t = _np.arange(fs*length)[:, None] / fs
-        sig = _np.sin(2*_np.pi*f*t) * amps
+    if frqs.shape == amps.shape or amps.size == 1:
+        txs = _np.arange(fps*length)[:, None] / fps
+        sig = _np.sin(2*_np.pi*txs*frqs) * amps
     else:
-        raise ValueError('Shapes of f and amps must be equal.')
+        raise ValueError('Shapes of ``f`` and ``amps`` must be equal.')
 
+    if noise:
+        sig += _stats.norm.rvs(0, noise, size=sig.shape)
     if retcomps:
         return sig
     else:
