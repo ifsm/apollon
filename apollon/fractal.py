@@ -106,14 +106,13 @@ def correlation_dimension(data: Array, delay: int, m_dim: int, n_bins: int,
     rr, cs = correlation_hist(data, delay, m_dim, n_bins, metric)
     lr, lc = log_correlation_sum(rr, cs)
 
-    lsb = n_bins//3
-    usb = n_bins*2//3
+    lsb = 0 #n_bins//3
+    usb = 600 #n_bins*2//3
 
-    search = slice(n_bins//3, n_bins*2//3)
+    search = slice(lsb, usb)
 
-    scaling_start = lsb + cs[search].argmax()
+    scaling_start = lsb + cs.cumsum()[search].argmax()
     scaling_stop = scaling_start + 10
-
     scaling = slice(scaling_start, scaling_stop)
 
     if debug:
@@ -127,7 +126,11 @@ def correlation_dimension(data: Array, delay: int, m_dim: int, n_bins: int,
         vlines(lr[scaling_stop], lc.min(), lc.max())
         plt.show()
 
-    cdim, err = np.polyfit(lr[scaling], lc[scaling], 1)
+
+    a = lr[scaling_stop] - lr[scaling_start]
+    b = lc[scaling_stop] - lc[scaling_start]
+    cdim = b / a
+    #cdim, err = np.polyfit(lr[scaling], lc[scaling], 1)
     return cdim
 
 
@@ -142,9 +145,9 @@ def __lorenz_system(x, y, z, s, r, b):
     Return:
         xyz_dot    (array) Derivatives of current system state.
     """
-    xyz_dot = _np.array([s * (y - x),
-                         x * (r - z) - y,
-                         x * y - b * z])
+    xyz_dot = np.array([s * (y - x),
+                        x * (r - z) - y,
+                        x * y - b * z])
     return xyz_dot
 
 
@@ -163,7 +166,7 @@ def lorenz_attractor(n, sigma=10, rho=28, beta=8/3,
     Return:
         xyz    (array) System states.
     """
-    xyz = _np.empty((n, 3))
+    xyz = np.empty((n, 3))
     xyz[0] = init_xyz
 
     for i in range(n-1):
