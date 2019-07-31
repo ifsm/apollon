@@ -18,6 +18,27 @@ from scipy.spatial import distance
 from . types import Array
 
 
+def log_histogram_bin_edges(dists, n_bins: int, default: float = None):
+    """Compute histogram bin edges that are equidistant in log space.
+    """
+    lower_bound = dists.min()
+    upper_bound = dists.max()
+
+    if lower_bound == 0:
+        lower_bound = np.absolute(np.diff(dists)).min()
+
+    if lower_bound == 0:
+        sd_it = iter(np.sort(dists))
+        while not lower_bound:
+            lower_bound = next(sd_it)
+
+    if lower_bound == 0:
+        lower_bound = np.finfo('float64').eps
+
+    return np.geomspace(lower_bound, dists.max(), n_bins+1)
+
+
+
 def delay_embedding(inp: Array, delay: int, m_dim: int) -> Array:
     """Compute a delay embedding of the `inp`.
 
@@ -41,7 +62,7 @@ def delay_embedding(inp: Array, delay: int, m_dim: int) -> Array:
 
 
 def embedding_dists(inp: Array, delay: int, m_dim: int,
-                    metric: str = 'sqeuclidean') -> Array:
+                    metric: str = 'euclidean') -> Array:
     """Perfom a delay embedding and return the pairwaise distances
     of the delayed vectors.
 
@@ -61,77 +82,24 @@ def embedding_dists(inp: Array, delay: int, m_dim: int,
     return distance.pdist(emb_vects, metric)
 
 
-def correlation_hist(data: Array, delay: int, m_dim: int, n_bins: int,
-                     metric: str = 'sqeuclidean') -> Tuple[Array, Array]:
-    """Compute histogram of distances in a delay embedding.
-
-    Bin sizes increase logarithmically between the minimal and maximal
-    distance in the embedding.
-
-    Params:
-        data:    One-dimensional input vector.
-        delay:  Vector delay in samples.
-        m_dim   Number of embedding dimension.
-        n_bins: Number of histogram bins.
-        metric: Metric to use.
-
-    Returns:
-        Uupper bin edges and number of points per bin.
+def log_histogram_bin_edges(dists, n_bins: int, default: float = None):
+    """Compute histogram bin edges that are equidistant in log space.
     """
-    dists = embedding_dists(data, delay, m_dim, metric)
-    rr = np.geomspace(dists.min(), dists.max(), n_bins)
-    cs, rr = np.histogram(dists, rr, density=True)
-    return rr[1:], cs
+    lower_bound = dists.min()
+    upper_bound = dists.max()
 
+    if lower_bound == 0:
+        lower_bound = np.absolute(np.diff(dists)).min()
 
-def log_correlation_sum(rr: Array, cs: Array) -> Tuple[Array, Array]:
-    "Transform"
-    return np.log(rr), np.log(cs.cumsum() / cs.sum())
+    if lower_bound == 0:
+        sd_it = iter(np.sort(dists))
+        while not lower_bound:
+            lower_bound = next(sd_it)
 
+    if lower_bound == 0:
+        lower_bound = np.finfo('float64').eps
 
-def correlation_dimension(data: Array, delay: int, m_dim: int, n_bins: int,
-        metric: str = 'sqeuclidean', debug: bool = False) -> float:
-    """Compute an estimate of the fractal correlation dimension of `data`.
-
-    Params:
-        inp:    One-dimensional input vector.
-        delay:  Vector delay in samples.
-        m_dim   Number of embedding dimension.
-        metric: Metric to use.
-        debug:  If True, plot visualisation of the estimation process.
-
-    Returns:
-        Estimate of the correlation dimension.
-    """
-    rr, cs = correlation_hist(data, delay, m_dim, n_bins, metric)
-    lr, lc = log_correlation_sum(rr, cs)
-
-    lsb = 0 #n_bins//3
-    usb = 600 #n_bins*2//3
-
-    search = slice(lsb, usb)
-
-    scaling_start = lsb + cs.cumsum()[search].argmax()
-    scaling_stop = scaling_start + 10
-    scaling = slice(scaling_start, scaling_stop)
-
-    if debug:
-        import matplotlib.pyplot as plt
-        plt.plot(lr, lc)
-
-        vlines(lr[lsb], lc.min(), lc.max(), colors='r')
-        vlines(lr[usb], lc.min(), lc.max(), colors='r')
-
-        vlines(lr[scaling_start], lc.min(), lc.max())
-        vlines(lr[scaling_stop], lc.min(), lc.max())
-        plt.show()
-
-
-    a = lr[scaling_stop] - lr[scaling_start]
-    b = lc[scaling_stop] - lc[scaling_start]
-    cdim = b / a
-    #cdim, err = np.polyfit(lr[scaling], lc[scaling], 1)
-    return cdim
+    return np.geomspace(lower_bound, dists.max(), n_bins+1)
 
 
 def __lorenz_system(x, y, z, s, r, b):
