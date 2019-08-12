@@ -6,20 +6,54 @@
 apollon/signal/features.py -- Feature extraction routines
 """
 
-import json as _json
-import csv as _csv
-import sys as _sys
-from typing import Any, Dict, List, Optional, Tuple
-
 import numpy as _np
 from scipy.signal import hilbert as _hilbert
 
+import fractal
 from .. import segment as _segment
 from .. tools import array2d_fsum
 from .. types import Array as _Array
 from .. import container
 from .  import critical_bands as _cb
 from .  tools import trim_spectrogram
+
+
+def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
+         scaling_size: int = 10, mode: str = 'bader') -> _Array:
+    # pylint: disable = too-many-arguments
+    """Compute an estimate of the correlation dimension of the input data.
+
+    If ``inp`` is two-dimensional, an estimated is computed for each row.
+
+    Params:
+        inp       Input array.
+        delay     Embedding delay in samples.
+        m_dim     Number of embedding dimensions.
+        n_bins    Number of bins.
+        mode      Use either 'bader' for the original algorithm
+                  or 'blass' for the refined version.
+
+    Returns:
+        Array of correlation dimension estimates.
+
+    Raises:
+        ValueError
+    """
+    if mode == 'bader':
+        cdim_func = fractal.cdim_bader
+    elif mode == 'blass':
+        raise NotImplementedError
+        #cdim_func = fractal.cdim
+    else:
+        raise ValueError(f'Unknown mode "{mode}". Expected either "bader", \
+                or "blass"')
+
+    inp = _np.atleast_2d(inp)
+    if inp.ndim < 1 or inp.ndim > 2:
+        raise ValueError(f'Dimension of input array must not exceed 2. \
+                Got {inp.ndim}')
+    return _np.array([cdim_func(seg, delay, m_dim, n_bins, scaling_size)
+                      for seg in inp])
 
 
 def spectral_centroid(inp: _Array, frqs: _Array) -> _Array:
@@ -183,7 +217,7 @@ def loudness(inp: _Array, frqs: _Array) -> _Array:
 
 
 def hrough(bins: _Array, frqs: float, cf_low: float = 50,
-           cf_high: float  = 16000, min_intensity: float = -48) -> _Array:
+           cf_high: float = 16000, min_intensity: float = -48) -> _Array:
     """Calculate Helmholtz Roughness from spectrogram.
 
     Helmholtz Roughness assumes that the maximal roughness
