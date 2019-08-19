@@ -8,14 +8,15 @@ apollon/signal/features.py -- Feature extraction routines
 
 import numpy as _np
 from scipy.signal import hilbert as _hilbert
-
 import fractal
+
 from .. import segment as _segment
 from .. tools import array2d_fsum
 from .. types import Array as _Array
 from .. import container
 from .  import critical_bands as _cb
 from .  tools import trim_spectrogram
+from .. audio import fti16
 
 
 def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
@@ -39,8 +40,15 @@ def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
     Raises:
         ValueError
     """
+    inp = _np.atleast_2d(inp)
+    if inp.ndim < 1 or inp.ndim > 2:
+        raise ValueError(f'Dimension of input array must not exceed 2. \
+                Got {inp.ndim}')
+
     if mode == 'bader':
         cdim_func = fractal.cdim_bader
+        if inp.dtyp != 'int16':
+            inp = fti16(inp)
     elif mode == 'blass':
         raise NotImplementedError
         #cdim_func = fractal.cdim
@@ -48,10 +56,6 @@ def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
         raise ValueError(f'Unknown mode "{mode}". Expected either "bader", \
                 or "blass"')
 
-    inp = _np.atleast_2d(inp)
-    if inp.ndim < 1 or inp.ndim > 2:
-        raise ValueError(f'Dimension of input array must not exceed 2. \
-                Got {inp.ndim}')
     return _np.array([cdim_func(seg, delay, m_dim, n_bins, scaling_size)
                       for seg in inp])
 
