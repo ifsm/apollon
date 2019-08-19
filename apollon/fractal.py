@@ -82,26 +82,6 @@ def embedding_dists(inp: Array, delay: int, m_dim: int,
     return distance.pdist(emb_vects, metric)
 
 
-def log_histogram_bin_edges(dists, n_bins: int, default: float = None):
-    """Compute histogram bin edges that are equidistant in log space.
-    """
-    lower_bound = dists.min()
-    upper_bound = dists.max()
-
-    if lower_bound == 0:
-        lower_bound = np.absolute(np.diff(dists)).min()
-
-    if lower_bound == 0:
-        sd_it = iter(np.sort(dists))
-        while not lower_bound:
-            lower_bound = next(sd_it)
-
-    if lower_bound == 0:
-        lower_bound = np.finfo('float64').eps
-
-    return np.geomspace(lower_bound, dists.max(), n_bins+1)
-
-
 def __lorenz_system(x, y, z, s, r, b):
     """Compute the derivatives of the Lorenz system of coupled
        differential equations.
