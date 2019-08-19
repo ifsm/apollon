@@ -195,6 +195,8 @@ def sinusoid(frqs, amps=1, fps: int = 9000, length: float = 1,
                  by the respective amplitude.
         fps:     Sample rate.
         length:  Length of signal in seconds.
+        noise:   Add gaussian noise with standard deviation ``noise`` to each
+                 sinusodial component.
         comps:   If True, return the components of the signal,
                  else return the sum.
 
@@ -212,6 +214,7 @@ def sinusoid(frqs, amps=1, fps: int = 9000, length: float = 1,
 
     if noise:
         sig += _stats.norm.rvs(0, noise, size=sig.shape)
+
     if retcomps:
         return sig
     else:
