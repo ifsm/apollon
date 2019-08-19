@@ -1,22 +1,26 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 
 import unittest
-import numpy as _np
+import numpy as np
 
-from apollon.audio import loadwav
+from apollon.audio import load_audio, fti16
+from apollon.types import Array
 
 
 class Test_ModulAudio(unittest.TestCase):
     def setUp(self):
-        self.x = loadwav('/Users/michael/audio/beat.wav')
+        self.snd = load_audio('audio/beat.wav')
 
     def test_AudioDataAttributes(self):
-        c = isinstance(self.x.fs, int)
-        self.assertTrue(c)
+        self.assertTrue(isinstance(self.snd.fps, int))
+        self.assertTrue(isinstance(self.snd.data, Array))
 
-        c = isinstance(self.x.data, _np.ndarray)
-        self.assertTrue(c)
+    def test_fti16(self):
+        res = fti16(self.snd.data)
+        self.assertTrue(isinstance(res, Array))
+        self.assertTrue(res.dtype == 'int16')
+        self.assertTrue(self.snd.data.shape == res.shape)
+
 
 if __name__ == '__main__':
     unittest.main()

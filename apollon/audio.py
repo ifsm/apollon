@@ -9,15 +9,17 @@ Classes:
     AudioFile   Representation of an audio file.
 
 Functions:
+    fti16        Cast float to int16.
     load_audio   Load .wav file.
 """
 import pathlib as _pathlib
 
 import matplotlib.pyplot as _plt
+import numpy as np
 import soundfile as _sf
 
 from . signal import tools as _ast
-from . types import PathType
+from . types import Array, PathType
 
 
 class AudioFile:
@@ -70,6 +72,18 @@ class AudioFile:
 
     def __getitem__(self, item):
         return self.data[item]
+
+
+def fti16(inp: Array) -> Array:
+    """Cast audio loaded as float to int16.
+
+    Params:
+        inp:    Input array of dtype float64.
+
+    Returns:
+        Array of dtype int16.
+    """
+    return np.clip(np.floor(inp*2**15), -2**15, 2**15-1).astype('int16')
 
 
 def load_audio(path: PathType, norm: bool = False, mono: bool = True) -> AudioFile:
