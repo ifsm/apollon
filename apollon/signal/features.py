@@ -47,7 +47,8 @@ def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
 
     if mode == 'bader':
         cdim_func = fractal.cdim_bader
-        if inp.dtyp != 'int16':
+        if inp.dtype != 'int16':
+            print('adsasdad')
             inp = fti16(inp)
     elif mode == 'blass':
         raise NotImplementedError
