@@ -11,7 +11,7 @@ class Test_ModulAudio(unittest.TestCase):
     def setUp(self):
         self.snd = load_audio('audio/beat.wav')
 
-    def test_AudioDataAttributes(self):
+    def test_AudioData(self):
         self.assertTrue(isinstance(self.snd.fps, int))
         self.assertTrue(isinstance(self.snd.data, Array))
 
