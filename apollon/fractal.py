@@ -12,7 +12,7 @@ Function:
 from typing import Tuple
 
 import numpy as np
-from scipy import stats as _stats
+from scipy import stats
 from scipy.spatial import distance
 
 from . types import Array
@@ -80,6 +80,20 @@ def embedding_dists(inp: Array, delay: int, m_dim: int,
     """
     emb_vects = delay_embedding(inp, delay, m_dim)
     return distance.pdist(emb_vects, metric)
+
+
+def embedding_entropy(emb: Array, n_bins: int) -> Array:
+    """Compute the information entropy from an embedding.
+
+    Params:
+        emb:     Input embedding.
+        bins:    Number of bins per dimension.
+
+    Returns:
+        Entropy of the embedding.
+    """
+    counts, edges = np.histogramdd(emb, bins=n_bins)
+    return stats.entropy(counts.flatten())
 
 
 def __lorenz_system(x, y, z, s, r, b):
