@@ -8,8 +8,8 @@ apollon/signal/features.py -- Feature extraction routines
 
 import numpy as _np
 from scipy.signal import hilbert as _hilbert
-import fractal
 
+import _features
 from .. import segment as _segment
 from .. tools import array2d_fsum
 from .. types import Array as _Array
@@ -46,9 +46,8 @@ def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
                 Got {inp.ndim}')
 
     if mode == 'bader':
-        cdim_func = fractal.cdim_bader
+        cdim_func = _features.cdim_bader
         if inp.dtype != 'int16':
-            print('adsasdad')
             inp = fti16(inp)
     elif mode == 'blass':
         raise NotImplementedError
