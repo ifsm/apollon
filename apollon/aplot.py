@@ -101,10 +101,10 @@ def _new_axis_3d(fig: MplFig = None, **kwargs) -> tuple:
     return fig, ax_3d
 
 
-def signal(values: _Array, fps: int = None, time_scale: str = 'seconds', **kwargs) -> tuple:
-    """Plot time series with constant sampling interval
+def signal(values: _Array, fps: int = None, **kwargs) -> tuple:
+    """Plot time series with constant sampling interval.
 
-    Args:
+    Params:
         values:        Values of the time series.
         fps:           Sampling frequency in samples.
         time_scale:    Seconds or samples.
@@ -113,15 +113,15 @@ def signal(values: _Array, fps: int = None, time_scale: str = 'seconds', **kwarg
         Figure and axes.
     """
     fig, ax = _new_axis(**kwargs)
-    domain = _np.arange(values.size, dtype=float)
+    domain = _np.arange(values.size, dtype='float64')
 
-    if time_scale == 'seconds':
-        domain /= fps
-        ax.set_xlabel('t [s]')
-        ax.set_ylabel(r'x[$t$]')
-    else:
+    if fps is None:
         ax.set_xlabel('n [samples]')
         ax.set_ylabel(r'x[$n$]')
+    else:
+        domain /= float(fps)
+        ax.set_xlabel('t [s]')
+        ax.set_ylabel(r'x[$t$]')
 
     ax.plot(domain, values, **_defaults.PP_SIGNAL)
 
@@ -212,18 +212,21 @@ def marginal_distr(train_data: _Array, state_means: _Array, stat_dist: _Array, b
     return ax
 
 
-def onsets(odf: _Array, onset_index: _Array, **kwargs) -> tuple:
+def onsets(sig, ons, **kwargs) -> tuple:
     """Indicate onsets on a time series.
 
-    Args:
-        odf:            Onset detection function or an arbitrary time series.
-        onset_index:    Onset indices relative to ``odf``.
+    Parmas:
+        sig:    Input to onset detection.
+        ons:    Onset detector instance.
 
     Returns:
         Figure and axes.
     """
-    fig, ax = signal(odf, fps=None, **kwargs)
-    ax.vlines(onset_index, -1, 1, **_defaults.PP_ONSETS)
+    fig, ax = signal(sig.data, fps=None, **kwargs)
+    odf_domain = _np.linspace(ons.n_perseg // 2, ons.hop_size * ons.odf.size,
+                              ons.odf.size)
+    ax.plot(odf_domain, ons.odf/ons.odf.max(), alpha=.8, lw=2)
+    ax.vlines(ons.index(), -1, 1, colors='C1', lw=2, alpha=.8)
     return fig, ax
 
 

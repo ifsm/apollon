@@ -21,20 +21,22 @@ import scipy.signal as _sps
 
 from . import fractal as _fractal
 from . import segment as _segment
+from . signal import tools as _ast
 from . signal.spectral import stft as _stft
-from . signal.tools import trim_spectrogram as _trim_spectrogram
 from . types import Array as _Array
 
 
 class OnsetDetector:
     """Onset detection base class.
 
-    Subclasses have to implement an __init__ method to take in custom arguments. It necessarily has to call
-    the base classes __init__ method. Additionally, subclasses have to implement a custom onset detection
+    Subclasses have to implement an __init__ method to take in custom
+    arguments. It necessarily has to call the base classes __init__ method.
+    Additionally, subclasses have to implement a custom onset detection
     function named _odf. This method should return an one-dimensional ndarray.
     """
     def __init__(self):
-        self.pp_params = {'pre_window': 10, 'post_window': 10, 'alpha': .1, 'delta': .1}
+        self.pp_params = {'pre_window': 10, 'post_window': 10, 'alpha': .1,
+                          'delta': .1}
         self.align = 'center'
 
     def _odf(self, inp: _Array) -> _Array:
@@ -83,36 +85,42 @@ class OnsetDetector:
 
 class EntropyOnsetDetector(OnsetDetector):
     """Detect onsets based on entropy maxima.
-
-    Args:
-        inp:        Audio signal.
-        delay:      Embedding delay.
-        m_dim:      Embedding dimension.
-        bins:       Boxes per axis.
-        n_perseg:   Length of segments in samples.
-        hop_size:   Displacement in samples.
-        smooth:     Smoothing filter length.
     """
-    def __init__(self, inp: _Array, delay: int = 10, m_dims: int = 3, bins: int = 10,
-                 n_perseg: int = 1024, hop_size: int = 512, pp_params = None) -> None:
+    def __init__(self, inp: _Array, m_dims: int = 3, delay: int = None,
+                 bins: int = 10, n_perseg: int = 1024, hop_size: int = 512,
+                 pp_params = None) -> None:
+        """Detect onsets as local maxima of information entropy of consecutive
+        windows.
+
+        Be sure to set ``n_perseg`` and ``hop_size`` according to the
+        sampling rate of the input signal.
+
+        Params:
+            inp:         Audio signal.
+            m_dim:       Embedding dimension.
+            bins:        Boxes per axis.
+            delay:       Embedding delay.
+            n_perseg:    Length of segments in samples.
+            hop_size:    Displacement in samples.
+            smooth:      Smoothing filter length.
+        """
         super().__init__()
 
-        self.delay = delay
         self.m_dims = m_dims
         self.bins = bins
+        self.delay = delay
         self.n_perseg = n_perseg
         self.hop_size = hop_size
 
         if pp_params is not None:
             self.pp_params = pp_params
-
         self.odf = self._odf(inp)
         self.peaks = self._detect()
 
 
     def _odf(self, inp: _Array) -> _Array:
-        """Compute onset detection function as the information entropy of ```m_dims```-dimensional
-        delay embedding per segment.
+        """Compute onset detection function as the information entropy of
+        ``m_dims``-dimensional delay embedding per segment.
 
         Args:
             inp:    Audio data.
@@ -123,23 +131,30 @@ class EntropyOnsetDetector(OnsetDetector):
         segments = _segment.by_samples(inp, self.n_perseg, self.hop_size)
         odf = _np.empty(segments.shape[0])
         for i, seg in enumerate(segments):
-            emb = _fractal.embedding(seg, self.delay, self.m_dims, mode='wrap')
+            emb = _fractal.delay_embedding(seg, self.delay, self.m_dims)
             odf[i] = _fractal.embedding_entropy(emb, self.bins)
         return _np.maximum(odf, odf.mean())
 
 
 class FluxOnsetDetector(OnsetDetector):
     """Onset detection based on spectral flux.
-
-    Args:
-        inp:
-        stft_params:    Parameters for the STFT
-        pp_params:      Peak picking paraneters
     """
+    def __init__(self, inp: _Array, fps: int, window: str = 'hamming',
+                 n_perseg: int = 2048, hop_size: int = 441, cutoff=(80, 10000),
+                 n_fft: int = None, pp_params = None):
+        """Detect onsets as local maxima in the energy difference of
+        consecutive stft time steps.
 
-    def __init__(self, inp: _Array, fps: int, window: str = 'hamming', n_perseg: int = 2048,
-            hop_size: int = 441, cutoff=(80, 10000), n_fft: int = None, pp_params = None):
-
+        Params:
+            inp:          Input array.
+            fps:          Sample rate.
+            window:       Window function.
+            n_perseg:     Samples per FFT segment.
+            hop_size:     FFT window shift in samples.
+            cut_off:      Lower and upper cutoff frequency.
+            n_fft:        Number sample points per FFT.
+            pp_params:    Key word arguments for peak picking.
+        """
         super().__init__()
 
         self.fps = fps
@@ -170,8 +185,10 @@ class FluxOnsetDetector(OnsetDetector):
         Returns:
             Onset detection function.
         """
-        spctrgrm = _stft(inp, self.fps, self.window, self.n_perseg, self.hop_size)
-        sb_flux, _ = _trim_spectrogram(spctrgrm.flux(subband=True), spctrgrm.frqs, *self.cutoff)
+        spctrgrm = _stft(inp, self.fps, self.window, self.n_perseg,
+                         self.hop_size)
+        sb_flux, _ = _ast.trim_spectrogram(spctrgrm.flux(subband=True),
+                                          spctrgrm.frqs, *self.cutoff)
         odf = sb_flux.sum(axis=0)
         return _np.maximum(odf, odf.mean())
 
@@ -182,8 +199,8 @@ class FluxOnsetDetector(OnsetDetector):
         return out
 
 
-def peak_picking(odf: _Array, post_window: int = 10, pre_window: int = 10, alpha: float = .1,
-                 delta: float=.1) -> _Array:
+def peak_picking(odf: _Array, post_window: int = 10, pre_window: int = 10,
+                 alpha: float = .1, delta: float=.1) -> _Array:
     """Pick local maxima from a numerical time series.
 
     Pick local maxima from the onset detection function `odf`, which is assumed
@@ -222,19 +239,21 @@ def peak_picking(odf: _Array, post_window: int = 10, pre_window: int = 10, alpha
     return _np.array(out)
 
 
-def evaluate_onsets(targets: Dict[str, _np.ndarray], estimates: Dict[str, _np.ndarray]) -> Tuple[float, float, float]:
+def evaluate_onsets(targets: Dict[str, _np.ndarray],
+                    estimates: Dict[str, _np.ndarray]
+                    ) -> Tuple[float, float, float]:
     """Evaluate onset detection performance.
 
     This function uses the mir_eval package for evaluation.
 
-    Args:
+    Params:
         targets:    Ground truth onset times, with dict keys being file names,
                     and values being target onset time codes in ms.
 
         estimates:  Estimated onsets times, with dictkeys being file names,
                     and values being the estimated onset time codes in ms.
 
-    Return:
+    Returns:
         Precison, recall, f-measure.
     """
     out = []

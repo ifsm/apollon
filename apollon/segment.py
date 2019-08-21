@@ -18,11 +18,11 @@ def _by_samples(x: _Array, n_perseg: int) -> _Array:
     split evenly.
 
     Args:
-        x        (np.ndarray)    One-dimensional input array.
-        n_perseg (int)           Length of segments in samples.
+        x        One-dimensional input array.
+        n_perseg Length of segments in samples.
 
     Returns:
-        (np.ndarray)    Two-dimensional array of segments.
+        Two-dimensional array of segments.
     """
     if not isinstance(n_perseg, int):
         raise TypeError('Param `n_perchunk` must be of type int.')
@@ -45,12 +45,12 @@ def _by_samples_with_hop(x: _Array, n_perseg: int, hop_size: int) -> _Array:
     split evenly.
 
     Args:
-        x        (np.ndarray)    One-dimensional input array.
-        n_perseg (int)           Length of segments in samples.
-        hop_size (int)           Hop size in samples
+        x           One-dimensional input array.
+        n_perseg    Length of segments in samples.
+        hop_size    Hop size in samples
 
     Returns:
-        (np.ndarray)    Two-dimensional array of segments.
+        Two-dimensional array of segments.
     """
     if not (isinstance(n_perseg, int) and isinstance(hop_size, int)):
         raise TypeError('Params must be of type int.')
@@ -64,7 +64,7 @@ def _by_samples_with_hop(x: _Array, n_perseg: int, hop_size: int) -> _Array:
     n_hops = (x.size - n_perseg) // hop_size + 1
     n_segs = n_hops
 
-    if (x.size - n_perseg) % hop_size != 0:
+    if (x.size - n_perseg) % hop_size != 0 and n_perseg > hop_size:
         n_segs += 1
 
     fit_size = hop_size * n_hops + n_perseg
@@ -96,7 +96,7 @@ def by_samples(x: _Array, n_perseg: int, hop_size: int = 0) -> _Array:
         hop_size    Hop size in samples. If < 1, hop_size = n_perseg.
 
     Returns:
-        (np.ndarray)    Two-dimensional array of segments.
+        Two-dimensional array of segments.
     """
     if hop_size < 1:
         return _by_samples(x, n_perseg)
@@ -104,7 +104,7 @@ def by_samples(x: _Array, n_perseg: int, hop_size: int = 0) -> _Array:
         return _by_samples_with_hop(x, n_perseg, hop_size)
 
 
-def by_ms(x: _Array, fs: int, ms_perseg: int, hop_size: int = 0) -> _Array:
+def by_ms(x: _Array, fps: int, ms_perseg: int, hop_size: int = 0) -> _Array:
     """Segment the input into n segments of length ms_perseg and move the
     window `hop_size` milliseconds.
 
@@ -122,10 +122,10 @@ def by_ms(x: _Array, fs: int, ms_perseg: int, hop_size: int = 0) -> _Array:
         hop_size    Hop size in milliseconds. If < 1, hop_size = n_perseg.
 
     Returns:
-        (np.ndarray)    Two-dimensional array of segments.
+        Two-dimensional array of segments.
         """
-    n_perseg = fs * ms_perseg // 1000
-    hop_size = fs * hop_size // 1000
+    n_perseg = fps * ms_perseg // 1000
+    hop_size = fps * hop_size // 1000
 
     return by_samples(x, n_perseg, hop_size)
 
@@ -136,16 +136,16 @@ def by_onsets(x: _Array, n_perseg: int, ons_idx: _Array, off: int = 0) -> _Array
     Extraction windos start at `ons_idx[i]` + `off`.
 
     Args:
-        x        (np.ndarray)    One-dimensional input array.
-        n_perseg (int)           Length of segments in samples.
-        ons_idx  (np.ndarray)    One-dimensional array of onset positions.
-        off      (int)           Length of offset.
+        x           One-dimensional input array.
+        n_perseg    Length of segments in samples.
+        ons_idx     One-dimensional array of onset positions.
+        off         Length of offset.
 
     Returns:
-        (np.ndarray)    Two-dimensional array of shape (len(ons_idx), n_perseg).
+        Two-dimensional array of shape (len(ons_idx), n_perseg).
     """
     n_ons = ons_idx.size
-    out = _np.empty((n_ons, n_perseg))
+    out = _np.empty((n_ons, n_perseg), dtype=x.dtype)
 
     for i, idx in enumerate(ons_idx):
         pos = idx + off
