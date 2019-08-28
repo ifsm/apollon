@@ -91,8 +91,6 @@ class _som_base:
         # measures
         self.quantization_error = []
 
-        # winner trajectories on Map
-        self.trajectories = []
 
     def get_winners(self, data, argax=1):
         """Get the best matching neurons for every vector in data.
@@ -390,7 +388,6 @@ class SelfOrganizingMap(_som_base):
 
             # update activation map
             self.whist[bm_units] += 1
-            self.trajectories.append(bm_units)
 
             # get bmu's multi index
             bmu_midx = _np.unravel_index(bm_units, self.shape)
