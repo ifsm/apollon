@@ -20,7 +20,7 @@ from apollon import aplot as aplot
 
 
 class _som_base:
-    def __init__(self, dims, eta, nhr, n_iter, metric, mode, init_distr, seed=None):
+    def __init__(self, dims, n_iter, eta, nhr, init_distr, mode, metric seed=None):
 
         # check dimensions
         for d in dims:
@@ -74,6 +74,11 @@ class _som_base:
             self.weights = _np.random.uniform(0, 1, size=(self.n_N, self.dw))
         elif init_distr == 'simplex':
             self.weights = self._init_st_mat()
+        elif init_distr == 'pca':
+            raise NotImplementedError
+        else:
+            raise ValueError(f'Unknown initializer "{init_distr}". Use'
+                    '"uniform", "simplex", or "pca".')
 
         # Allocate array for winner histogram
         # TODO: add array to collect for every winner the correspondig inp vector.
