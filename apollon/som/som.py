@@ -6,6 +6,8 @@
 # SelfOrganizingMap module
 #
 
+import itertools
+
 import numpy as _np
 import matplotlib.pyplot as _plt
 from scipy import stats as _stats
@@ -13,42 +15,34 @@ from scipy.spatial import distance as _distance
 from scipy.spatial import KDTree as _KDTree
 
 from apollon.io import save as _save
-from apollon.som import utilities as _utilities
+from apollon.som import utilities as _som_utils
 from apollon.som import defaults as _defaults
+from . import neighbors as _neighbors
 from apollon.aplot import _new_axis, _new_axis_3d
 from apollon import aplot as aplot
 
 
 class _som_base:
-    def __init__(self, dims, n_iter, eta, nhr, init_distr, mode, metric seed=None):
+    def __init__(self, dims, n_iter, eta, nhr, init_distr, metric, mode, seed=None):
 
         # check dimensions
         for d in dims:
             if not isinstance(d, int) or not d >= 1:
                 raise ValueError('Dimensions must be integer > 0.')
 
-
-        # shape parameters
         self.dims = dims
-        self.dx = self.dims[0]
-        self.dy = self.dims[1]
-        self.dw = self.dims[2]
+        self.dx, self.dy, self.dw = self.dims
         self.shape = (self.dx, self.dy)
-
-        # total number of neuros on the map
-        self.n_N = self.dx * self.dy
-
-        # center index of the map
+        self.n_units = self.dx * self.dy
         self.center = self.dx // 2, self.dy // 2
-
-        # number of iterations to perform
+        self.whist = _np.zeros(self.n_units)
         self.n_iter = n_iter
-
-        # training mode
         self.mode = mode
-
-        # metric for similarity ratings
         self.metric = metric
+        self.isCalibrated = False
+        self.calibration = None
+        self.quantization_error = []
+        self._neighbourhood = _neighbors.gaussian
 
         # check training parameters
         if eta is None:
@@ -59,42 +53,27 @@ class _som_base:
             else:
                 raise ValueError('eta not in [0, 1]')
 
-        if isinstance(nhr, int) and nhr > 1:
+        if nhr > 1:
             self.init_nhr = nhr
             #self.final_nhr = max(self.dx, self.dy) / _defaults.nhr_scale_factor
         else:
             raise ValueError('Neighbourhood radius must be int > 0.')
 
-        # Initialize the weights
         if seed is not None:
             _np.random.seed(seed)
 
-        # TODO: init range should be in terms of data
         if init_distr == 'uniform':
-            self.weights = _np.random.uniform(0, 1, size=(self.n_N, self.dw))
+            self.weights = _np.random.uniform(0, 1, size=(self.n_units, self.dw))
         elif init_distr == 'simplex':
-            self.weights = self._init_st_mat()
+            self.weights = _som_utils.init_simplex(self.dw, self.n_units)
         elif init_distr == 'pca':
             raise NotImplementedError
         else:
             raise ValueError(f'Unknown initializer "{init_distr}". Use'
                     '"uniform", "simplex", or "pca".')
 
-        # Allocate array for winner histogram
-        # TODO: add array to collect for every winner the correspondig inp vector.
-        self.whist = _np.zeros(self.n_N)
-
-        # grid data for neighbourhood calculation
         grid_iter = itertools.product(range(self.dx), range(self.dy))
         self._grid = _np.array(list(grid_iter))
-
-
-        # calibration
-        self.isCalibrated = False
-        self.calibration = None
-
-        # measures
-        self.quantization_error = []
 
 
     def get_winners(self, data, argax=1):
@@ -104,7 +83,7 @@ class _som_base:
                 data:  Input data set
                 argax: Axis used for minimization 1=x, 0=y.
 
-            Returna:
+            Return:
                 Indices of bmus and min dists.
         """
         # TODO: if the distance between an input vector and more than one lattice
@@ -120,43 +99,6 @@ class _som_base:
             raise ValueError('Wrong dimension of input data: {}'.format(data.ndim))
 
 
-    def nh_gaussian_L2(self, center, r):
-        """Compute 2D Gaussian neighbourhood around `center`. Distance between
-           center and m_i is calculate by Euclidean distance.
-        """
-        d = _distance.cdist(_np.array(center)[None, :], self._grid,
-                           metric='sqeuclidean')
-        ssq = 2 * r**2
-        return _np.exp(-d/ssq).reshape(-1, 1)
-
-
-    def _init_st_mat(self):
-        """Initialize the weights with stochastic matrices.
-
-        The rows of each n by n stochastic matrix are sampes drawn from the
-        Dirichlet distribution, where n is the number of rows and cols of the
-        matrix. The diagonal elemets of the matrices are set to twice the
-        probability of the remaining elements.
-        The square root n of the weight vectors' size must be element of the
-        natural numbers, so that the weight vector is reshapeable to a square
-        matrix.
-        """
-        # check for square matrix
-        d = _np.sqrt(self.dw)
-        is_not_qm = bool(d - int(d))
-        if is_not_qm:
-            raise ValueError('Weight vector (len={}) must be reshapeable to square matrix.'.format(self.dw))
-        else:
-            d = int(d)
-
-        # set alpha
-        alpha = _np.full((d, d), 500)
-        _np.fill_diagonal(alpha, 1000)
-
-        # sample from dirichlet distributions
-        st_matrix = _np.hstack([_stats.dirichlet.rvs(alpha=a, size=self.n_N)
-                               for a in alpha])
-        return st_matrix
 
 
     def calibrate(self, data, targets):
@@ -261,7 +203,7 @@ class _som_base:
         """
         if ax is None:
             fig, ax = aplot._new_axis()
-        udm = _utilities.umatrix(self.weights, self.shape, metric=self.metric)
+        udm = _som_utils.umatrix(self.weights, self.shape, metric=self.metric)
 
         ax.set_title('Unified distance matrix')
         ax.set_xlabel('# units')
@@ -281,7 +223,7 @@ class _som_base:
             axis, umatrix
         """
         fig, ax = _new_axis_3d(**kwargs)
-        udm = _utilities.umatrix(self.weights, self.shape, metric=self.metric)
+        udm = _som_utils.umatrix(self.weights, self.shape, metric=self.metric)
         X, Y = _np.mgrid[:self.dx, :self.dy]
         ax.plot_surface(X, Y, udm, cmap=cmap)
         return ax, udm
@@ -371,19 +313,14 @@ class _som_base:
         self.plot_qerror(ax=ax3)
 
 
-
 class SelfOrganizingMap(_som_base):
 
-    def __init__(self, dims=(10, 10, 3), eta=.8, nh=5, n_iter=100,
-                 metric='euclidean', mode='incremental', init_distr='simplex',
-                 seed=None):
+    def __init__(self, dims: tuple, n_iter: int, eta: float, nhr: float,
+            init_distr: str = 'uniform', metric: str = 'euclidean',
+            mode: str ='incremental', seed: int = None):
 
-        super().__init__(dims, eta, nh, n_iter, metric, mode, init_distr, seed)
+        super().__init__(dims, n_iter, eta, nhr, init_distr, metric, mode, seed)
 
-        #
-        # TODO: Implement mechanism to choose nh_function
-        #
-        self._neighbourhood = self.nh_gaussian_L2
 
     def _incremental_update(self, data_set, c_eta, c_nhr):
         total_qE = 0
@@ -398,7 +335,7 @@ class SelfOrganizingMap(_som_base):
             bmu_midx = _np.unravel_index(bm_units, self.shape)
 
             # calculate neighbourhood over bmu given current radius
-            c_nh = self._neighbourhood(bmu_midx, c_nhr)
+            c_nh = self._neighbourhood(self._grid, bmu_midx, c_nhr)
 
             # update lattice
             self.weights += c_eta * c_nh * (fv - self.weights)
@@ -413,8 +350,8 @@ class SelfOrganizingMap(_som_base):
         # get bmu's multi index
         bmu_midx = _np.unravel_index(bm_units, self.shape)
 
-        w_nh = _np.zeros((self.n_N, 1))
-        w_lat = _np.zeros((self.n_N, self.dw))
+        w_nh = _np.zeros((self.n_units, 1))
+        w_lat = _np.zeros((self.n_units, self.dw))
 
         for bx, by, fv in zip(*bmu_midx, data_set):
             # TODO:  Find a way for faster nh computation
@@ -436,7 +373,7 @@ class SelfOrganizingMap(_som_base):
         # main loop
         for (c_iter, c_nhr) in \
             zip(range(self.n_iter),
-                _utilities.decrease_linear(self.init_nhr, self.n_iter)):
+                _som_utils.decrease_linear(self.init_nhr, self.n_iter)):
 
             if verbose:
                 print(c_iter, end=' ')
@@ -458,8 +395,8 @@ class SelfOrganizingMap(_som_base):
         # main loop
         for (c_iter, c_eta, c_nhr) in \
             zip(range(self.n_iter),
-                _utilities.decrease_linear(self.init_eta, self.n_iter, _defaults.final_eta),
-                _utilities.decrease_expo(self.init_nhr, self.n_iter, _defaults.final_nhr)):
+                _som_utils.decrease_linear(self.init_eta, self.n_iter, _defaults.final_eta),
+                _som_utils.decrease_expo(self.init_nhr, self.n_iter, _defaults.final_nhr)):
 
             if verbose:
                 print('iter: {:2} -- eta: {:<5} -- nh: {:<6}' \
@@ -526,8 +463,8 @@ class DotSom(_som_base):
     def fit(self, data, verbose=True):
         for (c_iter, c_eta, c_nhr) in \
             zip(range(self.n_iter),
-                _utilities.decrease_linear(self.init_eta, self.n_iter, _defaults.final_eta),
-                _utilities.decrease_expo(self.init_nhr, self.n_iter, _defaults.final_nhr)):
+                _som_utils.decrease_linear(self.init_eta, self.n_iter, _defaults.final_eta),
+                _som_utils.decrease_expo(self.init_nhr, self.n_iter, _defaults.final_nhr)):
 
             if verbose:
                 print('iter: {:2} -- eta: {:<5} -- nh: {:<6}' \

@@ -4,9 +4,7 @@
 
 """apollon/som/uttilites.py
 
-(c) Michael Blaß, 2016
-
-Utilites for self.organizing maps.
+Utilities for self.organizing maps.
 
 Functions:
     activation_map    Plot activation map
@@ -18,7 +16,7 @@ import matplotlib.pyplot as _plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as _np
 from scipy.spatial import distance as _distance
-
+from scipy import stats as _stats
 import apollon.som.topologies as _topologies
 
 
@@ -83,3 +81,40 @@ def umatrix(weights, dxy, metric='euclidean'):
         out[mi] = _distance.cdist(p, nh).sum() / len(nh)
 
     return out / out.max()
+
+
+def init_simplex(n_features, n_units):
+    """Initialize the weights with stochastic matrices.
+
+    The rows of each n by n stochastic matrix are sampes drawn from the
+    Dirichlet distribution, where n is the number of rows and cols of the
+    matrix. The diagonal elemets of the matrices are set to twice the
+    probability of the remaining elements.
+    The square root n of the weight vectors' size must be element of the
+    natural numbers, so that the weight vector is reshapeable to a square
+    matrix.
+
+    Params:
+        n_features    Number of features in each vector.
+        n_units       Number of units on the SOM.
+
+    Returns:
+        Two-dimensional array of shape (n_units, n_features), in which each
+        row is a flattened random stochastic matrix.
+    """
+    # check for square matrix
+    n_rows = _np.sqrt(n_features)
+    if bool(n_rows - int(n_rows)):
+        raise ValueError(f'Weight vector (len={n_features}) is not'
+                'reshapeable to square matrix.')
+    else:
+        n_rows = int(n_rows)
+
+    # set alpha
+    alpha = _np.full((n_rows, n_rows), 500)
+    _np.fill_diagonal(alpha, 1000)
+
+    # sample from dirichlet distributions
+    st_matrix = _np.hstack([_stats.dirichlet.rvs(alpha=a, size=n_units)
+                            for a in alpha])
+    return st_matrix
