@@ -10,12 +10,14 @@ import numpy as _np
 import matplotlib.pyplot as _plt
 from scipy import stats as _stats
 from scipy.spatial import distance as _distance
+from scipy.spatial import KDTree as _KDTree
 
 from apollon.io import save as _save
 from apollon.som import utilities as _utilities
 from apollon.som import defaults as _defaults
 from apollon.aplot import _new_axis, _new_axis_3d
 from apollon import aplot as aplot
+
 
 class _som_base:
     def __init__(self, dims, eta, nhr, n_iter, metric, mode, init_distr, seed=None):
@@ -78,8 +80,9 @@ class _som_base:
         self.whist = _np.zeros(self.n_N)
 
         # grid data for neighbourhood calculation
-        self._grid = _np.mgrid[:self.dx, :self.dy]
-        self._grid = _np.dstack(self._grid).reshape(self.n_N, 2)
+        grid_iter = itertools.product(range(self.dx), range(self.dy))
+        self._grid = _np.array(list(grid_iter))
+
 
         # calibration
         self.isCalibrated = False
