@@ -1,6 +1,6 @@
 """
 poisson_hmm.py -- HMM with Poisson-distributed state dependent process.
-Copyright (C) 2018  Michael Blaß <michael.blass@uni-hamburg.de>
+Copyright (C) 2018  Michael Blaß <mblass@posteo.net>
 
 Functions:
     to_txt                  Serializes model to text file.
