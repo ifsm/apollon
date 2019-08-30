@@ -80,15 +80,37 @@ def decrease_expo(start, step, stop=1):
             yield start * _np.exp(b*x)
 
 
-def get_winner(weights, test_vector, metric='euclidean'):
-    if test_vector.ndim == 1:
-        d = _distance.cdist(test_vector[None, :], weights, metric=metric)
-        return _np.argmin(d)
-    elif test_vector.ndim == 2:
-        ds = _distance.cdist(test_vector, weights, metric=metric)
-        return _np.argmin(ds, axis=1)
-    else:
-        raise ValueError('Wrong dimension of input data: {}'.format(data.ndim))
+def best_match(weights: Array, inp: Array, metric: str, rax: int = 1):
+    """Compute the best matching unit of ``weights`` for each
+    element in ``inp``.
+
+    If several elemets in ``weights`` have the same distance to the
+    current element of ``inp``, the first element of ``weights`` is
+    choosen to be the best matching unit.
+
+    Args:
+        weights:    Two-dimensional array of weights, in which each row
+                    represents an unit.
+        inp:        Array of test vectors. If two-dimensional, rows are
+                    assumed to represent observations.
+        metric:     Distance metric to use.
+        rax:        Axis on which to perform reduction.
+
+    Returns:
+        Index and error of best matching units.
+    """
+    if weights.ndim != 2:
+        raise ValueError(f'Array ``weights`` has {weights.ndim} dimensions,\n'
+                'it has to have exactly two dimensions.')
+
+    if weights.shape[-1] != inp.shape[-1]:
+        raise ValueError(f'Feature dimension of ``weights`` has '
+                '{weights.shape[0]} elemets, whereas ``inp`` has '
+                '{inp.shape[-1]} elemets. but they have, however, '
+                'to match exactly.')
+
+    dists = _distance.cdist(_np.atleast_2d(inp), weights, metric)
+    return dists.argmin(axis=1), dists.min(axis=1)
 
 
 def umatrix(weights, dxy, metric='euclidean'):
