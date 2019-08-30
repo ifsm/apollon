@@ -15,22 +15,67 @@ from scipy.spatial import distance
 
 
 def gaussian(grid, center, radius):
-   """Compute n-dimensional Gaussian neighbourhood on a ``grid``.
+    """Compute n-dimensional Gaussian neighbourhood.
 
-   Params:
-       grid    Shape of the underlying grid.
-       center  Index of of the mode value.
-       radius
-   """
-   center = np.atleast_2d(center)
-   dists = distance.cdist(center, grid, metric='sqeuclidean')
-   return np.exp(-dists/(2*radius**2)).reshape(-1, 1)
+    Gaussian neighborhood smoothes the array.
 
-def nh_gaussian_L2(self, center, r):
-    """Compute 2D Gaussian neighbourhood around `center`. Distance between
-       center and m_i is calculate by Euclidean distance.
+    Params:
+        grid      Array of n-dimensional indices.
+        center    Index of the neighborhood center.
+        radius    Size of neighborhood.
     """
-    d = _distance.cdist(_np.array(center)[None, :], self._grid,
-                       metric='sqeuclidean')
-    ssq = 2 * r**2
-    return _np.exp(-d/ssq).reshape(-1, 1)
+    center = np.atleast_2d(center)
+    dists = distance.cdist(center, grid, metric='sqeuclidean')
+    return np.exp(-dists/(2*radius**2)).T
+
+
+def mexican(grid, center, radius):
+    """Compute n-dimensional Mexcican hat neighbourhood.
+
+    Mexican hat neighborhood smoothes the array.
+
+    Params:
+        grid      Array of n-dimensional indices.
+        center    Index of the neighborhood center.
+        radius    Size of neighborhood.
+    """
+    center = np.atleast_2d(center)
+    dists = distance.cdist(center, grid, metric='sqeuclidean')
+    return ((1-(dists/radius**2)) * np.exp(-dists/(2*radius**2))).T
+
+
+def star(grid, center, radius):
+    """Compute n-dimensional cityblock neighborhood.
+
+    The cityblock neighborhood is a star-shaped area
+    around ``center``.
+
+    Params:
+        grid      Array of n-dimensional indices.
+        center    Index of the neighborhood center.
+        radius    Size of neighborhood.
+
+    Returns:
+    """
+    center = np.atleast_2d(center)
+    dists = distance.cdist(center, grid, 'cityblock')
+    return (dists <= radius).astype(int).T
+
+
+def rect(grid, center, radius):
+    """Compute n-dimensional Chebychev neighborhood.
+
+    The Chebychev neighborhood is a square-shaped area
+    around ``center``.
+
+    Params:
+        grid      Array of n-dimensional indices.
+        center    Index of the neighborhood center.
+        radius    Size of neighborhood.
+
+    Returns:
+        Two-dimensional array of in
+    """
+    center = np.atleast_2d(center)
+    dists = distance.cdist(center, grid, 'chebychev')
+    return (dists <= radius).astype(int).T
