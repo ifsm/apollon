@@ -11,13 +11,43 @@ Functions:
     distance_map      Plot a distance map
     distance_map3d    Plot a 3d distance map
 """
+import itertools
+from typing import Iterator, Tuple
 
 import matplotlib.pyplot as _plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as _np
 from scipy.spatial import distance as _distance
 from scipy import stats as _stats
+
 import apollon.som.topologies as _topologies
+from apollon.types import Array
+
+
+def grid_iter(n_rows: int, n_cols: int) -> Iterator[Tuple[int, int]]:
+    """Compute grid indices of an two-dimensional array.
+
+    Params:
+        n_rows    Number of array rows.
+        n_cols    Number of array columns.
+
+    Return:
+        Multi-index iterator.
+    """
+    return itertools.product(range(n_rows), range(n_cols))
+
+
+def grid(n_rows: int, n_cols: int) -> Array:
+    """Compute grid indices of an two-dimensional array.
+
+    Params:
+        n_rows    Number of array rows.
+        n_cols    Number of array columns.
+
+    Return:
+        Two-dimensional array in which each row represents an multi-index.
+    """
+    return _np.array(list(grid_iter(n_rows, n_cols)))
 
 
 def activation_map(som, **kwargs):
