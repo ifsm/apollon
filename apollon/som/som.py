@@ -7,23 +7,22 @@
 #
 
 import itertools
-
 import numpy as _np
 import matplotlib.pyplot as _plt
 from scipy import stats as _stats
 from scipy.spatial import distance as _distance
-from scipy.spatial import KDTree as _KDTree
 
 from apollon.io import save as _save
-from apollon.som import utilities as _som_utils
 from apollon.som import defaults as _defaults
 from . import neighbors as _neighbors
+from . import utilities as _som_utils
+from .. types import Array as _Array
 from apollon.aplot import _new_axis, _new_axis_3d
 from apollon import aplot as aplot
 
 
-class _som_base:
-    def __init__(self, dims, n_iter, eta, nhr, init_distr, metric, mode, seed=None):
+class _SomBase:
+    def __init__(self, dims, n_iter, eta, nhr, nh_shape, init_distr, metric, mode, seed=None):
 
         # check dimensions
         for d in dims:
@@ -41,8 +40,13 @@ class _som_base:
         self.metric = metric
         self.isCalibrated = False
         self.calibration = None
-        self.quantization_error = []
-        self._neighbourhood = _neighbors.gaussian
+        self.quantization_error = _np.zeros(n_iter)
+
+        try:
+            self._neighbourhood = getattr(_neighbors, nh_shape)
+        except AttributeError:
+            raise AttributeError(f'Neiborhood shape {nh_shape} is unknown. Use'
+                        'one `gaussian`, `mexican`, `rect`, or `star`')
 
         # check training parameters
         if eta is None:
@@ -70,35 +74,9 @@ class _som_base:
             raise NotImplementedError
         else:
             raise ValueError(f'Unknown initializer "{init_distr}". Use'
-                    '"uniform", "simplex", or "pca".')
+                             '"uniform", "simplex", or "pca".')
 
-        grid_iter = itertools.product(range(self.dx), range(self.dy))
-        self._grid = _np.array(list(grid_iter))
-
-
-    def get_winners(self, data, argax=1):
-        """Get the best matching neurons for every vector in data.
-
-            Args:
-                data:  Input data set
-                argax: Axis used for minimization 1=x, 0=y.
-
-            Return:
-                Indices of bmus and min dists.
-        """
-        # TODO: if the distance between an input vector and more than one lattice
-        #       neuro is the same, choose winner randomly.
-
-        if data.ndim == 1:
-            d = _distance.cdist(data[None, :], self.weights, metric=self.metric)
-            return _np.argmin(d), _np.min(d**2, axis=1)
-        elif data.ndim == 2:
-            ds = _distance.cdist(data, self.weights, metric=self.metric)
-            return _np.argmin(ds, axis=argax), _np.sum(_np.min(ds, axis=argax)**2)
-        else:
-            raise ValueError('Wrong dimension of input data: {}'.format(data.ndim))
-
-
+        self._grid = _som_utils.grid(self.dx, self.dy)
 
 
     def calibrate(self, data, targets):
@@ -114,158 +92,6 @@ class _som_base:
         self._cmap = targets[bmiv]
         self.isCalibrated = True
 
-
-    def plot_calibration(self, lables=None, ax=None, cmap='plasma', **kwargs):
-        """Plot calibrated map.
-
-        Args:
-            labels:
-            ax
-            cmap:
-
-        Returns:
-        """
-        if not self.isCalibrated:
-            raise ValueError('Map not calibrated.')
-        else:
-            if ax is None:
-                fig, ax = _new_axis()
-            ax.set_title('Calibration')
-            ax.set_xlabel('# units')
-            ax.set_ylabel('# units')
-            ax.imshow(self._cmap.reshape(self.dx, self.dy), origin='lower',
-                      cmap=cmap)
-            #return ax
-
-
-    def plot_datamap(self, data, targets, interp='None', marker=False,
-                     cmap='viridis', **kwargs):
-        """Represent the input data on the map by retrieving the best
-        matching unit for every element in `data`. Mark each map unit
-        with the corresponding target value.
-
-        Args:
-            data:    Input data set.
-            targets: Class labels or values.
-            interp:  matplotlib interpolation method name.
-            marker:  Plot markers in bmu position if True.
-
-        Returns:
-           axis, umatrix, bmu_xy
-        """
-        ax, udm = self.plot_umatrix(interp=interp, cmap=cmap, **kwargs)
-
-        #
-        # TODO: Use .transform() instead
-        #
-        bmu, err = self.get_winners(data)
-
-        x, y = _np.unravel_index(bmu, (self.dx, self.dy))
-        fd = {'color':'#cccccc'}
-        if marker:
-            ax.scatter(y, x, s=40, marker='x', color='r')
-
-        for i, j, t in zip(x, y, targets):
-            ax.text(j, i, t, fontdict=fd,
-                    horizontalalignment='center',
-                    verticalalignment='center')
-        return (ax, udm, (x, y))
-
-
-    def plot_qerror(self, ax=None, **kwargs):
-        """Plot quantization error."""
-        if ax is None:
-            fig, ax = _new_axis(**kwargs)
-
-        ax.set_title('Quantization Errors per iteration')
-        ax.set_xlabel('# interation')
-        ax.set_ylabel('Error')
-
-        ax.plot(self.quantization_error, lw=3, alpha=.8,
-                label='Quantizationerror')
-
-
-    def plot_umatrix(self, interp='None', cmap='viridis', ax=None, **kwargs):
-        """Plot unified distance matrix.
-
-        The unified distance matrix (udm) allows to visualize weight matrices
-        of high dimensional weight vectors. The entries (x, y) of the udm
-        correspondto the arithmetic mean of the distances between weight
-        vector (x, y) and its 4-neighbourhood.
-
-        Args:
-            w:        Neighbourhood width.
-            interp:   matplotlib interpolation method name.
-            ax:       Provide custom axis object.
-
-       Returns:
-           axis, umatrix
-        """
-        if ax is None:
-            fig, ax = aplot._new_axis()
-        udm = _som_utils.umatrix(self.weights, self.shape, metric=self.metric)
-
-        ax.set_title('Unified distance matrix')
-        ax.set_xlabel('# units')
-        ax.set_ylabel('# units')
-        ax.imshow(udm, interpolation=interp, cmap=cmap, origin='lower')
-        return ax, udm
-
-
-    def plot_umatrix3d(self, w=1, cmap='viridis', **kwargs):
-        """Plot the umatrix in 3d. The color on each unit (x, y) represents its
-           mean distance to all direct neighbours.
-
-        Args:
-            w: Neighbourhood width.
-
-        Returns:
-            axis, umatrix
-        """
-        fig, ax = _new_axis_3d(**kwargs)
-        udm = _som_utils.umatrix(self.weights, self.shape, metric=self.metric)
-        X, Y = _np.mgrid[:self.dx, :self.dy]
-        ax.plot_surface(X, Y, udm, cmap=cmap)
-        return ax, udm
-
-
-    def plot_features(self, figsize=(8, 8)):
-        """Values of each feature of the weight matrix per map unit.
-
-        This works currently ony for feature vectors of len dw**2.
-
-        Args:
-            Size of figure.
-        """
-        d = _np.sqrt(self.dw).astype(int)
-        rweigths = self.weights.reshape(self.dims)
-
-        fig, _ = _plt.subplots(d, d, figsize=figsize, sharex=True, sharey=True)
-        for i, ax in enumerate(fig.axes):
-            ax.axison=False
-            ax.imshow(rweigths[..., i], origin='lower')
-
-
-    def plot_whist(self, interp='None', ax=None, **kwargs):
-        """Plot the winner histogram.
-
-        The darker the color on position (x, y) the more often neuron (x, y)
-        was choosen as winner. The number of winners at edge neuros is
-        magnitudes of order higher than on the rest of the map. Thus, the
-        histogram is shown in log-mode.
-
-        Args:
-            interp: matplotlib interpolation method name.
-            ax:     Provide custom axis object.
-
-        Returns:
-            The axis.
-        """
-        if ax is None:
-            fig, ax = _new_axis(**kwargs)
-        ax.imshow(_np.log1p(self.whist.reshape(self.dx, self.dy)),
-                  vmin=0, cmap='Greys', interpolation=interp, origin='lower')
-        return ax
 
 
     def save(self, path):
@@ -297,49 +123,52 @@ class _som_base:
             return _np.array(midx)
 
 
-    def inspect(self):
-        fig = _plt.figure(figsize=(12, 5))
-        ax1 = _new_axis(sp_pos=(1, 3, 1), fig=fig)
-        ax2 = _new_axis(sp_pos=(1, 3, 2), fig=fig)
-        ax3 = _new_axis(sp_pos=(1, 3, 3), fig=fig)
+class BatchMap(_SomBase):
+    def __init__(self, dims: tuple, n_iter: int, eta: float, nhr: float,
+                 nh_shape: str = 'gaussian', init_distr: str = 'uniform',
+                 metric: str = 'euclidean', seed: int = None):
 
-        _, _ = self.plot_umatrix(ax=ax1)
-
-        if self.isCalibrated:
-            _ = self.plot_calibration(ax=ax2)
-        else:
-            _ = self.plot_whist(ax=ax2)
-
-        self.plot_qerror(ax=ax3)
+        super().__init__(dims, n_iter, eta, nhr, nh_shape, init_distr, metric,
+                         mode='batch', seed=seed)
 
 
-class SelfOrganizingMap(_som_base):
+class IncrementalMap(_SomBase):
+    def __init__(self, dims: tuple, n_iter: int, eta: float, nhr: float,
+                 nh_shape: str = 'gaussian', init_distr: str = 'uniform',
+                 metric: str = 'euclidean', seed: int = None):
+
+        super().__init__(dims, n_iter, eta, nhr, nh_shape, init_distr, metric,
+                         mode='incremental', seed=seed)
+
+
+    def fit(self, train_data, verbose=False):
+        eta_ = _som_utils.decrease_linear(self.init_eta, self.n_iter, _defaults.final_eta)
+        nhr_ = _som_utils.decrease_expo(self.init_nhr, self.n_iter, _defaults.final_nhr)
+        iter_ = range(self.n_iter)
+
+        for (c_iter, c_eta, c_nhr) in zip(iter_, eta_, nhr_):
+            if verbose:
+                print('iter: {:2} -- eta: {:<5} -- nh: {:<6}' \
+                 .format(c_iter, _np.round(c_eta, 4), _np.round(c_nhr, 5)))
+
+            for fvect in _np.random.permutation(train_data):
+                bmu, err = _som_utils.best_match(self.weights, fvect, self.metric)
+                self.whist[bmu] += 1
+                self.quantization_error[c_iter] += err
+
+                m_idx= _np.atleast_2d(_np.unravel_index(bmu, self.shape)).T
+                neighbors = self._neighbourhood(self._grid, m_idx, c_nhr)
+                self.weights += c_eta * neighbors * (fvect - self.weights)
+
+
+class SelfOrganizingMap(_SomBase):
 
     def __init__(self, dims: tuple, n_iter: int, eta: float, nhr: float,
-            init_distr: str = 'uniform', metric: str = 'euclidean',
-            mode: str ='incremental', seed: int = None):
+                 nh_shape: str = 'gaussian', init_distr: str = 'uniform',
+                 metric: str = 'euclidean', mode: str = 'incremental',
+                 seed: int = None):
 
-        super().__init__(dims, n_iter, eta, nhr, init_distr, metric, mode, seed)
-
-
-    def _incremental_update(self, data_set, c_eta, c_nhr):
-        total_qE = 0
-        for fv in data_set:
-            bm_units, c_qE = self.get_winners(fv)
-            total_qE += c_qE
-
-            # update activation map
-            self.whist[bm_units] += 1
-
-            # get bmu's multi index
-            bmu_midx = _np.unravel_index(bm_units, self.shape)
-
-            # calculate neighbourhood over bmu given current radius
-            c_nh = self._neighbourhood(self._grid, bmu_midx, c_nhr)
-
-            # update lattice
-            self.weights += c_eta * c_nh * (fv - self.weights)
-        self.quantization_error.append(total_qE)
+        super().__init__(dims, n_iter, eta, nhr, nh_shape, init_distr, metric, mode, seed)
 
 
     def _batch_update(self, data_set, c_nhr):
@@ -381,41 +210,6 @@ class SelfOrganizingMap(_som_base):
             self._batch_update(data, c_nhr)
 
 
-    def train_minibatch(self, data, verbose=False):
-        raise NotImplementedError
-
-    def train_incremental(self, data, verbose=False):
-        """Randomly feed the data to the network and update after each
-           data item.
-
-        Args:
-            data:     Input data set.
-            verbose:  Print verbose messages if True.
-        """
-        # main loop
-        for (c_iter, c_eta, c_nhr) in \
-            zip(range(self.n_iter),
-                _som_utils.decrease_linear(self.init_eta, self.n_iter, _defaults.final_eta),
-                _som_utils.decrease_expo(self.init_nhr, self.n_iter, _defaults.final_nhr)):
-
-            if verbose:
-                print('iter: {:2} -- eta: {:<5} -- nh: {:<6}' \
-                 .format(c_iter, _np.round(c_eta, 4), _np.round(c_nhr, 5)))
-
-            # always shuffle data
-            self._incremental_update(_np.random.permutation(data), c_eta, c_nhr)
-
-
-    def fit(self, data, verbose=False):
-        """Train the SOM on the given data set."""
-
-        if self.mode == 'incremental':
-            self.train_incremental(data, verbose)
-
-        elif self.mode == 'batch':
-            self.train_batch(data, verbose)
-
-
     def predict(self, data):
         """Predict a class label for each item in input data. SOM needs to be
         calibrated in order to predict class labels.
@@ -427,9 +221,8 @@ class SelfOrganizingMap(_som_base):
             raise AttributeError('SOM is not calibrated.')
 
 
-#from apollon.hmm.poisson_hmm import hmm_distance
 
-class DotSom(_som_base):
+class DotSom(_SomBase):
     def __init__(self, dims=(10, 10, 3), eta=.8, nh=8, n_iter=10,
                  metric='euclidean', mode=None, init_distr='uniform', seed=None):
         """ This SOM assumes a stationary PoissonHMM on each unit. The weight vector
