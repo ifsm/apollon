@@ -26,7 +26,7 @@ def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
 
     If ``inp`` is two-dimensional, an estimated is computed for each row.
 
-    Params:
+    Args:
         inp       Input array.
         delay     Embedding delay in samples.
         m_dim     Number of embedding dimensions.
