@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+
+import unittest
+import numpy as np
+
+from apollon.signal.spectral import fft
+from apollon.signal.tools import sinusoid
+
+
+class TestFFT(unittest.TestCase):
+    def setUp(self):
+        self.frqs = np.array([440, 550, 660, 880, 1760])
+        self.amps = np.array([1., .5, .25, .1, .05])
+        self.signal_1d = sinusoid(self.frqs, self.amps, fps=9000)
+        self.signal_2d = np.vstack((self.signal_1d, self.signal_1d))
+
+    def test_fft_1d(self):
+        bins = np.absolute(fft(self.signal_1d))
+        self.assertTrue(np.allclose(bins[self.frqs], self.amps))
+
+    def test_fft_2d(self):
+        bins = np.absolute(fft(self.signal_2d))
+        self.assertTrue(np.allclose(bins[:, self.frqs], self.amps))
+
+if __name__ == '__main__':
+    unittest.main()
