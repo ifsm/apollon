@@ -72,7 +72,6 @@ apollon_correlogram_delay (PyObject* self, PyObject* args)
         Py_RETURN_NONE;
     }
 
-    Py_INCREF (arr_corr);
     return (PyObject *) arr_corr;
 }
 
@@ -123,7 +122,6 @@ apollon_correlogram (PyObject* self, PyObject* args)
         Py_RETURN_NONE;
     }
 
-    Py_INCREF (arr_corr);
     return (PyObject *) arr_corr;
 }
 

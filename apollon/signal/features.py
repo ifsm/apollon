@@ -26,7 +26,7 @@ def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
 
     If ``inp`` is two-dimensional, an estimated is computed for each row.
 
-    Params:
+    Args:
         inp       Input array.
         delay     Embedding delay in samples.
         m_dim     Number of embedding dimensions.
@@ -58,6 +58,28 @@ def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
 
     return _np.array([cdim_func(seg, delay, m_dim, n_bins, scaling_size)
                       for seg in inp])
+
+
+def correlogram(inp: _Array, wlen: int, n_delay: int) -> _Array:
+    """Windowed autocorrelation of ``inp``.
+
+    This function computes the autocorrelation of a ``wlen``-sized
+    window of the input.
+
+    Args:
+        inp:        One-dimensional input signal.
+        wlen:       Length of the autocorrelation window.
+        n_delay:    Number of delay.
+
+    Returns:
+        Two-dimensional array in which each column is an auto-correlation
+        function.
+    """
+    if not isinstance(inp, _np.ndarray):
+        raise TypeError(f'Argument ``inp`` is of type {type(inp)}. It has '
+                        'to be an numpy array.')
+
+    return _features.correlogram(inp, wlen, n_delay)
 
 
 def spectral_centroid(inp: _Array, frqs: _Array) -> _Array:
