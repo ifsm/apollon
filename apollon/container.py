@@ -16,8 +16,8 @@ from typing import Any, Dict, List, Optional, Tuple
 @dataclasses.dataclass(frozen=True)
 class FTParams:
     fps: int
-    window: str
-    n_perseg: int
+    window: str = None
+    n_perseg: int = None
     hop_size: int = None
     n_fft: int = None
     lower_cutoff: float = None
