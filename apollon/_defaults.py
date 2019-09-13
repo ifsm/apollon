@@ -8,6 +8,8 @@ apollon/_defaults.py --  Defaut definitions
 
 TIME_STAMP_FMT = '%Y-%m-%d %H:%M:%S'
 
+SPL_REF = 2e-5
+
 PP_SIGNAL = {'linewidth': 1, 'linestyle': 'solid', 'color': 'k', 'alpha': .5,
              'zorder': 0}
 
