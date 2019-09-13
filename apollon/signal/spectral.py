@@ -2,26 +2,27 @@
 # Copyright (C) 2019 Michael Blaß
 # mblass@posteo.net
 
-"""spectral.py    (c) Michael Blaß 2016
+"""apollon/signal/spectral.py
 
 Provide easy access to frequency spectra obtained by the DFT.
 
 Classes:
-    _Spectrum_Base      Utility class
-    _Spectrum           Representation of a frequency spectrum
+    Spectrum
+    Spectrogram
+    stft
 
 Functions:
     fft                 Easy to use discrete fourier transform
 """
-import json as _json
 import matplotlib.pyplot as _plt
 import numpy as _np
-from scipy.signal import get_window as _get_window
+import numpy.ma as _ma
 
 from . import features as _features
-from . import tools as _tools
-from .. types import Array as _Array
+from . import tools as _sigtools
 from .. import container
+from .. import _defaults
+from .. types import Array as _Array
 
 
 def fft(sig: _Array, window: str = None, n_fft: int = None) -> _Array:
@@ -60,7 +61,7 @@ def fft(sig: _Array, window: str = None, n_fft: int = None) -> _Array:
         bins = _np.multiply(bins[:, :-1], 2.0)
     else:
         bins = _np.multiply(bins, 2.0)
-    return bins
+    return bins.T
 
 
 class Spectrum:
@@ -69,15 +70,12 @@ class Spectrum:
         if inp.ndim > 2:
             raise ValueError(f'Input array has {inp.dim} dimensions, but it '
                     'should have two at max.')
+
         self.params = Spectrum._parse_params(inp, params)
         self.bins = fft(inp, self.params.window, self.params.n_fft)
+        self.bins = _ma.masked_array(self.bins)
         self.frqs = _np.fft.rfftfreq(self.params.n_fft, 1.0/self.params.fps)
-
-        clip_range = _np.logical_and(self.params.lower_cutoff <= self.frqs,
-                                     self.frqs <= self.params.upper_cutoff)
-
-        self.bins = self.bins[:, clip_range]
-        self.frqs = self.frqs[clip_range]
+        self.frqs = _ma.masked_array(self.frqs)
 
     def abs(self):
         """Return magnitude spectrum."""
@@ -114,6 +112,22 @@ class Spectrum:
     def perceptual_shape(self):
         pass
 
+    def clip(self, lcf: float = None, ucf: float = None, dbt: float = None) -> None:
+        """
+        """
+        lower_bound = self.frqs.data[0] if lcf is None else lcf
+        upper_bound = self.frqs.data[-1] if ucf is None else ucf
+
+        if dbt is not None:
+            thr = _np.power(10, dbt/20) * _defaults.SPL_REF
+            self.bins.mask = _np.absolute(self.bins.data) < thr
+
+        self.frqs.mask = _np.logical_or(self.frqs.data < lower_bound,
+                                        self.frqs.data >= upper_bound)
+
+        self.params.lower_cutoff = lower_bound
+        self.params.upper_cutoff = upper_bound
+        self.params.db_threshold = dbt
 
     @staticmethod
     def _parse_params(inp: _Array, params: container.FTParams) -> container.FTParams:
@@ -143,7 +157,7 @@ class Spectrum:
                     'lcf < ucf <= fps/2')
 
         return container.FTParams(params.fps, params.window, n_perseg,
-                None, n_fft, lcf, ucf)
+                None, n_fft, lcf, ucf, params.db_threshold)
 
     def __abs__(self):
         return _np.absolute(self.bins)
@@ -223,7 +237,7 @@ class Spectrogram:
 
         inp_strided = _np.lib.stride_tricks.as_strided(inp, (shp_x, shp_y), (strd_x, strd_y))
 
-        return _np.transpose(fft(inp_strided, self.window, self.n_fft))
+        return fft(inp_strided, self.window, self.n_fft)
 
     def abs(self):
         """Return the magnitude spectrogram."""
@@ -286,7 +300,7 @@ class Spectrogram:
         low_idx = int(_np.floor(low/self.d_frq)) + 1
         high_idx = int(_np.floor(high/self.d_frq))
 
-        vals = _tools.amp2db(self.abs()[low_idx:high_idx, :])
+        vals = _sigtools.amp2db(self.abs()[low_idx:high_idx, :])
         frq_range = self.frqs[low_idx:high_idx]
         cmesh_frqs = _np.append(frq_range, frq_range[-1]+self.d_frq)
         if log_frq is not None:
