@@ -13,7 +13,7 @@ import csv as _csv
 from typing import Any, Dict, List, Optional, Tuple
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass()
 class FTParams:
     fps: int
     window: str = None
@@ -22,6 +22,7 @@ class FTParams:
     n_fft: int = None
     lower_cutoff: float = None
     upper_cutoff: float = None
+    db_threshold: float = None
 
 
 class NameSpace:
