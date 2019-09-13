@@ -10,12 +10,12 @@ import numpy as _np
 from scipy.signal import hilbert as _hilbert
 
 import _features
+from . import tools as _sigtools
 from .. import segment as _segment
 from .. tools import array2d_fsum
 from .. types import Array as _Array
 from .. import container
 from .  import critical_bands as _cb
-from .  tools import trim_spectrogram
 from .. audio import fti16
 
 
@@ -96,7 +96,6 @@ def spectral_centroid(inp: _Array, frqs: _Array) -> _Array:
         Array of Spectral centroid frequencies.
     """
     inp = _np.atleast_2d(inp).astype('float64')
-
     weighted_nrgy = _np.multiply(inp, frqs).sum(axis=1).squeeze()
     total_nrgy = inp.sum(axis=1).squeeze()
     total_nrgy[total_nrgy == 0.0] = 1.0
@@ -157,7 +156,7 @@ def spectral_shape(inp: _Array, frqs: _Array, cf_low: float = 50,
     if inp.ndim < 2:
         inp = inp[:, None]
 
-    vals, frqs = trim_spectrogram(inp, frqs, cf_low, cf_high)
+    vals, frqs = _sigtools.clip_spectr(inp, frqs, cf_low, cf_high)
 
     total_nrgy = array2d_fsum(vals)
     total_nrgy[total_nrgy == 0.0] = 1.0    # Total energy is zero iff input signal is all zero.
