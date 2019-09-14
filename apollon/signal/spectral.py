@@ -86,11 +86,7 @@ class Spectrum:
         return self.params
 
     def centroid(self, power=True):
-        if power is True:
-            inp = self.power()
-        else:
-            inp = self.abs()
-        return _features.spectral_centroid(inp, self.frqs)
+        return _np.multiply(self.abs(), self.frqs[:, None]).sum() / self.abs().sum()
 
     def extract(self, cf_low: float = 50, cf_high: float = 16000):
         #spctr = _features.spectral_shape(self.power().T, self.frqs, cf_low, cf_high)
