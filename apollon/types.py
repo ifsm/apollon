@@ -9,6 +9,7 @@ from typing import (Any, Dict, Generator, Iterable, List, Optional, Tuple, Union
 import numpy as _np    # type: ignore
 
 Array = _np.ndarray    # pylint: disable = C0103
+MaskedArray = _np.ma.core.MaskedArray # pylint: disable = C0103
 
 ArrayOrStr = Union[Array, str]
 IterOrNone = Union[Iterable, None]
@@ -18,3 +19,5 @@ ParameterSet = Optional[ParamsType]
 ParserType = Tuple[ParamsType, List[str]]
 PathType = Union[str, pathlib.Path]
 PathGen = Generator[PathType, None, None]
+Spectrum = Tuple[MaskedArray, MaskedArray]
+Spectrogram = Tuple[Array, Array, Array]

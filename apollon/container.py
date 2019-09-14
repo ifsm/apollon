@@ -7,22 +7,39 @@
 Classes:
     FeatureSpace
 """
-
+import dataclasses
 import json
 import csv as _csv
 from typing import Any, Dict, List, Optional, Tuple
 
 
-class FeatureSpace:
-    """Container class for feature vectors."""
+@dataclasses.dataclass()
+class FTParams:
+    fps: int
+    window: str = None
+    n_perseg: int = None
+    hop_size: int = None
+    n_fft: int = None
+    lower_cutoff: float = None
+    upper_cutoff: float = None
+    db_threshold: float = None
+
+
+class NameSpace:
     def __init__(self, **kwargs):
         for key, val in kwargs.items():
             if isinstance(val, dict):
                 val = FeatureSpace(**val)
-            self.update(key, val)
+            self.__dict__[key] = val
+
+
+class FeatureSpace(NameSpace):
+    """Container class for feature vectors."""
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def update(self, key: str, val: Any) -> None:
-        """Update the FeatureSpace.
+        """Update the set of parameters.
 
         Args:
             key:  Field name.

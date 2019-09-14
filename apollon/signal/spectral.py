@@ -2,110 +2,41 @@
 # Copyright (C) 2019 Michael Blaß
 # mblass@posteo.net
 
-"""spectral.py    (c) Michael Blaß 2016
+"""apollon/signal/spectral.py
 
 Provide easy access to frequency spectra obtained by the DFT.
 
 Classes:
-    _Spectrum_Base      Utility class
-    _Spectrum           Representation of a frequency spectrum
+    Spectrum
+    Spectrogram
+    stft
 
 Functions:
     fft                 Easy to use discrete fourier transform
 """
-import json as _json
 import matplotlib.pyplot as _plt
 import numpy as _np
-from scipy.signal import get_window as _get_window
+import numpy.ma as _ma
 
 from . import features as _features
-from . import tools as _tools
-from .. types import Array as _Array
+from . import tools as _sigtools
 from .. import container
+from .. import _defaults
+from .. types import Array as _Array
 
 
-class _Spectrum_Base:
-    def __abs__(self):
-        return _np.absolute(self.bins)
+def fft(sig: _Array, window: str = None, n_fft: int = None) -> _Array:
+    """Compute the normalized Discrete Fourier Transform for real input.
 
-    def __add__(self, other):
-        if isinstance(other, _Spectrum):
-            if self.sr == other.sr and self.n == other.n:
-                return _Spectrum(self.bins + other.bins, sr=self.sr,
-                                 n=self.n, window=self.window)
-            else:
-                raise ValueError('Spectra not compatible.')
-        else:
-            return _Spectrum(self.bins + other, sr=self.sr,
-                             n=self.n, window=self.window)
+    This is a simple wrapper around `numpy.fft.rfft`.
 
-    def __radd__(self, other):
-        if isinstance(other, _Spectrum):
-            if self.sr == other.sr and self.n == other.n:
-                return _Spectrum(self.bins + other.bins, sr=self.sr,
-                                 n=self.n, window=self.window)
-            else:
-                raise ValueError('Spectra not compatible.')
-        else:
-            return _Spectrum(self.bins + other, sr=self.sr,
-                             n=self.n, window=self.window)
-
-    def __sub__(self, other):
-        if isinstance(other, _Spectrum):
-            if self.sr == other.sr and self.n == other.n:
-                return _Spectrum(self.bins - other.bins, sr=self.sr,
-                                 n=self.n, window=self.window)
-            else:
-                raise ValueError('Spectra not compatible.')
-        else:
-            return _Spectrum(self.bins - other, sr=self.sr,
-                             n=self.n, window=self.window)
-
-    def __rsub__(self, other):
-        if isinstance(other, _Spectrum):
-            if self.sr == other.sr and self.n == other.n:
-                return_Spectrum(self.bins - other.bins, sr=self.sr,
-                                n=self.n, window=self.window)
-            else:
-                raise ValueError('Spectra not compatible.')
-        else:
-            return _Spectrum(self.bins - other, sr=self.sr,
-                             n=self.n, window=self.window)
-
-    def __mul__(self, other):
-        if isinstance(other, _Spectrum):
-            if self.sr == other.sr and self.n == other.n:
-                return _Spectrum(self.bins * other.bins, sr=self.sr,
-                                 n=self.n, window=self.window)
-            else:
-                raise ValueError('Spectra not compatible.')
-        else:
-            return _Spectrum(self.bins * other, sr=self.sr,
-                             n=self.n, window=self.window)
-
-    def __rmul__(self, other):
-        if isinstance(other, _Spectrum):
-            if self.sr == other.sr and self.n == other.n:
-                return _Spectrum(self.bins * other.bins, sr=self.sr,
-                                 n=self.n, window=self.window)
-            else:
-                raise ValueError('Spectra not compatible.')
-        else:
-            return _Spectrum(self.bins * other, sr=self.sr,
-                             n=self.n, window=self.window)
-
-
-
-def fft(sig, window=None, n_fft=None):
-    """Return the Discrete Fourier Transform for real input.
-
-    Params:
-        sig    (array-like)    Input time domain signal
-        n_fft  (int)           FFT length
-        window (str)           Name of window function
+    Args:
+        sig:       Input signal.
+        n_fft:     FFT length in samples.
+        window:    Name of window function.
 
     Returns:
-        (ndarray) FFT bins.
+        FFT bins.
 
     Raises:
         AttributeError
@@ -120,7 +51,7 @@ def fft(sig, window=None, n_fft=None):
         try:
             win_func = getattr(_np, window)
         except AttributeError:
-            raise AttributeError('Unknown window function `{}`.'.format(window))
+            raise AttributeError(f'Unknown window function `{window}`.')
         sig = _np.multiply(sig, win_func(n_sig))
 
     bins = _np.fft.rfft(sig, n_fft)
@@ -130,52 +61,37 @@ def fft(sig, window=None, n_fft=None):
         bins = _np.multiply(bins[:, :-1], 2.0)
     else:
         bins = _np.multiply(bins, 2.0)
+    return bins.T
 
-    return bins.squeeze()
 
+class Spectrum:
+    def __init__(self, inp: _Array, params: container.FTParams) -> None:
+        inp = _np.atleast_2d(inp)
+        if inp.ndim > 2:
+            raise ValueError(f'Input array has {inp.dim} dimensions, but it '
+                    'should have two at max.')
 
-class Spectrum(_Spectrum_Base):
-
-    def __init__(self, inp: _Array, fps: int, n_fft: int = None,
-                 window: str = None):
-
-        self.fps = fps
-        self.n_fft = inp.shape[-1] if n_fft is None else n_fft
-        self.window = window
-        self.bins = fft(inp, self.window, self.n_fft)
-        self.frqs = _np.fft.rfftfreq(self.n_fft, 1.0/self.fps)
-
-    def __getitem__(self, key):
-        return self.bins[key]
-
-    def __len__(self):
-        return self.length
-
-    def __repr__(self):
-        return ('Spectrum(fps={}, n_fft={}, window={})'
-                .format(self.bins, self.fps, self.n_fft, self.window))
-
-    def params(self) -> dict:
-        return {'fps': self.fps, 'n_fft': self.n_fft, 'window': self.window}
-
-    def centroid(self, power=True):
-        if power is True:
-            inp = self.power()
-        else:
-            inp = self.abs()
-        return _features.spectral_centroid(inp, self.frqs)
-
-    def extract(self, cf_low: float = 50, cf_high: float = 16000):
-        spctr = _features.spectral_shape(self.power().T, self.frqs, cf_low, cf_high)
-        prcpt = _features.perceptual_shape(self.abs().T, self.frqs, cf_low, cf_high)
-        return container.FeatureSpace(spectral=spctr, perceptual=prcpt)
-
-    def __abs__(self):
-        return _np.absolute(self.bins)
+        self.params = Spectrum._parse_params(inp, params)
+        self.bins = fft(inp, self.params.window, self.params.n_fft)
+        self.bins = _ma.masked_array(self.bins)
+        self.frqs = _np.fft.rfftfreq(self.params.n_fft, 1.0/self.params.fps)
+        self.frqs = _ma.masked_array(self.frqs)
 
     def abs(self):
         """Return magnitude spectrum."""
         return self.__abs__()
+
+    def params(self) -> container.FTParams:
+        """Return the parsed parameters."""
+        return self.params
+
+    def centroid(self, power=True):
+        return _np.multiply(self.abs(), self.frqs[:, None]).sum() / self.abs().sum()
+
+    def extract(self, cf_low: float = 50, cf_high: float = 16000):
+        #spctr = _features.spectral_shape(self.power().T, self.frqs, cf_low, cf_high)
+        #prcpt = _features.perceptual_shape(self.abs().T, self.frqs, cf_low, cf_high)
+        return container.FeatureSpace(spectral=spctr, perceptual=prcpt)
 
     def power(self):
         """Retrun power spectrum."""
@@ -185,6 +101,71 @@ class Spectrum(_Spectrum_Base):
         """Return phase spectrum."""
         return _np.angle(self.bins)
 
+    def spectral_shape(self):
+        return _features.spectral_shape(self.power().T, self.frqs,
+                self.params.lower_cutoff, self.params.upper_cutoff)
+
+    def perceptual_shape(self):
+        pass
+
+    def clip(self, lcf: float = None, ucf: float = None, dbt: float = None) -> None:
+        """
+        """
+        lower_bound = self.frqs.data[0] if lcf is None else lcf
+        upper_bound = self.frqs.data[-1] if ucf is None else ucf
+
+        if dbt is not None:
+            thr = _np.power(10, dbt/20) * _defaults.SPL_REF
+            self.bins.mask = _np.absolute(self.bins.data) < thr
+
+        self.frqs.mask = _np.logical_or(self.frqs.data < lower_bound,
+                                        self.frqs.data >= upper_bound)
+
+        self.params.lower_cutoff = lower_bound
+        self.params.upper_cutoff = upper_bound
+        self.params.db_threshold = dbt
+
+    @staticmethod
+    def _parse_params(inp: _Array, params: container.FTParams) -> container.FTParams:
+        if params.n_fft is not None:
+            n_fft = params.n_fft
+        else:
+            n_fft = inp.shape[1]
+
+        n_perseg = n_fft
+
+        if params.lower_cutoff is None:
+            lcf = 0
+        else:
+            lcf = params.lower_cutoff
+
+        if params.upper_cutoff is None:
+            ucf = params.fps / 2
+        else:
+            ucf = params.upper_cutoff
+
+        if not 0 <= lcf < ucf:
+            raise ValueError('Lower cut-off frequency must be in range '
+                    '0 <= lcf < ucf')
+
+        if not lcf < ucf <= params.fps / 2:
+            raise ValueError('Upper cut-off frequency must be in range '
+                    'lcf < ucf <= fps/2')
+
+        return container.FTParams(params.fps, params.window, n_perseg,
+                None, n_fft, lcf, ucf, params.db_threshold)
+
+    def __abs__(self):
+        return _np.absolute(self.bins)
+
+    def __getitem__(self, key):
+        return self.bins[key]
+
+    def __len__(self):
+        return self.length
+
+    def __repr__(self):
+        return 'Spectrum()'
 
 class Spectrogram:
     """Compute a spectrogram from an one-dimensional input signal."""
@@ -252,7 +233,7 @@ class Spectrogram:
 
         inp_strided = _np.lib.stride_tricks.as_strided(inp, (shp_x, shp_y), (strd_x, strd_y))
 
-        return _np.transpose(fft(inp_strided, self.window, self.n_fft))
+        return fft(inp_strided, self.window, self.n_fft)
 
     def abs(self):
         """Return the magnitude spectrogram."""
@@ -315,7 +296,7 @@ class Spectrogram:
         low_idx = int(_np.floor(low/self.d_frq)) + 1
         high_idx = int(_np.floor(high/self.d_frq))
 
-        vals = _tools.amp2db(self.abs()[low_idx:high_idx, :])
+        vals = _sigtools.amp2db(self.abs()[low_idx:high_idx, :])
         frq_range = self.frqs[low_idx:high_idx]
         cmesh_frqs = _np.append(frq_range, frq_range[-1]+self.d_frq)
         if log_frq is not None:

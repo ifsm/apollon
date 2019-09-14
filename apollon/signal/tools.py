@@ -23,11 +23,14 @@ Functions:
     trim_spectrogram    Trim spectrogram to a frequency range.
 """
 
-
 import numpy as _np
+import numpy.ma as _ma
 from scipy import stats as _stats
 
+from .. import _defaults
 from .. types import Array as _Array
+from .. import types as _types
+
 
 def acf(inp_sig):
     """Normalized estimate of the autocorrelation function of `inp_sig`
@@ -238,21 +241,26 @@ def zero_padding(sig: _Array, n_pad: int, dtype: str = None):
     return container
 
 
-def trim_spectrogram(inp: _Array, frqs: _Array, low: float, high: float) -> _Array:
-    """Trim spectrogram and frequency array to the frequency range [low, high].
+def clip_spectr(inp: _Array, frqs: _Array, lcf: float = None,
+        ucf: float = None, dbt: float = None) -> _types.Spectrum:
+    """Trim a spectral array to the frequency range [low, high].
+
+    Additionally, clip amplitudes to ``dbt`` dB SPL.
 
     Args:
-        inp  (ndarray)    Input spectrogram.
-        frqs (ndarray)    Spectrogram frequency axis.
-        low  (float)      Lower trim boundary.
-        high (float)      Upper trim boundary.
+        inp:    Input spectrogram.
+        frqs:   Spectrogram frequency axis.
+        lcf:    Lower cut-off frequency.
+        ucf:    Upper cut-off frequency.
+        dbt:    Amplitude threshold in dB.
 
     Returns:
-        (tuple)    (trimmed_spectrogram, trimmed_frqs)
+        Clipped spectral array, and frequencies.
     """
-    lower_bound = _np.maximum(low, frqs[0])
-    upper_bound = _np.minimum(high, frqs[-1])
+    lower_bound = frqs[0] if lcf is None else lcf
+    upper_bound = frqs[-1] if ucf is None else ucf
+    thr = _np.power(10, dbt/20) * _defaults.SPL_REF
+    out_frqs = _ma.masked_outside(frqs, lower_bound, upper_bound)
+    out_bins = _ma.masked_where(_np.absolute(inp) < thr, inp)
 
-    clip_range = _np.logical_and(lower_bound <= frqs, frqs <= upper_bound)
-
-    return inp[clip_range], frqs[clip_range]
+    return out_bins, out_frqs

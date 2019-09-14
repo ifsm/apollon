@@ -20,5 +20,7 @@ Contents
    installation
    starters
    clt 
+   contribute
+
 * :ref:`genindex`
 * :ref:`modindex`
