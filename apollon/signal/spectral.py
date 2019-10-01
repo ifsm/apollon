@@ -16,7 +16,6 @@ Functions:
 """
 import matplotlib.pyplot as _plt
 import numpy as _np
-import numpy.ma as _ma
 
 from . import features as _features
 from . import tools as _sigtools
@@ -65,23 +64,32 @@ def fft(sig: _Array, window: str = None, n_fft: int = None) -> _Array:
 
 
 class Spectrum:
-    def __init__(self, inp: _Array, params: container.FTParams) -> None:
+    def __init__(self, fps: int = None, window: str = None, n_fft: int = None,
+            lcf: float = None, ucf: float = None, dbt: float = None) -> None:
+        self.params = container.SpectrumParams(fps, window, n_fft, lcf, ucf, dbt)
+        self._mask = None
+
+    def fit(self, inp: _Array) -> None:
         inp = _np.atleast_2d(inp)
         if inp.ndim > 2:
             raise ValueError(f'Input array has {inp.dim} dimensions, but it '
                     'should have two at max.')
 
-        self.params = Spectrum._parse_params(inp, params)
-        self.bins = fft(inp, self.params.window, self.params.n_fft)
-        self.bins = _ma.masked_array(self.bins)
-        self.frqs = _np.fft.rfftfreq(self.params.n_fft, 1.0/self.params.fps)
-        self.frqs = _ma.masked_array(self.frqs)
+        self.data = fft(inp, self.params.window, self.params.n_fft)
+        self._mask = _np.full_like(self.data, True, dtype=bool)
+        if self.params.n_fft is None:
+            size = inp.shape[-1]
+        else:
+            size = self.params.n_fft
+        self.frqs = _np.fft.rfftfreq(size, 1.0/self.params.fps)
+        self.clip(self.params.lcf, self.params.ucf, self.params.dbt)
+        self.bins = self.data[self._mask]
 
     def abs(self):
         """Return magnitude spectrum."""
         return self.__abs__()
 
-    def params(self) -> container.FTParams:
+    def params(self) -> container.SpectrumParams:
         """Return the parsed parameters."""
         return self.params
 
@@ -111,49 +119,31 @@ class Spectrum:
     def clip(self, lcf: float = None, ucf: float = None, dbt: float = None) -> None:
         """
         """
-        lower_bound = self.frqs.data[0] if lcf is None else lcf
-        upper_bound = self.frqs.data[-1] if ucf is None else ucf
+        if lcf != self.params.lcf:
+            self.params.lcf = lcf
 
-        if dbt is not None:
+        if ucf != self.params.ucf:
+            self.params.ucf = ucf
+
+        if dbt != self.params.dbt:
+            self.params.dbt = dbt
+
+        _lcf = self.frqs[0] if self.params.lcf is None else self.params.lcf
+        _ucf = self.frqs[-1] if self.params.ucf is None else self.params.ucf
+
+        frqs = self.frqs[:, None]
+        frq_mask = _np.logical_and(frqs >= _lcf, frqs <= _ucf)
+        if dbt is None:
+            dbt_mask = _np.nonzero(_np.absolute(self.data) == 0)
+        else:
             thr = _np.power(10, dbt/20) * _defaults.SPL_REF
-            self.bins.mask = _np.absolute(self.bins.data) < thr
+            dbt_mask = _np.nonzero(_np.absolute(self.data) < thr)
+        self._mask.fill(True)
+        self._mask[dbt_mask] = False
 
-        self.frqs.mask = _np.logical_or(self.frqs.data < lower_bound,
-                                        self.frqs.data >= upper_bound)
-
-        self.params.lower_cutoff = lower_bound
-        self.params.upper_cutoff = upper_bound
-        self.params.db_threshold = dbt
-
-    @staticmethod
-    def _parse_params(inp: _Array, params: container.FTParams) -> container.FTParams:
-        if params.n_fft is not None:
-            n_fft = params.n_fft
-        else:
-            n_fft = inp.shape[1]
-
-        n_perseg = n_fft
-
-        if params.lower_cutoff is None:
-            lcf = 0
-        else:
-            lcf = params.lower_cutoff
-
-        if params.upper_cutoff is None:
-            ucf = params.fps / 2
-        else:
-            ucf = params.upper_cutoff
-
-        if not 0 <= lcf < ucf:
-            raise ValueError('Lower cut-off frequency must be in range '
-                    '0 <= lcf < ucf')
-
-        if not lcf < ucf <= params.fps / 2:
-            raise ValueError('Upper cut-off frequency must be in range '
-                    'lcf < ucf <= fps/2')
-
-        return container.FTParams(params.fps, params.window, n_perseg,
-                None, n_fft, lcf, ucf, params.db_threshold)
+    def plot(self, fmt='-'):
+        import matplotlib.pyplot as plt
+        plt.plot(self.frqs[self._mask.squeeze()], self.abs()[self._mask.squeeze()], fmt)
 
     def __abs__(self):
         return _np.absolute(self.bins)
