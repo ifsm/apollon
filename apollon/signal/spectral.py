@@ -67,7 +67,8 @@ class Spectrum:
     def __init__(self, fps: int = None, window: str = None, n_fft: int = None,
             lcf: float = None, ucf: float = None, dbt: float = None) -> None:
         self.params = container.SpectrumParams(fps, window, n_fft, lcf, ucf, dbt)
-        self._mask = None
+        self._frqs = None
+        self._bins = None
 
     def fit(self, inp: _Array) -> None:
         inp = _np.atleast_2d(inp)
@@ -75,19 +76,27 @@ class Spectrum:
             raise ValueError(f'Input array has {inp.dim} dimensions, but it '
                     'should have two at max.')
 
-        self._data = fft(inp, self.params.window, self.params.n_fft)
-        self.frqs = _np.fft.rfftfreq(size, 1.0/self.params.fps).reshape(-1, 1)
-        self._mask = _np.full_like(self.data, True, dtype=bool)
+        self._bins = fft(inp, self.params.window, self.params.n_fft)
+        self._frqs = _np.fft.rfftfreq(inp.shape[-1], 1.0/self.params.fps).reshape(-1, 1)
         if self.params.n_fft is None:
             size = inp.shape[-1]
         else:
             size = self.params.n_fft
-        #self.frqs = a view into self._frqs
-        #self.bins = a view into self._data
+        self._clip_frqs()
+        self._clip_db()
 
+    @property
+    def bins(self):
+        return self._bins
+
+    @property
     def abs(self):
         """Return magnitude spectrum."""
         return self.__abs__()
+
+    @property
+    def frqs(self):
+        return self._frqs
 
     def params(self) -> container.SpectrumParams:
         """Return the parsed parameters."""
@@ -107,30 +116,27 @@ class Spectrum:
 
     def phase(self):
         """Return phase spectrum."""
-        return _np.angle(self.bins)
+        return _np.angle(self._bins)
 
     def spectral_shape(self):
-        return _features.spectral_shape(self.power().T, self.frqs,
+        return _features.spectral_shape(self.power().T, self._frqs,
                 self.params.lower_cutoff, self.params.upper_cutoff)
 
     def perceptual_shape(self):
         pass
 
-    def clip(self, lcf: float = None, ucf: float = None, dbt: float = None) -> None:
+    def _clip(self) -> None:
         """
         """
-        self.params.lcf = lcf
-        self.params.ucf = ucf
-        self.params.dbt = dbt
 
         if not (self.params.lcf is None and self.params.ucf is None):
-            _lcf = self.frqs[0] if self.params.lcf is None else self.params.lcf
-            _ucf = self.frqs[-1] if self.params.ucf is None else self.params.ucf
+            _lcf = self._frqs[0] if self.params.lcf is None else self.params.lcf
+            _ucf = self._frqs[-1] if self.params.ucf is None else self.params.ucf
 
-            self._mask = _np.logical_and(self.frqs >= _lcf, self.frqs <= _ucf)
-
-        self.frqs = self.frqs[self._mask]
-        self.bins = self.data[self._mask]
+            mask = _np.logical_and(self._frqs >= _lcf, self._frqs <= _ucf)
+            print("III")
+        self._frqs = self._frqs[mask]
+        self._bins = self._bins[mask]
         """
         if dbt is None:
             dbt_mask = _np.nonzero(_np.absolute(self.data) == 0)
@@ -139,15 +145,22 @@ class Spectrum:
             dbt_mask = _np.nonzero(_np.absolute(self.data) < thr)
         self._mask[dbt_mask] = False
         """
+
+    def _clip_db(self):
+        if self.params.dbt is not None:
+            thr = _np.power(10, self.params.db_min/20) * _defaults.SPL_REF
+            idx = _np.nonzero(_np.absolute(self._bins < thr)
+            self._bins[idx] = complex(0)
+
     def plot(self, fmt='-'):
         import matplotlib.pyplot as plt
-        plt.plot(self.frqs, self.abs(), fmt)
+        plt.plot(self.frqs, self.abs, fmt)
 
     def __abs__(self):
-        return _np.absolute(self.bins)
+        return _np.absolute(self._bins)
 
     def __getitem__(self, key):
-        return self.bins[key]
+        return self._bins[key]
 
     def __len__(self):
         return self.length
