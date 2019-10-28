@@ -75,15 +75,15 @@ class Spectrum:
             raise ValueError(f'Input array has {inp.dim} dimensions, but it '
                     'should have two at max.')
 
-        self.data = fft(inp, self.params.window, self.params.n_fft)
+        self._data = fft(inp, self.params.window, self.params.n_fft)
+        self.frqs = _np.fft.rfftfreq(size, 1.0/self.params.fps).reshape(-1, 1)
         self._mask = _np.full_like(self.data, True, dtype=bool)
         if self.params.n_fft is None:
             size = inp.shape[-1]
         else:
             size = self.params.n_fft
-        self.frqs = _np.fft.rfftfreq(size, 1.0/self.params.fps)
-        self.clip(self.params.lcf, self.params.ucf, self.params.dbt)
-        self.bins = self.data[self._mask]
+        #self.frqs = a view into self._frqs
+        #self.bins = a view into self._data
 
     def abs(self):
         """Return magnitude spectrum."""
@@ -119,31 +119,29 @@ class Spectrum:
     def clip(self, lcf: float = None, ucf: float = None, dbt: float = None) -> None:
         """
         """
-        if lcf != self.params.lcf:
-            self.params.lcf = lcf
+        self.params.lcf = lcf
+        self.params.ucf = ucf
+        self.params.dbt = dbt
 
-        if ucf != self.params.ucf:
-            self.params.ucf = ucf
+        if not (self.params.lcf is None and self.params.ucf is None):
+            _lcf = self.frqs[0] if self.params.lcf is None else self.params.lcf
+            _ucf = self.frqs[-1] if self.params.ucf is None else self.params.ucf
 
-        if dbt != self.params.dbt:
-            self.params.dbt = dbt
+            self._mask = _np.logical_and(self.frqs >= _lcf, self.frqs <= _ucf)
 
-        _lcf = self.frqs[0] if self.params.lcf is None else self.params.lcf
-        _ucf = self.frqs[-1] if self.params.ucf is None else self.params.ucf
-
-        frqs = self.frqs[:, None]
-        frq_mask = _np.logical_and(frqs >= _lcf, frqs <= _ucf)
+        self.frqs = self.frqs[self._mask]
+        self.bins = self.data[self._mask]
+        """
         if dbt is None:
             dbt_mask = _np.nonzero(_np.absolute(self.data) == 0)
         else:
             thr = _np.power(10, dbt/20) * _defaults.SPL_REF
             dbt_mask = _np.nonzero(_np.absolute(self.data) < thr)
-        self._mask.fill(True)
         self._mask[dbt_mask] = False
-
+        """
     def plot(self, fmt='-'):
         import matplotlib.pyplot as plt
-        plt.plot(self.frqs[self._mask.squeeze()], self.abs()[self._mask.squeeze()], fmt)
+        plt.plot(self.frqs, self.abs(), fmt)
 
     def __abs__(self):
         return _np.absolute(self.bins)
