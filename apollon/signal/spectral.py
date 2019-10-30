@@ -65,8 +65,21 @@ def fft(sig: _Array, window: str = None, n_fft: int = None) -> _Array:
 
 class Spectrum:
     def __init__(self, fps: int = None, window: str = None, n_fft: int = None,
-            lcf: float = None, ucf: float = None, dbt: float = None) -> None:
-        self.params = container.SpectrumParams(fps, window, n_fft, lcf, ucf, dbt)
+            lo_cf: float = None, up_cf: float = None,
+            lo_db: float = None, up_db: float = None) -> None:
+        """Create a new spectrum
+
+        Args:
+            fps:      Sample rate.
+            window:   Name of window function.
+            n_fft:    FFT length.
+            lo_cf:    Lower cut-off frequency.
+            up_cf:    Upper cut-off frequency.
+            lo_db:    Lower dB boundary.
+            up_db:    Upper db_boundary.
+        """
+        self._params = container.SpectrumParams(fps, window, n_fft, lo_cf,
+            up_cf, lo_db, up_db)
         self._frqs = None
         self._bins = None
 
@@ -76,88 +89,60 @@ class Spectrum:
             raise ValueError(f'Input array has {inp.dim} dimensions, but it '
                     'should have two at max.')
 
-        self._bins = fft(inp, self.params.window, self.params.n_fft)
-        self._frqs = _np.fft.rfftfreq(inp.shape[-1], 1.0/self.params.fps).reshape(-1, 1)
-        if self.params.n_fft is None:
+        if self._params.n_fft is None:
             size = inp.shape[-1]
         else:
-            size = self.params.n_fft
-        self._clip_frqs()
-        self._clip_db()
+            size = self._params.n_fft
+
+        self._bins = fft(inp, self._params.window, self._params.n_fft)
+        self._frqs = _np.fft.rfftfreq(size, 1.0/self._params.fps).reshape(-1, 1)
+        self._frqs = _sigtools.trim_frqs(self._frqs, self._params.fps,
+                self._params.lo_cf, self._params.up_cf)
 
     @property
-    def bins(self):
-        return self._bins
-
-    @property
-    def abs(self):
-        """Return magnitude spectrum."""
+    def abs(self) -> _Array:
+        """Return trimmed and clipped magintude spectrum."""
         return self.__abs__()
 
     @property
-    def frqs(self):
+    def bins(self) -> _Array:
+        """Return rimmed FFT bins."""
+        return self._bins
+
+    @property
+    def frqs(self) -> _Array:
+        """Return trimmed frequency axis."""
         return self._frqs
 
+    @property
     def params(self) -> container.SpectrumParams:
         """Return the parsed parameters."""
-        return self.params
+        return self._params
 
-    def centroid(self, power=True):
-        return _np.multiply(self.abs(), self.frqs[:, None]).sum() / self.abs().sum()
+    @property
+    def phase(self):
+        """Return phase spectrum."""
+        if self._bins is None:
+            return None
+        return _np.angle(self._bins)
 
-    def extract(self, cf_low: float = 50, cf_high: float = 16000):
-        #spctr = _features.spectral_shape(self.power().T, self.frqs, cf_low, cf_high)
-        #prcpt = _features.perceptual_shape(self.abs().T, self.frqs, cf_low, cf_high)
-        return container.FeatureSpace(spectral=spctr, perceptual=prcpt)
-
+    @property
     def power(self):
         """Retrun power spectrum."""
         return _np.square(self.__abs__())
 
-    def phase(self):
-        """Return phase spectrum."""
-        return _np.angle(self._bins)
-
-    def spectral_shape(self):
-        return _features.spectral_shape(self.power().T, self._frqs,
-                self.params.lower_cutoff, self.params.upper_cutoff)
-
-    def perceptual_shape(self):
-        pass
-
-    def _clip(self) -> None:
-        """
-        """
-
-        if not (self.params.lcf is None and self.params.ucf is None):
-            _lcf = self._frqs[0] if self.params.lcf is None else self.params.lcf
-            _ucf = self._frqs[-1] if self.params.ucf is None else self.params.ucf
-
-            mask = _np.logical_and(self._frqs >= _lcf, self._frqs <= _ucf)
-            print("III")
-        self._frqs = self._frqs[mask]
-        self._bins = self._bins[mask]
-        """
-        if dbt is None:
-            dbt_mask = _np.nonzero(_np.absolute(self.data) == 0)
-        else:
-            thr = _np.power(10, dbt/20) * _defaults.SPL_REF
-            dbt_mask = _np.nonzero(_np.absolute(self.data) < thr)
-        self._mask[dbt_mask] = False
-        """
-
-    def _clip_db(self):
-        if self.params.dbt is not None:
-            thr = _np.power(10, self.params.db_min/20) * _defaults.SPL_REF
-            idx = _np.nonzero(_np.absolute(self._bins < thr)
-            self._bins[idx] = complex(0)
+    def centroid(self, power=True):
+        return _np.multiply(self.abs(), self.frqs[:, None]).sum() / self.abs().sum()
 
     def plot(self, fmt='-'):
         import matplotlib.pyplot as plt
         plt.plot(self.frqs, self.abs, fmt)
 
     def __abs__(self):
-        return _np.absolute(self._bins)
+        if self._bins is None:
+            return None
+        return _sigtools.clip_db(_np.absolute(self._bins), self._params.lo_db,
+                self._params.up_db)
 
     def __getitem__(self, key):
         return self._bins[key]
@@ -167,6 +152,7 @@ class Spectrum:
 
     def __repr__(self):
         return 'Spectrum()'
+
 
 class Spectrogram:
     """Compute a spectrogram from an one-dimensional input signal."""
