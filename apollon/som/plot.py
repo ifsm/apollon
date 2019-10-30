@@ -2,8 +2,15 @@
 # Copyright (C) 2019 Michael Blaß
 # mblass@posteo.net
 
-"""apollon/som/uttilites.py
+"""apollon/som/plot.py
 """
+from typing import Tuple
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+from apollon import tools
+from apollon.types import Array
 
 
 def plot_calibration(self, lables=None, ax=None, cmap='plasma', **kwargs):
@@ -174,3 +181,39 @@ def inspect(self):
         _ = self.plot_whist(ax=ax2)
 
     self.plot_qerror(ax=ax3)
+
+
+def weights(weights: Array, dims: Tuple, cmap: str = 'tab20',
+        figsize: Tuple = (15, 15), stand: bool =False) -> Tuple:
+    """Plot a bar chart of the weights of each map unit.
+
+    Args:
+        weights:    Two-dimensional array of weights.
+        dims:       SOM dimensions (dx, dy, dw).
+        cmap:       Matplotlib color map name.
+        figsize:    Figure size.
+        stand:      Standardize the weights if ``True``.
+
+    Returns:
+        Figure and axes.
+    """
+    dx, dy, dw = dims
+    fig, axs = plt.subplots(dx, dy, figsize=figsize, sharex=True, sharey=True)
+    axs = np.flipud(axs).flatten()
+
+    xr = range(dw)
+    bar_colors = getattr(plt.cm, cmap)(xr)
+    if stand:
+        weights = tools.standardize(weights)
+    yticks = np.arange(np.floor(weights.min()), np.ceil(weights.max())+1, 2)
+
+    for ax, wv in zip(axs, weights):
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+        ax.spines['bottom'].set_position('zero')
+        ax.set_xticks([])
+        ax.set_yticks(yticks)
+        ax.bar(xr, wv, color=bar_colors)
+
+    return fig, axs
+
