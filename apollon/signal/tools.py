@@ -98,6 +98,37 @@ def amp2db(amp, ref:float = 20e-6) -> _Array:
     return 20 * _np.log10(_np.maximum(amp, ref) / ref)
 
 
+def trim_frqs(frqs: _Array, fps: int, lo_cf: float = None,
+        up_cf: float = None) -> _Array:
+    """Clip an array of DFT frquencies to a [``lo_cf``, ``up_cf``], such that
+    both boundaries are included.
+
+    Frequency below ``lo_cf`` and above ``up_cf`` are removed form the output.
+
+    Args:
+        frqs:    Array of frequencies.
+        fps:     Sample rate.
+        lo_cf:     Lower cut-off frequency.
+        up_cf:     Upper cut-off frequency.
+
+    Returns:
+        Array of frequencies.
+    """
+    d_frq = frqs[1] - frqs[0]
+    if lo_cf is None and up_cf is None:
+        return _np.copy(frqs)
+    elif lo_cf is None:
+        lcf = int(lo_cf//d_frq)
+        return _np.copy(frqs[lcf:])
+    elif up_cf is None:
+        ucf = int(up_cf//d_frq)
+        return _np.copy(frqs[:ucf])
+    else:
+        lcf = int(lo_cf//d_frq)
+        ucf = int(up_cf//d_frq)
+        return frqs[lcf:ucf]
+
+
 def corr_coef_pearson(x, y):
     """Fast perason correlation coefficient."""
     detr_x = x - _np.mean(x)
@@ -107,6 +138,31 @@ def corr_coef_pearson(x, y):
     r_xx_yy = (detr_x @ detr_x) * (detr_y @ detr_y)
 
     return r_xy / r_xx_yy
+
+
+def clip_db(inp: _Array, lo_db: float = None, up_db: float = None):
+    """Clip ``inp`` to the range [``lo_db``, ``up_db``].
+
+    Args:
+        inp:       Array of DFT bin magnitudes.
+        lo_db:    Lower clip boundary in deci Bel.
+        up_db:    Upper clip boundary in deci Bel.
+
+    Returns:
+        Copy of ``inp`` with values clipped.
+    """
+    if lo_db is None and up_db is None:
+        return _np.copy(inp)
+    elif lo_db is None:
+        up_thr = _np.power(10, up_db/20) * _defaults.SPL_REF
+        return _np.minimum(inp, up_thr)
+    elif up_db is None:
+        lo_thr = _np.power(10, lo_db/20) * _defaults.SPL_REF
+        return _np.maximum(inp, 0, out=inp, where=inp<lo_thr)
+    else:
+        lo_thr = _np.power(10, lo_db/20) * _defaults.SPL_REF
+        up_thr = _np.power(10, up_db/20) * _defaults.SPL_REF
+        return _np.clip(inp, lo_thr, up_thr)
 
 
 def freq2mel(f):
