@@ -198,22 +198,55 @@ def weights(weights: Array, dims: Tuple, cmap: str = 'tab20',
         Figure and axes.
     """
     dx, dy, dw = dims
-    fig, axs = plt.subplots(dx, dy, figsize=figsize, sharex=True, sharey=True)
-    axs = np.flipud(axs).flatten()
-
-    xr = range(dw)
-    bar_colors = getattr(plt.cm, cmap)(xr)
     if stand:
         weights = tools.standardize(weights)
-    yticks = np.arange(np.floor(weights.min()), np.ceil(weights.max())+1, 2)
+    lower = np.floor(weights.min())
+    upper = np.ceil(weights.max())
+    yticks = np.linspace(lower, upper, 5)
+    xr = range(dw)
+    bar_colors = getattr(plt.cm, cmap)(xr)
+
+    fig, axs = plt.subplots(dx, dy, figsize=figsize, sharex=True, sharey=True,
+            subplot_kw={'xticks': [], 'yticks': yticks})
+    axs = np.flipud(axs).flatten()
 
     for ax, wv in zip(axs, weights):
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
         ax.spines['bottom'].set_position('zero')
-        ax.set_xticks([])
-        ax.set_yticks(yticks)
         ax.bar(xr, wv, color=bar_colors)
 
     return fig, axs
 
+
+def weights_line(weights: Array, dims: Tuple, color: str = 'r',
+        figsize: Tuple = (15, 15), stand: bool =False) -> Tuple:
+    """Plot a line chart of the weights of each map unit.
+
+    Args:
+        weights:    Two-dimensional array of weights.
+        dims:       SOM dimensions (dx, dy, dw).
+        cmap:       Matplotlib color map name.
+        figsize:    Figure size.
+        stand:      Standardize the weights if ``True``.
+
+    Returns:
+        Figure and axes.
+    """
+    dx, dy, dw = dims
+    if stand:
+        weights = tools.standardize(weights)
+    lower = np.floor(weights.min())
+    upper = np.ceil(weights.max())
+
+    fig, axs = plt.subplots(dx, dy, figsize=figsize, sharex=True, sharey=True,
+            subplot_kw={'xticks': [], 'yticks': [], 'frame_on': False})
+    axs = np.flipud(axs).flatten()
+
+    for ax, wv in zip(axs, weights):
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+        ax.spines['bottom'].set_position('zero')
+        ax.plot(wv, color=color)
+
+    return fig, axs
