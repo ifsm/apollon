@@ -18,10 +18,10 @@ class SpectrumParams:
     fps: int
     window: str = None
     n_fft: int = None
-    lo_cf: float = None
-    up_cf: float = None
-    lo_db: float = None
-    up_db: float = None
+    lcf: float = None
+    ucf: float = None
+    ldb: float = None
+    udb: float = None
 
 
 class NameSpace:
