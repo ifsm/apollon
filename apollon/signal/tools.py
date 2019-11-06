@@ -98,35 +98,27 @@ def amp2db(amp, ref:float = 20e-6) -> _Array:
     return 20 * _np.log10(_np.maximum(amp, ref) / ref)
 
 
-def trim_frqs(frqs: _Array, fps: int, lo_cf: float = None,
-        up_cf: float = None) -> _Array:
-    """Clip an array of DFT frquencies to a [``lo_cf``, ``up_cf``], such that
-    both boundaries are included.
-
-    Frequency below ``lo_cf`` and above ``up_cf`` are removed form the output.
+def trim_range(d_frq: float, lcf: float = None, ucf: float = None) -> slice:
+    """Return slice of trim indices regarding an array ``frqs`` of DFT
+    frquencies, such that both boundaries are included.
 
     Args:
-        frqs:    Array of frequencies.
-        fps:     Sample rate.
-        lo_cf:     Lower cut-off frequency.
-        up_cf:     Upper cut-off frequency.
+        d_frq:   Frequency spacing.
+        lcf:     Lower cut-off frequency.
+        ucf:     Upper cut-off frequency.
 
     Returns:
-        Array of frequencies.
+        Slice of trim indices.
     """
-    d_frq = frqs[1] - frqs[0]
-    if lo_cf is None and up_cf is None:
-        return _np.copy(frqs)
-    elif lo_cf is None:
-        lcf = int(lo_cf//d_frq)
-        return _np.copy(frqs[lcf:])
-    elif up_cf is None:
-        ucf = int(up_cf//d_frq)
-        return _np.copy(frqs[:ucf])
-    else:
-        lcf = int(lo_cf//d_frq)
-        ucf = int(up_cf//d_frq)
-        return frqs[lcf:ucf]
+    try:
+        lcf = int(lcf//d_frq)
+    except TypeError:
+        lcf = None
+    try:
+        ucf = int(ucf//d_frq)
+    except TypeError:
+        ucf = None
+    return slice(lcf, ucf)
 
 
 def corr_coef_pearson(x, y):
