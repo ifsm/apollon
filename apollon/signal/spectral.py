@@ -65,21 +65,21 @@ def fft(sig: _Array, window: str = None, n_fft: int = None) -> _Array:
 
 class Spectrum:
     def __init__(self, fps: int = None, window: str = None, n_fft: int = None,
-            lo_cf: float = None, up_cf: float = None,
-            lo_db: float = None, up_db: float = None) -> None:
+            lcf: float = None, ucf: float = None,
+            ldb: float = None, udb: float = None) -> None:
         """Create a new spectrum
 
         Args:
             fps:      Sample rate.
             window:   Name of window function.
             n_fft:    FFT length.
-            lo_cf:    Lower cut-off frequency.
-            up_cf:    Upper cut-off frequency.
-            lo_db:    Lower dB boundary.
-            up_db:    Upper db_boundary.
+            lcf:      Lower cut-off frequency.
+            ucf:      Upper cut-off frequency.
+            ldb:    Lower dB boundary.
+            udb:    Upper db_boundary.
         """
-        self._params = container.SpectrumParams(fps, window, n_fft, lo_cf,
-            up_cf, lo_db, up_db)
+        self._params = container.SpectrumParams(fps, window, n_fft, lcf,
+            ucf, ldb, udb)
         self._frqs = None
         self._bins = None
 
@@ -96,8 +96,17 @@ class Spectrum:
 
         self._bins = fft(inp, self._params.window, self._params.n_fft)
         self._frqs = _np.fft.rfftfreq(size, 1.0/self._params.fps).reshape(-1, 1)
-        self._frqs = _sigtools.trim_frqs(self._frqs, self._params.fps,
-                self._params.lo_cf, self._params.up_cf)
+
+        trim = _sigtools.trim_range(self.d_frq, self.params.lcf, self.params.ucf)
+        self._bins = self._bins[trim]
+        self._frqs = self._frqs[trim]
+
+    @property
+    def d_frq(self):
+        try:
+            return self._frqs[1, 0] - self._frqs[0, 0]
+        except TypeError:
+            return None
 
     @property
     def abs(self) -> _Array:
@@ -138,11 +147,26 @@ class Spectrum:
         import matplotlib.pyplot as plt
         plt.plot(self.frqs, self.abs, fmt)
 
+    def _trim(self, lcf: float = None, ucf: float = None) -> None:
+        try:
+            lcf = int(lcf//self.d_frq)
+        except TypeError:
+            lcf = None
+
+        try:
+            ucf = int(ucf//self.d_frq)
+        except TypeError:
+            ucf = None
+
+        trim_range = slice(lcf, ucf)
+        self._frqs = self._frqs[trim_range]
+        self._bins = self._bins[trim_range]
+
     def __abs__(self):
         if self._bins is None:
             return None
-        return _sigtools.clip_db(_np.absolute(self._bins), self._params.lo_db,
-                self._params.up_db)
+        return _sigtools.clip_db(_np.absolute(self._bins), self._params.ldb,
+                self._params.udb)
 
     def __getitem__(self, key):
         return self._bins[key]
