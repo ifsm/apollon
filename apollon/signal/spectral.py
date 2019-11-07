@@ -164,7 +164,7 @@ class Spectrum:
     def __abs__(self):
         if self._bins is None:
             return None
-        return _sigtools.clip_db(_np.absolute(self._bins), self._params.ldb,
+        return _sigtools.limit(_np.absolute(self._bins), self._params.ldb,
                 self._params.udb)
 
     def __getitem__(self, key):
