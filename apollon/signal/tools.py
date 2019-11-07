@@ -9,7 +9,6 @@ Signal processing tools
 Functions:
     acf                 Normalized autocorrelation.
     acf_pearson         Normalized Pearson acf.
-    amp2db              Transform amplitude to dB.
     corr_coef_pearson   Correlation coefficient after Pearson.
     freq2mel            Transform frequency to mel.
     mel2freq            Transform mel to frequency.
@@ -19,6 +18,7 @@ Functions:
     normalize           Scale data betwee -1.0 and 1.0.
     noise               Generate withe noise.
     sinusoid            Generate sinusoidal signal.
+    spl                 Conpute sound pressure level.
     zero_padding        Append array with zeros.
     trim_spectrogram    Trim spectrogram to a frequency range.
 """
@@ -74,28 +74,6 @@ def acf_pearson(inp_sig):
             out[m] = s
 
     return out
-
-
-def amp2db(amp, ref:float = 20e-6) -> _Array:
-    """Transform amplitude to dB.
-
-    Return a copy of `amp` in dB scaling regarding a reference pressure `ref`.
-    The reference pressure is commonly the human hearing treshold at
-    20 micro Pa.
-
-    `amp` is supposed to be a inon-negative scalar or numpy.array taken from a
-    magnitude spectrum.
-
-    This function set all values of `amp` smaller then `ref` to `ref`, hence
-    eliminating inaudible singnal energy in the log domain.
-
-    Params:
-        amp    (array-like or number) Given amplitude values.
-
-    Return:
-        (ndarray)    values in dB.
-    """
-    return 20 * _np.log10(_np.maximum(amp, ref) / ref)
 
 
 def corr_coef_pearson(x, y):
@@ -222,6 +200,39 @@ def sinusoid(frqs, amps=1, fps: int = 9000, length: float = 1,
         return sig
     else:
         return sig.sum(axis=1)
+
+
+def spl(amp: _Array, ref: float = _defaults.SPL_REF) -> _Array:
+    """Computes sound pressure level.
+
+    The values of ``amp`` are assumed to be magnitudes of DFT bins.
+
+    The reference pressure defaults to the human hearing treshold of 20 μPa.
+
+    This function sets all values of ``amp`` smaller then ``ref`` to ``ref``,
+    hence eliminating inaudible singnal energy in the log domain.
+
+    Args:
+        amp:    Given amplitude values.
+
+    Returns:
+        Input scaled to deci Bel.
+    """
+    return 20.0 * _np.log10(_np.maximum(amp, ref) / ref)
+
+
+def amp(spl: _Array, ref: float = _defaults.SPL_REF) -> _Array:
+    """Computes amplitudes form sound pressure level.
+
+    The reference pressure defaults to the human hearing treshold of 20 μPa.
+
+    Args:
+        spl:    Sound pressure level.
+
+    Returns:
+        DFT magnituds.
+    """
+    return _np.power(10.0, 0.05*spl) * ref
 
 
 def zero_padding(sig: _Array, n_pad: int, dtype: str = None):
