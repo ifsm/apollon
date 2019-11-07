@@ -11,12 +11,13 @@ Functions:
     acf_pearson         Normalized Pearson acf.
     corr_coef_pearson   Correlation coefficient after Pearson.
     freq2mel            Transform frequency to mel.
+    limit               Limit dynamic range.
     mel2freq            Transform mel to frequency.
     frq2bark            Transform frequency to Bark scale.
     maxamp              Maximal amplitude of signal.
     minamp              Minimal amplitude of signal.
     normalize           Scale data betwee -1.0 and 1.0.
-    noise               Generate withe noise.
+    noise               Generate white noise.
     sinusoid            Generate sinusoidal signal.
     spl                 Conpute sound pressure level.
     zero_padding        Append array with zeros.
@@ -110,31 +111,6 @@ def corr_coef_pearson(x, y):
     return r_xy / r_xx_yy
 
 
-def clip_db(inp: _Array, lo_db: float = None, up_db: float = None):
-    """Clip ``inp`` to the range [``lo_db``, ``up_db``].
-
-    Args:
-        inp:       Array of DFT bin magnitudes.
-        lo_db:    Lower clip boundary in deci Bel.
-        up_db:    Upper clip boundary in deci Bel.
-
-    Returns:
-        Copy of ``inp`` with values clipped.
-    """
-    if lo_db is None and up_db is None:
-        return _np.copy(inp)
-    elif lo_db is None:
-        up_thr = _np.power(10, up_db/20) * _defaults.SPL_REF
-        return _np.minimum(inp, up_thr)
-    elif up_db is None:
-        lo_thr = _np.power(10, lo_db/20) * _defaults.SPL_REF
-        return _np.maximum(inp, 0, out=inp, where=inp<lo_thr)
-    else:
-        lo_thr = _np.power(10, lo_db/20) * _defaults.SPL_REF
-        up_thr = _np.power(10, up_db/20) * _defaults.SPL_REF
-        return _np.clip(inp, lo_thr, up_thr)
-
-
 def freq2mel(f):
     """Transforms Hz to Mel-Frequencies.
 
@@ -146,6 +122,33 @@ def freq2mel(f):
     """
     f = _np.atleast_1d(f)
     return 1125 * _np.log(1 + f / 700)
+
+
+def limit(inp: _Array, ldb: float = None, udb: float = None):
+    """Limit the dynamic range of ``inp`` to  [``ldb``, ``udb``].
+
+    Boundaries are given in dB SPL.
+
+    Args:
+        inp:    DFT bin magnitudes.
+        ldb:    Lower clip boundary in deci Bel.
+        udb:    Upper clip boundary in deci Bel.
+
+    Returns:
+        Copy of ``inp`` with values clipped.
+    """
+    try:
+        lth = amp(ldb)
+    except TypeError:
+        lth = 0.0
+
+    try:
+        uth = amp(udb)
+    except TypeError:
+        uth  = inp.max()
+
+    low = _np.where(inp<lth, 0.0, inp)
+    return _np.minimum(low, uth)
 
 
 def mel2freq(z):
