@@ -41,7 +41,7 @@ def fft(sig: _Array, window: str = None, n_fft: int = None) -> _Array:
         AttributeError
     """
     sig = _np.atleast_2d(sig).astype('float64')
-    n_sig = sig.shape[-1]
+    n_sig = sig.shape[0]
 
     if n_fft is None:
         n_fft = n_sig
@@ -53,14 +53,13 @@ def fft(sig: _Array, window: str = None, n_fft: int = None) -> _Array:
             raise AttributeError(f'Unknown window function `{window}`.')
         sig = _np.multiply(sig, win_func(n_sig))
 
-    bins = _np.fft.rfft(sig, n_fft)
-    bins = _np.divide(bins, float(n_fft))
+    bins = _np.fft.rfft(sig, n_fft, axis=0) / float(n_fft)
 
     if n_fft % 2 != 0:
-        bins = _np.multiply(bins[:, :-1], 2.0)
+        bins = _np.multiply(bins[:-1], 2.0)
     else:
         bins = _np.multiply(bins, 2.0)
-    return bins.T
+    return bins
 
 
 class Spectrum:
@@ -90,7 +89,7 @@ class Spectrum:
                     'should have two at max.')
 
         if self._params.n_fft is None:
-            size = inp.shape[-1]
+            size = inp.shape[0]
         else:
             size = self._params.n_fft
 
