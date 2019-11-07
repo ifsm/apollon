@@ -164,11 +164,11 @@ def normalize(sig):
     return sig / _np.max(_np.absolute(sig), axis=0)
 
 
-def sinusoid(frqs, amps=1, fps: int = 9000, length: float = 1,
-             noise: float = None, retcomps: bool = False) -> _Array:
+def sinusoid(frqs, amps=1, fps: int = 9000, length: float = 1.0,
+             noise: float = None, comps: bool = False) -> _Array:
     """Generate sinusoidal signal.
 
-    Params:
+    Args:
         frqs:    Component frequencies.
         amps:    Amplitude of each component in ``frqs``.  If ``amps`` is an
                  integer, each component of ``frqs`` is scaled according to
@@ -191,15 +191,15 @@ def sinusoid(frqs, amps=1, fps: int = 9000, length: float = 1,
         txs = _np.arange(fps*length)[:, None] / fps
         sig = _np.sin(2*_np.pi*txs*frqs) * amps
     else:
-        raise ValueError('Shapes of ``f`` and ``amps`` must be equal.')
+        raise ValueError(f'Shapes of ``frqs`` {frqs.shape} and ``amps``'
+               '{ams.shape} differ.')
 
     if noise:
         sig += _stats.norm.rvs(0, noise, size=sig.shape)
 
-    if retcomps:
+    if comps:
         return sig
-    else:
-        return sig.sum(axis=1)
+    return sig.sum(axis=1, keepdims=True)
 
 
 def spl(amp: _Array, ref: float = _defaults.SPL_REF) -> _Array:
