@@ -16,7 +16,6 @@ Functions:
 """
 import matplotlib.pyplot as _plt
 import numpy as _np
-import numpy.ma as _ma
 
 from . import features as _features
 from . import tools as _sigtools
@@ -42,7 +41,7 @@ def fft(sig: _Array, window: str = None, n_fft: int = None) -> _Array:
         AttributeError
     """
     sig = _np.atleast_2d(sig).astype('float64')
-    n_sig = sig.shape[-1]
+    n_sig = sig.shape[0]
 
     if n_fft is None:
         n_fft = n_sig
@@ -54,118 +53,129 @@ def fft(sig: _Array, window: str = None, n_fft: int = None) -> _Array:
             raise AttributeError(f'Unknown window function `{window}`.')
         sig = _np.multiply(sig, win_func(n_sig))
 
-    bins = _np.fft.rfft(sig, n_fft)
-    bins = _np.divide(bins, float(n_fft))
+    bins = _np.fft.rfft(sig, n_fft, axis=0) / float(n_fft)
 
     if n_fft % 2 != 0:
-        bins = _np.multiply(bins[:, :-1], 2.0)
+        bins = _np.multiply(bins[:-1], 2.0)
     else:
         bins = _np.multiply(bins, 2.0)
-    return bins.T
+    return bins
 
 
 class Spectrum:
-    def __init__(self, inp: _Array, params: container.FTParams) -> None:
+    def __init__(self, fps: int = None, window: str = None, n_fft: int = None,
+            lcf: float = None, ucf: float = None,
+            ldb: float = None, udb: float = None) -> None:
+        """Create a new spectrum
+
+        Args:
+            fps:      Sample rate.
+            window:   Name of window function.
+            n_fft:    FFT length.
+            lcf:      Lower cut-off frequency.
+            ucf:      Upper cut-off frequency.
+            ldb:    Lower dB boundary.
+            udb:    Upper db_boundary.
+        """
+        self._params = container.SpectrumParams(fps, window, n_fft, lcf,
+            ucf, ldb, udb)
+        self._frqs = None
+        self._bins = None
+
+    def fit(self, inp: _Array) -> None:
         inp = _np.atleast_2d(inp)
         if inp.ndim > 2:
             raise ValueError(f'Input array has {inp.dim} dimensions, but it '
                     'should have two at max.')
 
-        self.params = Spectrum._parse_params(inp, params)
-        self.bins = fft(inp, self.params.window, self.params.n_fft)
-        self.bins = _ma.masked_array(self.bins)
-        self.frqs = _np.fft.rfftfreq(self.params.n_fft, 1.0/self.params.fps)
-        self.frqs = _ma.masked_array(self.frqs)
+        if self._params.n_fft is None:
+            size = inp.shape[0]
+        else:
+            size = self._params.n_fft
 
-    def abs(self):
-        """Return magnitude spectrum."""
+        self._bins = fft(inp, self._params.window, self._params.n_fft)
+        self._frqs = _np.fft.rfftfreq(size, 1.0/self._params.fps).reshape(-1, 1)
+
+        trim = _sigtools.trim_range(self.d_frq, self.params.lcf, self.params.ucf)
+        self._bins = self._bins[trim]
+        self._frqs = self._frqs[trim]
+
+    @property
+    def d_frq(self):
+        try:
+            return self._frqs[1, 0] - self._frqs[0, 0]
+        except TypeError:
+            return None
+
+    @property
+    def abs(self) -> _Array:
+        """Return trimmed and clipped magintude spectrum."""
         return self.__abs__()
 
-    def params(self) -> container.FTParams:
+    @property
+    def bins(self) -> _Array:
+        """Return rimmed FFT bins."""
+        return self._bins
+
+    @property
+    def frqs(self) -> _Array:
+        """Return trimmed frequency axis."""
+        return self._frqs
+
+    @property
+    def params(self) -> container.SpectrumParams:
         """Return the parsed parameters."""
-        return self.params
+        return self._params
 
-    def centroid(self, power=True):
-        return _np.multiply(self.abs(), self.frqs[:, None]).sum() / self.abs().sum()
+    @property
+    def phase(self):
+        """Return phase spectrum."""
+        if self._bins is None:
+            return None
+        return _np.angle(self._bins)
 
-    def extract(self, cf_low: float = 50, cf_high: float = 16000):
-        #spctr = _features.spectral_shape(self.power().T, self.frqs, cf_low, cf_high)
-        #prcpt = _features.perceptual_shape(self.abs().T, self.frqs, cf_low, cf_high)
-        return container.FeatureSpace(spectral=spctr, perceptual=prcpt)
-
+    @property
     def power(self):
         """Retrun power spectrum."""
         return _np.square(self.__abs__())
 
-    def phase(self):
-        """Return phase spectrum."""
-        return _np.angle(self.bins)
+    def centroid(self, power=True):
+        return _np.multiply(self.abs(), self.frqs[:, None]).sum() / self.abs().sum()
 
-    def spectral_shape(self):
-        return _features.spectral_shape(self.power().T, self.frqs,
-                self.params.lower_cutoff, self.params.upper_cutoff)
+    def plot(self, fmt='-'):
+        import matplotlib.pyplot as plt
+        plt.plot(self.frqs, self.abs, fmt)
 
-    def perceptual_shape(self):
-        pass
+    def _trim(self, lcf: float = None, ucf: float = None) -> None:
+        try:
+            lcf = int(lcf//self.d_frq)
+        except TypeError:
+            lcf = None
 
-    def clip(self, lcf: float = None, ucf: float = None, dbt: float = None) -> None:
-        """
-        """
-        lower_bound = self.frqs.data[0] if lcf is None else lcf
-        upper_bound = self.frqs.data[-1] if ucf is None else ucf
+        try:
+            ucf = int(ucf//self.d_frq)
+        except TypeError:
+            ucf = None
 
-        if dbt is not None:
-            thr = _np.power(10, dbt/20) * _defaults.SPL_REF
-            self.bins.mask = _np.absolute(self.bins.data) < thr
-
-        self.frqs.mask = _np.logical_or(self.frqs.data < lower_bound,
-                                        self.frqs.data >= upper_bound)
-
-        self.params.lower_cutoff = lower_bound
-        self.params.upper_cutoff = upper_bound
-        self.params.db_threshold = dbt
-
-    @staticmethod
-    def _parse_params(inp: _Array, params: container.FTParams) -> container.FTParams:
-        if params.n_fft is not None:
-            n_fft = params.n_fft
-        else:
-            n_fft = inp.shape[1]
-
-        n_perseg = n_fft
-
-        if params.lower_cutoff is None:
-            lcf = 0
-        else:
-            lcf = params.lower_cutoff
-
-        if params.upper_cutoff is None:
-            ucf = params.fps / 2
-        else:
-            ucf = params.upper_cutoff
-
-        if not 0 <= lcf < ucf:
-            raise ValueError('Lower cut-off frequency must be in range '
-                    '0 <= lcf < ucf')
-
-        if not lcf < ucf <= params.fps / 2:
-            raise ValueError('Upper cut-off frequency must be in range '
-                    'lcf < ucf <= fps/2')
-
-        return container.FTParams(params.fps, params.window, n_perseg,
-                None, n_fft, lcf, ucf, params.db_threshold)
+        trim_range = slice(lcf, ucf)
+        self._frqs = self._frqs[trim_range]
+        self._bins = self._bins[trim_range]
 
     def __abs__(self):
-        return _np.absolute(self.bins)
+        if self._bins is None:
+            return None
+        return _sigtools.clip_db(_np.absolute(self._bins), self._params.ldb,
+                self._params.udb)
 
     def __getitem__(self, key):
-        return self.bins[key]
+        return self._bins[key]
 
     def __len__(self):
         return self.length
 
     def __repr__(self):
         return 'Spectrum()'
+
 
 class Spectrogram:
     """Compute a spectrogram from an one-dimensional input signal."""

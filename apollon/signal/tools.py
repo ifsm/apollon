@@ -76,6 +76,29 @@ def acf_pearson(inp_sig):
     return out
 
 
+def trim_range(d_frq: float, lcf: float = None, ucf: float = None) -> slice:
+    """Return slice of trim indices regarding an array ``frqs`` of DFT
+    frquencies, such that both boundaries are included.
+
+    Args:
+        d_frq:   Frequency spacing.
+        lcf:     Lower cut-off frequency.
+        ucf:     Upper cut-off frequency.
+
+    Returns:
+        Slice of trim indices.
+    """
+    try:
+        lcf = int(lcf//d_frq)
+    except TypeError:
+        lcf = None
+    try:
+        ucf = int(ucf//d_frq)
+    except TypeError:
+        ucf = None
+    return slice(lcf, ucf)
+
+
 def corr_coef_pearson(x, y):
     """Fast perason correlation coefficient."""
     detr_x = x - _np.mean(x)
@@ -85,6 +108,31 @@ def corr_coef_pearson(x, y):
     r_xx_yy = (detr_x @ detr_x) * (detr_y @ detr_y)
 
     return r_xy / r_xx_yy
+
+
+def clip_db(inp: _Array, lo_db: float = None, up_db: float = None):
+    """Clip ``inp`` to the range [``lo_db``, ``up_db``].
+
+    Args:
+        inp:       Array of DFT bin magnitudes.
+        lo_db:    Lower clip boundary in deci Bel.
+        up_db:    Upper clip boundary in deci Bel.
+
+    Returns:
+        Copy of ``inp`` with values clipped.
+    """
+    if lo_db is None and up_db is None:
+        return _np.copy(inp)
+    elif lo_db is None:
+        up_thr = _np.power(10, up_db/20) * _defaults.SPL_REF
+        return _np.minimum(inp, up_thr)
+    elif up_db is None:
+        lo_thr = _np.power(10, lo_db/20) * _defaults.SPL_REF
+        return _np.maximum(inp, 0, out=inp, where=inp<lo_thr)
+    else:
+        lo_thr = _np.power(10, lo_db/20) * _defaults.SPL_REF
+        up_thr = _np.power(10, up_db/20) * _defaults.SPL_REF
+        return _np.clip(inp, lo_thr, up_thr)
 
 
 def freq2mel(f):
@@ -111,8 +159,6 @@ def mel2freq(z):
     """
     z = _np.atleast_1d(z)
     return 700 * (_np.exp(z / 1125) - 1)
-
-
 
 
 def maxamp(sig):
