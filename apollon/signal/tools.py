@@ -203,7 +203,7 @@ def sinusoid(frqs, amps=1, fps: int = 9000, length: float = 1,
 
 
 def spl(amp: _Array, ref: float = _defaults.SPL_REF) -> _Array:
-    """Compute the sound pressure level.
+    """Computes sound pressure level.
 
     The values of ``amp`` are assumed to be magnitudes of DFT bins.
 
@@ -219,6 +219,20 @@ def spl(amp: _Array, ref: float = _defaults.SPL_REF) -> _Array:
         Input scaled to deci Bel.
     """
     return 20.0 * _np.log10(_np.maximum(amp, ref) / ref)
+
+
+def amp(spl: _Array, ref: float = _defaults.SPL_REF) -> _Array:
+    """Computes amplitudes form sound pressure level.
+
+    The reference pressure defaults to the human hearing treshold of 20 μPa.
+
+    Args:
+        spl:    Sound pressure level.
+
+    Returns:
+        DFT magnituds.
+    """
+    return _np.power(10.0, 0.05*spl) * ref
 
 
 def zero_padding(sig: _Array, n_pad: int, dtype: str = None):
