@@ -12,7 +12,7 @@ from scipy.signal import hilbert as _hilbert
 import _features
 from . import tools as _sigtools
 from .. import segment as _segment
-from .. tools import array2d_fsum
+from .. import tools
 from .. types import Array as _Array
 from .. import container
 from .  import critical_bands as _cb
@@ -158,7 +158,7 @@ def spectral_shape(inp: _Array, frqs: _Array, cf_low: float = 50,
 
     vals, frqs = _sigtools.clip_spectr(inp, frqs, cf_low, cf_high)
 
-    total_nrgy = array2d_fsum(vals)
+    total_nrgy = tools.fsum(vals)
     total_nrgy[total_nrgy == 0.0] = 1.0    # Total energy is zero iff input signal is all zero.
                                            # Replace these bin values with 1, so division by
                                            # total energy will not lead to nans.
@@ -166,9 +166,9 @@ def spectral_shape(inp: _Array, frqs: _Array, cf_low: float = 50,
     centroid = frqs @ vals / total_nrgy
     deviation = frqs[:, None] - centroid
 
-    spread = array2d_fsum(_np.power(deviation, 2) * vals)
-    skew = array2d_fsum(_np.power(deviation, 3) * vals)
-    kurt = array2d_fsum(_np.power(deviation, 4) * vals)
+    spread = tools.fsum(_np.power(deviation, 2) * vals)
+    skew = tools.fsum(_np.power(deviation, 3) * vals)
+    kurt = tools.fsum(_np.power(deviation, 4) * vals)
 
     spread = _np.sqrt(spread/total_nrgy)
     zero_spread = spread == 0
@@ -218,7 +218,7 @@ def perceptual_shape(inp: _Array, frqs: _Array, cf_low: float = 50,
     cbrs = _cb.filter_bank(frqs) @ inp
     loud_specific = _np.maximum(_cb.specific_loudness(cbrs),
                                 _np.finfo('float64').eps)
-    loud_total = array2d_fsum(loud_specific, axis=0)
+    loud_total = tools.fsum(loud_specific, axis=0)
 
 
     zfn = _np.arange(1, 25)

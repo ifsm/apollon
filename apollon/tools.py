@@ -241,11 +241,34 @@ def within_any(val: float, windows: _Array) -> bool:
     return _np.any(c)
 
 
-def array2d_fsum(arr: _Array, axis: int = 0) -> _Array:
-    """Return math.fsum along the specifyed axis."""
-    if axis == 0:
-        vals = arr.T
-    else:
-        vals = arr
+def fsum(arr: _Array, axis: int = None, keepdims: bool = False,
+         dtype: 'str' = 'float64') -> _Array:
+    """Return math.fsum along the specifyed axis.
 
-    return _np.array([_math.fsum(ax_slice) for ax_slice in vals])
+    This function supports at most two-dimensional arrays.
+
+    Args:
+        arr:      Input array.
+        axis:     Reduction axis.
+        keepdims: If ``True``, the output will have the same dimensionality
+                  as the input.
+        dtype:    Numpy data type.
+    Returns:
+        Sums along axis.
+    """
+    if axis is None:
+        out = _np.float64(_math.fsum(arr.flatten()))
+        if keepdims:
+            out = _np.array(out, ndmin=arr.ndim)
+    elif axis == 0:
+        out = _np.array([_math.fsum(col) for col in arr.T], dtype=dtype)
+        if keepdims:
+            out = _np.expand_dims(out, 0)
+    elif axis == 1:
+        out = _np.array([_math.fsum(row) for row in arr], dtype=dtype)
+        if keepdims:
+            out = _np.expand_dims(out, 1)
+    else:
+        raise ValueError(f'``Axis is {axis} but must be 0, 1, or ``None``.')
+    return out
+
