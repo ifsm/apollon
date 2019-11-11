@@ -14,15 +14,14 @@ from typing import Any, Dict, List, Optional, Tuple
 
 
 @dataclasses.dataclass()
-class FTParams:
+class SpectrumParams:
     fps: int
     window: str = None
-    n_perseg: int = None
-    hop_size: int = None
     n_fft: int = None
-    lower_cutoff: float = None
-    upper_cutoff: float = None
-    db_threshold: float = None
+    lcf: float = None
+    ucf: float = None
+    ldb: float = None
+    udb: float = None
 
 
 class NameSpace:

@@ -9,16 +9,17 @@ Signal processing tools
 Functions:
     acf                 Normalized autocorrelation.
     acf_pearson         Normalized Pearson acf.
-    amp2db              Transform amplitude to dB.
     corr_coef_pearson   Correlation coefficient after Pearson.
     freq2mel            Transform frequency to mel.
+    limit               Limit dynamic range.
     mel2freq            Transform mel to frequency.
     frq2bark            Transform frequency to Bark scale.
     maxamp              Maximal amplitude of signal.
     minamp              Minimal amplitude of signal.
     normalize           Scale data betwee -1.0 and 1.0.
-    noise               Generate withe noise.
+    noise               Generate white noise.
     sinusoid            Generate sinusoidal signal.
+    spl                 Conpute sound pressure level.
     zero_padding        Append array with zeros.
     trim_spectrogram    Trim spectrogram to a frequency range.
 """
@@ -76,26 +77,27 @@ def acf_pearson(inp_sig):
     return out
 
 
-def amp2db(amp, ref:float = 20e-6) -> _Array:
-    """Transform amplitude to dB.
+def trim_range(d_frq: float, lcf: float = None, ucf: float = None) -> slice:
+    """Return slice of trim indices regarding an array ``frqs`` of DFT
+    frquencies, such that both boundaries are included.
 
-    Return a copy of `amp` in dB scaling regarding a reference pressure `ref`.
-    The reference pressure is commonly the human hearing treshold at
-    20 micro Pa.
+    Args:
+        d_frq:   Frequency spacing.
+        lcf:     Lower cut-off frequency.
+        ucf:     Upper cut-off frequency.
 
-    `amp` is supposed to be a inon-negative scalar or numpy.array taken from a
-    magnitude spectrum.
-
-    This function set all values of `amp` smaller then `ref` to `ref`, hence
-    eliminating inaudible singnal energy in the log domain.
-
-    Params:
-        amp    (array-like or number) Given amplitude values.
-
-    Return:
-        (ndarray)    values in dB.
+    Returns:
+        Slice of trim indices.
     """
-    return 20 * _np.log10(_np.maximum(amp, ref) / ref)
+    try:
+        lcf = int(lcf//d_frq)
+    except TypeError:
+        lcf = None
+    try:
+        ucf = int(ucf//d_frq)
+    except TypeError:
+        ucf = None
+    return slice(lcf, ucf)
 
 
 def corr_coef_pearson(x, y):
@@ -122,6 +124,33 @@ def freq2mel(f):
     return 1125 * _np.log(1 + f / 700)
 
 
+def limit(inp: _Array, ldb: float = None, udb: float = None):
+    """Limit the dynamic range of ``inp`` to  [``ldb``, ``udb``].
+
+    Boundaries are given in dB SPL.
+
+    Args:
+        inp:    DFT bin magnitudes.
+        ldb:    Lower clip boundary in deci Bel.
+        udb:    Upper clip boundary in deci Bel.
+
+    Returns:
+        Copy of ``inp`` with values clipped.
+    """
+    try:
+        lth = amp(ldb)
+    except TypeError:
+        lth = 0.0
+
+    try:
+        uth = amp(udb)
+    except TypeError:
+        uth  = inp.max()
+
+    low = _np.where(inp<lth, 0.0, inp)
+    return _np.minimum(low, uth)
+
+
 def mel2freq(z):
     """Transforms Mel-Frequencies to Hz.
 
@@ -133,8 +162,6 @@ def mel2freq(z):
     """
     z = _np.atleast_1d(z)
     return 700 * (_np.exp(z / 1125) - 1)
-
-
 
 
 def maxamp(sig):
@@ -186,11 +213,11 @@ def normalize(sig):
     return sig / _np.max(_np.absolute(sig), axis=0)
 
 
-def sinusoid(frqs, amps=1, fps: int = 9000, length: float = 1,
-             noise: float = None, retcomps: bool = False) -> _Array:
+def sinusoid(frqs, amps=1, fps: int = 9000, length: float = 1.0,
+             noise: float = None, comps: bool = False) -> _Array:
     """Generate sinusoidal signal.
 
-    Params:
+    Args:
         frqs:    Component frequencies.
         amps:    Amplitude of each component in ``frqs``.  If ``amps`` is an
                  integer, each component of ``frqs`` is scaled according to
@@ -213,15 +240,48 @@ def sinusoid(frqs, amps=1, fps: int = 9000, length: float = 1,
         txs = _np.arange(fps*length)[:, None] / fps
         sig = _np.sin(2*_np.pi*txs*frqs) * amps
     else:
-        raise ValueError('Shapes of ``f`` and ``amps`` must be equal.')
+        raise ValueError(f'Shapes of ``frqs`` {frqs.shape} and ``amps``'
+               '{ams.shape} differ.')
 
     if noise:
         sig += _stats.norm.rvs(0, noise, size=sig.shape)
 
-    if retcomps:
+    if comps:
         return sig
-    else:
-        return sig.sum(axis=1)
+    return sig.sum(axis=1, keepdims=True)
+
+
+def spl(amp: _Array, ref: float = _defaults.SPL_REF) -> _Array:
+    """Computes sound pressure level.
+
+    The values of ``amp`` are assumed to be magnitudes of DFT bins.
+
+    The reference pressure defaults to the human hearing treshold of 20 μPa.
+
+    This function sets all values of ``amp`` smaller then ``ref`` to ``ref``,
+    hence eliminating inaudible singnal energy in the log domain.
+
+    Args:
+        amp:    Given amplitude values.
+
+    Returns:
+        Input scaled to deci Bel.
+    """
+    return 20.0 * _np.log10(_np.maximum(amp, ref) / ref)
+
+
+def amp(spl: _Array, ref: float = _defaults.SPL_REF) -> _Array:
+    """Computes amplitudes form sound pressure level.
+
+    The reference pressure defaults to the human hearing treshold of 20 μPa.
+
+    Args:
+        spl:    Sound pressure level.
+
+    Returns:
+        DFT magnituds.
+    """
+    return _np.power(10.0, 0.05*spl) * ref
 
 
 def zero_padding(sig: _Array, n_pad: int, dtype: str = None):
