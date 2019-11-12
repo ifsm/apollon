@@ -51,14 +51,14 @@ def fft(sig: _Array, window: str = None, n_fft: int = None) -> _Array:
             win_func = getattr(_np, window)
         except AttributeError:
             raise AttributeError(f'Unknown window function `{window}`.')
-        sig = _np.multiply(sig, win_func(n_sig))
+        sig *= _np.expand_dims(win_func(n_sig), 1)
 
     bins = _np.fft.rfft(sig, n_fft, axis=0) / float(n_fft)
 
-    if n_fft % 2 != 0:
-        bins = _np.multiply(bins[:-1], 2.0)
+    if n_fft % 2:
+        bins *= 2.0
     else:
-        bins = _np.multiply(bins, 2.0)
+        bins[:-1] *= 2.0
     return bins
 
 
