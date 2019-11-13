@@ -82,25 +82,19 @@ def correlogram(inp: _Array, wlen: int, n_delay: int) -> _Array:
     return _features.correlogram(inp, wlen, n_delay)
 
 
-def spectral_centroid(inp: _Array, frqs: _Array) -> _Array:
+def spectral_centroid(frqs: _Array, bins: _Array) -> _Array:
     """Estimate the spectral centroid frequency.
 
-    Calculation is applied to the second axis. One-dimensional
-    arrays will be promoted.
+    Spectral centroid is always computed along the second axis of ``bins``.
 
     Args:
-        inp:   Input data. Each row is assumend FFT bins scaled by `freqs`.
-        frqs:  One-dimensional array of FFT frequencies.
+        frqs:    Nx1 array of DFT frequencies.
+        power:   NxM array of DFT bin values.
 
     Returns:
-        Array of Spectral centroid frequencies.
+        1xM array of spectral centroids.
     """
-    inp = _np.atleast_2d(inp).astype('float64')
-    weighted_nrgy = _np.multiply(inp, frqs).sum(axis=1).squeeze()
-    total_nrgy = inp.sum(axis=1).squeeze()
-    total_nrgy[total_nrgy == 0.0] = 1.0
-
-    return _np.divide(weighted_nrgy, total_nrgy)
+    return tools.fsum(frqs*_power_distr(bins), axis=0, keepdims=True)
 
 
 def spectral_flux(inp: _Array, delta: float = 1.0) -> _Array:
@@ -117,68 +111,19 @@ def spectral_flux(inp: _Array, delta: float = 1.0) -> _Array:
     return _np.maximum(_np.gradient(inp, delta, axis=-1), 0).squeeze()
 
 
-def spectral_shape(inp: _Array, frqs: _Array, cf_low: float = 50,
-                   cf_high: float = 16000) -> container.FeatureSpace:
-    """Compute low-level spectral shape descriptors.
+def spectral_spread(frqs: _Array, bins: _Array) -> _Array:
+    """Estimate spectral spread.
 
-    This function computes the first four central moments of
-    the input spectrum. If input is two-dimensional, the first
-    axis is assumed to represent frequency.
-
-    The central moments are:
-        - Spectral Centroid (SC)
-        - Spectral Spread (SSP),
-        - Spectral Skewness (SSK)
-        - Spectral Kurtosis (SKU).
-
-    Spectral Centroid represents the center of gravity of the spectrum.
-    It correlates well with the perception of auditory brightness.
-
-    Spectral Spread is a measure for the frequency deviation around the
-    centroid.
-
-    Spectral Skewness is a measure of spectral symmetry. For values of
-    SSK = 0 the spectral distribution is exactly symmetric. SSK > 0 indicates
-    more power in the frequency domain below the centroid and vice versa.
-
-    Spectral Kurtosis is a measure of flatness. The lower the value, the faltter
-    the distribution.
-
+    Spectral spread is always computed along the second axis of ``bins``.
     Args:
-        inp:      Input spectrum or spectrogram.
-        frqs:     Frequency axis.
-        cf_low:   Lower cutoff frequency.
-        cf_high:  Upper cutoff frequency.
+        frqs:    Nx1 array of DFT frequencies.
+        power:   NxM array of DFT bin values.
 
     Returns:
-        Spectral centroid, spread, skewness, and kurtosis.
+        1xM array of spectral spread.
     """
-    if inp.ndim < 2:
-        inp = inp[:, None]
-
-    vals, frqs = _sigtools.clip_spectr(inp, frqs, cf_low, cf_high)
-
-    total_nrgy = tools.fsum(vals)
-    total_nrgy[total_nrgy == 0.0] = 1.0    # Total energy is zero iff input signal is all zero.
-                                           # Replace these bin values with 1, so division by
-                                           # total energy will not lead to nans.
-
-    centroid = frqs @ vals / total_nrgy
-    deviation = frqs[:, None] - centroid
-
-    spread = tools.fsum(_np.power(deviation, 2) * vals)
-    skew = tools.fsum(_np.power(deviation, 3) * vals)
-    kurt = tools.fsum(_np.power(deviation, 4) * vals)
-
-    spread = _np.sqrt(spread/total_nrgy)
-    zero_spread = spread == 0
-
-    skew = _np.divide(skew/total_nrgy, _np.power(spread, 3), where=~zero_spread)
-    kurt = _np.divide(kurt/total_nrgy, _np.power(spread, 4), where=~zero_spread)
-    skew[zero_spread] = 0
-    kurt[zero_spread] = 0
-
-    return container.FeatureSpace(centroid=centroid, spread=spread, skewness=skew, kurtosis=kurt)
+    deviation = _np.power(frqs-spectral_centroid(frqs, bins), 2)
+    return tools.fsum(deviation*_power_distr(bins), axis=0, keepdims=True)
 
 
 def log_attack_time(inp: _Array, fps: int, ons_idx: _Array,
@@ -228,16 +173,17 @@ def perceptual_shape(inp: _Array, frqs: _Array, cf_low: float = 50,
     return container.FeatureSpace(loudness=loud_total, sharpness=sharp, roughness=rough)
 
 
-def loudness(inp: _Array, frqs: _Array) -> _Array:
+def loudness(frqs: _Array, bins: _Array) -> _Array:
     """Calculate a measure for the perceived loudness from a spectrogram.
 
     Args:
-        inp:  Magnitude spectrogram.
+        frqs:   Frquency axis.
+        bins:   Magnitude spectrogram.
 
     Returns:
-        Loudness
+        Estimate of the total loudness.
     """
-    cbrs = _cb.filter_bank(frqs) @ inp
+    cbrs = _cb.filter_bank(frqs) @ bins
     return _cb.total_loudness(cbrs)
 
 
@@ -295,5 +241,20 @@ def sharpness(inp: _Array, frqs: _Array) -> _Array:
     Returns:
         Sharpness for each time instant of the spectragram.
     """
-    cbrs = _cb.filter_bank(frqs) @ inp
+    cbrs = _cb.filter_bank(frqs) @ bins
     return _cb.sharpness(cbrs)
+
+
+def _power_distr(bins: _Array) -> _Array:
+    """Computes the spectral energy distribution.
+
+    Args:
+        bins:    NxM array of DFT bins.
+
+    Returns:
+        NxM array of spectral densities.
+    """
+    total_power = tools.fsum(bins, axis=0, keepdims=True)
+    total_power[total_power == 0] = 1
+    return bins / total_power
+
