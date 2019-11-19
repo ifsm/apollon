@@ -8,7 +8,8 @@ from scipy.signal.windows import get_window as _get_window
 from .. types import Array as _Array
 from .. import tools as _tools
 
-def frq2cbr(frq) -> _Array:
+
+def frq2cbr(frq: _Array) -> _Array:
     """Transform frquencies in Hz to critical band rates in Bark.
 
     Args:
@@ -25,10 +26,10 @@ def level(cbi: _Array):
     """Compute the critical band level L_G from critical band intensities I_G.
 
     Args:
-        cbi (ndarray)    Critical band intensities.
+        cbi:    Critical band intensities.
 
     Returns:
-        (nddarray)    Critical band levels.
+        Critical band levels.
     """
     ref = 10e-12
     return 10.0 * _np.log10(_np.maximum(cbi, ref) / ref)
@@ -41,15 +42,15 @@ def specific_loudness(cbr: _Array):
     should be scaled in critical band levels.
 
     Args:
-        cbr (ndarray)    Critical band rate spectrum.
+        cbr:    Critical band rate spectrum.
 
     Returns:
-        (ndarray)    Specific loudness.
+        Specific loudness.
     """
     return _np.power(level(cbr), 0.23)
 
 
-def total_loudness(cbr: _Array):
+def total_loudness(cbr: _Array) -> _Array:
     """Compute the totals loudness of critical band rate spectra.
 
     The total loudness is the sum of the specific loudnesses. The spectra
@@ -61,20 +62,20 @@ def total_loudness(cbr: _Array):
     Returns:
         (ndarray)    Total loudness.
     """
-    return _tools.array2d_fsum(specific_loudness(cbr), axis=0)
+    return _tools.fsum(specific_loudness(cbr), axis=0)
 
 
-def filter_bank(frqs):
+def filter_bank(frqs: _Array) -> _Array:
     """Return a critical band rate scaled filter bank.
 
     Each filter is triangular, which lower and upper cuttoff frequencies
     set to lower and upper bound of the given critical band rate.
 
     Args:
-        frqs (ndarray)    Frequency axis in Hz.
+        frqs:    Frequency axis in Hz.
 
     Returns:
-        (ndarray)    Bark scaled filter bank.
+        Bark scaled filter bank.
     """
     n_bands = 24
     z_frq = frq2cbr(frqs)
@@ -87,7 +88,6 @@ def filter_bank(frqs):
         idx = _np.logical_and(lo <= z_frq, z_frq < hi)
         n = idx.sum()
         filter_bank[lo, idx] = _get_window('triang', n, False)
-
     return filter_bank
 
 
@@ -97,14 +97,13 @@ def weight_factor(z):
     This is an improved version of Peeters (2004), section 8.1.3.
 
     Args:
-        z (ndarray)    Critical band rate.
+        z: Critical band rate.
 
     Returns:
-        (ndarray)    Wheighting factor.
+        Weighting factor.
     """
     base = _np.ones_like(z, dtype='float64')
     slope = 0.066 * _np.exp(0.171 * _np.atleast_1d(z))
-
     return _np.maximum(base, slope)
 
 
