@@ -29,6 +29,7 @@ from .. types import Array as _Array
 from .. import container
 from .  import critical_bands as _cb
 from .. audio import fti16
+from .. import _defaults
 
 
 def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
@@ -138,23 +139,31 @@ def spectral_spread(frqs: _Array, bins: _Array) -> _Array:
     return tools.fsum(deviation*_power_distr(bins), axis=0, keepdims=True)
 
 
-def spl(amp: _Array, ref: float = _defaults.SPL_REF) -> _Array:
+def spl(amp: _Array, total: bool = False, ref: float = None) -> _Array:
     """Computes sound pressure level.
 
     The values of ``amp`` are assumed to be magnitudes of DFT bins.
 
     The reference pressure defaults to the human hearing treshold of 20 μPa.
 
-    This function sets all values of ``amp`` smaller then ``ref`` to ``ref``,
-    hence eliminating inaudible singnal energy in the log domain.
-
     Args:
-        amp:    Given amplitude values.
+        amp:      Amplitude values.
+        total:    If True, returns the total spl over all values. In case
+                  ``amp`` is two-dimensional, the first axis is aggregated.
+        ref:      Custom reference value.
 
     Returns:
-        Input scaled to deci Bel.
+        Sound pressure level of ``amp``.
     """
-    return 20.0 * _np.log10(_np.maximum(amp, ref) / ref)
+    if ref is None:
+        ref = _defaults.SPL_REF
+
+    if total:
+        vals = amp.sum(axis=0, keepdims=True)
+    else:
+        vals = amp
+    vals = _np.maximum(vals, ref) / ref
+    return 20.0*_np.log10(vals)
 
 
 def log_attack_time(inp: _Array, fps: int, ons_idx: _Array,
