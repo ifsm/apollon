@@ -73,7 +73,8 @@ def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
                       for seg in inp])
 
 
-def correlogram(inp: _Array, wlen: int, n_delay: int) -> _Array:
+def correlogram(inp: _Array, wlen: int, n_delay: int,
+        total: bool = False) -> _Array:
     """Windowed autocorrelation of ``inp``.
 
     This function computes the autocorrelation of a ``wlen``-sized
@@ -92,7 +93,12 @@ def correlogram(inp: _Array, wlen: int, n_delay: int) -> _Array:
         raise TypeError(f'Argument ``inp`` is of type {type(inp)}. It has '
                         'to be an numpy array.')
 
-    return _features.correlogram(inp, wlen, n_delay)
+    crr = _features.correlogram(inp, wlen, n_delay)
+    if total is True:
+        prob = crr / crr.sum()
+        prob = prob[prob>0]
+        return -_np.sum(prob*_np.log2(prob))
+    return crr
 
 
 def spectral_centroid(frqs: _Array, bins: _Array) -> _Array:
