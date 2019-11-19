@@ -139,7 +139,7 @@ def spectral_spread(frqs: _Array, bins: _Array) -> _Array:
     return tools.fsum(deviation*_power_distr(bins), axis=0, keepdims=True)
 
 
-def spl(amp: _Array, total: bool = False, ref: float = None) -> _Array:
+def spl(amps: _Array, total: bool = False, ref: float = None) -> _Array:
     """Computes sound pressure level.
 
     The values of ``amp`` are assumed to be magnitudes of DFT bins.
@@ -147,7 +147,7 @@ def spl(amp: _Array, total: bool = False, ref: float = None) -> _Array:
     The reference pressure defaults to the human hearing treshold of 20 μPa.
 
     Args:
-        amp:      Amplitude values.
+        amps:     Amplitude values.
         total:    If True, returns the total spl over all values. In case
                   ``amp`` is two-dimensional, the first axis is aggregated.
         ref:      Custom reference value.
@@ -158,12 +158,11 @@ def spl(amp: _Array, total: bool = False, ref: float = None) -> _Array:
     if ref is None:
         ref = _defaults.SPL_REF
 
+    vals = _np.power(amps/ref, 2)
     if total:
-        vals = amp.sum(axis=0, keepdims=True)
-    else:
-        vals = amp
-    vals = _np.maximum(vals, ref) / ref
-    return 20.0*_np.log10(vals)
+        vals = vals.sum(axis=0, keepdims=True)
+    vals = _np.maximum(1.0, vals)
+    return 10.0*_np.log10(vals)
 
 
 def splc(frqs: _Array, amps: _Array, total: bool = False,
