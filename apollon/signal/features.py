@@ -166,6 +166,21 @@ def spl(amp: _Array, total: bool = False, ref: float = None) -> _Array:
     return 20.0*_np.log10(vals)
 
 
+def splc(frqs: _Array, amps: _Array, total: bool = False,
+         ref: float = None) -> _Array:
+    """Apply C-weighted to SPL.
+
+    Args:
+        frqs:    Center frequency of DFT band.
+        amps:    Magnitude of DFT band.
+        ref:     Reference value for p_0.
+
+    Returns:
+        C-weighted sound pressure level.
+    """
+    return spl(_sigtools.c_weighting(frqs)*amps, total)
+
+
 def log_attack_time(inp: _Array, fps: int, ons_idx: _Array,
                     wlen: float = 0.05) -> _Array:
     """Estimate the attack time of each onset and return its logarithm.
