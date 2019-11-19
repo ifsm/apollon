@@ -218,10 +218,14 @@ def loudness(frqs: _Array, bins: _Array) -> _Array:
     return _cb.total_loudness(cbrs)
 
 
-def roughness_helmholtz(frqs: _Array, bins: _Array, frq_max: float) -> _Array:
+def roughness_helmholtz(frqs: _Array, bins: _Array, frq_max: float,
+        total: bool = True) -> _Array:
     frq_res = (frqs[1]-frqs[0]).item()
     kernel = _roughnes_kernel(frq_res, frq_max)
-    return _np.correlate(bins.squeeze(), kernel, mode='same')
+    out = _np.correlate(bins.squeeze(), kernel, mode='same')
+    if total is True:
+        out = out.sum(keepdims=True)
+    return out
 
 
 def sharpness(inp: _Array, frqs: _Array) -> _Array:
