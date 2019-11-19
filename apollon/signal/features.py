@@ -11,6 +11,8 @@ Functions:
     spectral_centroid
     spectral_spread
     spectral_flux
+    spl
+    splc
     loudness
     sharpness
     roughness
@@ -134,6 +136,25 @@ def spectral_spread(frqs: _Array, bins: _Array) -> _Array:
     """
     deviation = _np.power(frqs-spectral_centroid(frqs, bins), 2)
     return tools.fsum(deviation*_power_distr(bins), axis=0, keepdims=True)
+
+
+def spl(amp: _Array, ref: float = _defaults.SPL_REF) -> _Array:
+    """Computes sound pressure level.
+
+    The values of ``amp`` are assumed to be magnitudes of DFT bins.
+
+    The reference pressure defaults to the human hearing treshold of 20 μPa.
+
+    This function sets all values of ``amp`` smaller then ``ref`` to ``ref``,
+    hence eliminating inaudible singnal energy in the log domain.
+
+    Args:
+        amp:    Given amplitude values.
+
+    Returns:
+        Input scaled to deci Bel.
+    """
+    return 20.0 * _np.log10(_np.maximum(amp, ref) / ref)
 
 
 def log_attack_time(inp: _Array, fps: int, ons_idx: _Array,

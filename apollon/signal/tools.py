@@ -19,7 +19,6 @@ Functions:
     normalize           Scale data betwee -1.0 and 1.0.
     noise               Generate white noise.
     sinusoid            Generate sinusoidal signal.
-    spl                 Conpute sound pressure level.
     zero_padding        Append array with zeros.
     trim_spectrogram    Trim spectrogram to a frequency range.
 """
@@ -249,25 +248,6 @@ def sinusoid(frqs, amps=1, fps: int = 9000, length: float = 1.0,
     if comps:
         return sig
     return sig.sum(axis=1, keepdims=True)
-
-
-def spl(amp: _Array, ref: float = _defaults.SPL_REF) -> _Array:
-    """Computes sound pressure level.
-
-    The values of ``amp`` are assumed to be magnitudes of DFT bins.
-
-    The reference pressure defaults to the human hearing treshold of 20 μPa.
-
-    This function sets all values of ``amp`` smaller then ``ref`` to ``ref``,
-    hence eliminating inaudible singnal energy in the log domain.
-
-    Args:
-        amp:    Given amplitude values.
-
-    Returns:
-        Input scaled to deci Bel.
-    """
-    return 20.0 * _np.log10(_np.maximum(amp, ref) / ref)
 
 
 def amp(spl: _Array, ref: float = _defaults.SPL_REF) -> _Array:
