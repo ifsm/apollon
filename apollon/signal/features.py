@@ -95,9 +95,7 @@ def correlogram(inp: _Array, wlen: int, n_delay: int,
 
     crr = _features.correlogram(inp, wlen, n_delay)
     if total is True:
-        prob = crr / crr.sum()
-        prob = prob[prob>0]
-        return -_np.sum(prob*_np.log2(prob))
+        return crr.sum(keepdims=True) / _np.prod(crr.shape)
     return crr
 
 
