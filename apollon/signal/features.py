@@ -226,25 +226,24 @@ def roughness_helmholtz(frqs: _Array, bins: _Array, frq_max: float,
         total: bool = True) -> _Array:
     frq_res = (frqs[1]-frqs[0]).item()
     kernel = _roughnes_kernel(frq_res, frq_max)
-    out = _np.correlate(bins.squeeze(), kernel, mode='same')
+    out = _np.correlate(bins.squeeze(), kernel, mode='same')[:, None]
     if total is True:
         out = out.sum(keepdims=True)
     return out
 
 
-def sharpness(inp: _Array, frqs: _Array) -> _Array:
+def sharpness(frqs: _Array, bins: _Array) -> _Array:
     """Calculate a measure for the perception of auditory sharpness from a spectrogram.
 
     Args:
-        inp:     Two-dimensional input array. Assumed to be an magnitude
-                 spectrogram.
-        frqs:    Frequency axis of the spectrogram.
+        frqs:    Frequencies.
+        bins:    DFT magnitudes.
 
     Returns:
-        Sharpness for each time instant of the spectragram.
+        Sharpness.
     """
-    cbrs = _cb.filter_bank(frqs) @ bins
-    return _cb.sharpness(cbrs)
+    cbrs = _cb.filter_bank(frqs.squeeze()) @ bins.squeeze()
+    return _cb.sharpness(cbrs)[:, None]
 
 
 def _power_distr(bins: _Array) -> _Array:
