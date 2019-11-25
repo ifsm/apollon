@@ -72,7 +72,6 @@ correlogram (const double *sig,
         {
             double crr = corrcoef (sig, off, off+delay, wlen);
             size_t idx = (delay-1) * dims[1] + off;
-            printf ("(%zu, %zu) -> %zu\t", delay, off, sig[idx]);
             cgram[idx] = crr > 0.0F ? pow (crr, 4) : 0.0F;
         }
     }
