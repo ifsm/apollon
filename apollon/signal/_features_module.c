@@ -60,15 +60,16 @@ apollon_correlogram_delay (PyObject* self, PyObject* args)
         Py_RETURN_NONE;
     }
 
-    success = correlogram_delay ((double *) PyArray_DATA (arr_signal),
-                           (size_t *) PyArray_DATA (arr_delays),
-                           (size_t) window_len,
-                           (size_t *) dims,
-                           PyArray_DATA (arr_corr));
+    success = correlogram_delay (
+                (double *) PyArray_DATA (arr_signal),
+                (size_t *) PyArray_DATA (arr_delays),
+                (size_t) window_len,
+                (size_t *) dims,
+                PyArray_DATA (arr_corr));
 
     if (success == 0)
     {
-        PyErr_SetString (PyExc_ValueError, "Correlogram failed");
+        PyErr_SetString (PyExc_ValueError, "Correlogram failed.");
         Py_RETURN_NONE;
     }
 
@@ -82,10 +83,9 @@ apollon_correlogram (PyObject* self, PyObject* args)
     int      success    = 0;
     npy_intp window_len = 0;
     npy_intp max_delay  = 0;
-    npy_intp dims[]    = {0, 0};
+    npy_intp dims[]     = {0, 0};
 
-    PyObject *op_signal = NULL;
-
+    PyObject      *op_signal  = NULL;
     PyArrayObject *arr_signal = NULL;
     PyArrayObject *arr_corr   = NULL;
 
@@ -104,9 +104,10 @@ apollon_correlogram (PyObject* self, PyObject* args)
     dims[0] = max_delay;
     dims[1] = PyArray_SIZE (arr_signal) - window_len - max_delay;
 
-    arr_corr = (PyArrayObject *) PyArray_NewFromDescr (&PyArray_Type,
-                                                PyArray_DescrFromType (NPY_DOUBLE),
-                                                2, dims, NULL, NULL, 0, NULL);
+    arr_corr = (PyArrayObject *) PyArray_NewFromDescr (
+                &PyArray_Type, PyArray_DescrFromType (NPY_DOUBLE),
+                2, dims, NULL, NULL, 0, NULL);
+
     if (arr_corr == NULL)
     {
         PyErr_SetString (PyExc_MemoryError, "Could not allocate correlogram.\n");
@@ -118,7 +119,7 @@ apollon_correlogram (PyObject* self, PyObject* args)
 
     if (success == 0)
     {
-        PyErr_SetString (PyExc_ValueError, "Correlogram failed");
+        PyErr_SetString (PyExc_ValueError, "Correlogram failed..");
         Py_RETURN_NONE;
     }
 

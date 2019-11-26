@@ -4,6 +4,18 @@
 
 """
 apollon/signal/features.py -- Feature extraction routines
+
+Functions:
+    cdim           Fractal correlation dimension.
+    correlogram    Windowed auto-correlation.
+    spectral_centroid
+    spectral_spread
+    spectral_flux
+    spl
+    splc
+    loudness
+    sharpness
+    roughness
 """
 
 import numpy as _np
@@ -17,6 +29,7 @@ from .. types import Array as _Array
 from .. import container
 from .  import critical_bands as _cb
 from .. audio import fti16
+from .. import _defaults
 
 
 def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
@@ -27,12 +40,12 @@ def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
     If ``inp`` is two-dimensional, an estimated is computed for each row.
 
     Args:
-        inp       Input array.
-        delay     Embedding delay in samples.
-        m_dim     Number of embedding dimensions.
-        n_bins    Number of bins.
-        mode      Use either 'bader' for the original algorithm
-                  or 'blass' for the refined version.
+        inp:       Input array.
+        delay:     Embedding delay in samples.
+        m_dim:     Number of embedding dimensions.
+        n_bins:    Number of bins.
+        mode:      Use either 'bader' for the original algorithm
+                   or 'blass' for the refined version.
 
     Returns:
         Array of correlation dimension estimates.
@@ -60,7 +73,8 @@ def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
                       for seg in inp])
 
 
-def correlogram(inp: _Array, wlen: int, n_delay: int) -> _Array:
+def correlogram(inp: _Array, wlen: int, n_delay: int,
+        total: bool = False) -> _Array:
     """Windowed autocorrelation of ``inp``.
 
     This function computes the autocorrelation of a ``wlen``-sized
@@ -79,36 +93,33 @@ def correlogram(inp: _Array, wlen: int, n_delay: int) -> _Array:
         raise TypeError(f'Argument ``inp`` is of type {type(inp)}. It has '
                         'to be an numpy array.')
 
-    return _features.correlogram(inp, wlen, n_delay)
+    crr = _features.correlogram(inp, wlen, n_delay)
+    if total is True:
+        return crr.sum(keepdims=True) / _np.prod(crr.shape)
+    return crr
 
 
-def spectral_centroid(inp: _Array, frqs: _Array) -> _Array:
+def spectral_centroid(frqs: _Array, bins: _Array) -> _Array:
     """Estimate the spectral centroid frequency.
 
-    Calculation is applied to the second axis. One-dimensional
-    arrays will be promoted.
+    Spectral centroid is always computed along the second axis of ``bins``.
 
     Args:
-        inp:   Input data. Each row is assumend FFT bins scaled by `freqs`.
-        frqs:  One-dimensional array of FFT frequencies.
+        frqs:     Nx1 array of DFT frequencies.
+        power:    NxM array of DFT bin values.
 
     Returns:
-        Array of Spectral centroid frequencies.
+        1xM array of spectral centroids.
     """
-    inp = _np.atleast_2d(inp).astype('float64')
-    weighted_nrgy = _np.multiply(inp, frqs).sum(axis=1).squeeze()
-    total_nrgy = inp.sum(axis=1).squeeze()
-    total_nrgy[total_nrgy == 0.0] = 1.0
-
-    return _np.divide(weighted_nrgy, total_nrgy)
+    return tools.fsum(frqs*_power_distr(bins), axis=0, keepdims=True)
 
 
 def spectral_flux(inp: _Array, delta: float = 1.0) -> _Array:
     """Estimate the spectral flux
 
     Args:
-        inp:    Input data. Each row is assumend FFT bins.
-        delta:  Sample spacing.
+        inp:      Input data. Each row is assumend FFT bins.
+        delta:    Sample spacing.
 
     Returns:
         Array of Spectral flux.
@@ -117,68 +128,60 @@ def spectral_flux(inp: _Array, delta: float = 1.0) -> _Array:
     return _np.maximum(_np.gradient(inp, delta, axis=-1), 0).squeeze()
 
 
-def spectral_shape(inp: _Array, frqs: _Array, cf_low: float = 50,
-                   cf_high: float = 16000) -> container.FeatureSpace:
-    """Compute low-level spectral shape descriptors.
+def spectral_spread(frqs: _Array, bins: _Array) -> _Array:
+    """Estimate spectral spread.
 
-    This function computes the first four central moments of
-    the input spectrum. If input is two-dimensional, the first
-    axis is assumed to represent frequency.
-
-    The central moments are:
-        - Spectral Centroid (SC)
-        - Spectral Spread (SSP),
-        - Spectral Skewness (SSK)
-        - Spectral Kurtosis (SKU).
-
-    Spectral Centroid represents the center of gravity of the spectrum.
-    It correlates well with the perception of auditory brightness.
-
-    Spectral Spread is a measure for the frequency deviation around the
-    centroid.
-
-    Spectral Skewness is a measure of spectral symmetry. For values of
-    SSK = 0 the spectral distribution is exactly symmetric. SSK > 0 indicates
-    more power in the frequency domain below the centroid and vice versa.
-
-    Spectral Kurtosis is a measure of flatness. The lower the value, the faltter
-    the distribution.
-
+    Spectral spread is always computed along the second axis of ``bins``.
     Args:
-        inp:      Input spectrum or spectrogram.
-        frqs:     Frequency axis.
-        cf_low:   Lower cutoff frequency.
-        cf_high:  Upper cutoff frequency.
+        frqs:     Nx1 array of DFT frequencies.
+        power:    NxM array of DFT bin values.
 
     Returns:
-        Spectral centroid, spread, skewness, and kurtosis.
+        1xM array of spectral spread.
     """
-    if inp.ndim < 2:
-        inp = inp[:, None]
+    deviation = _np.power(frqs-spectral_centroid(frqs, bins), 2)
+    return tools.fsum(deviation*_power_distr(bins), axis=0, keepdims=True)
 
-    vals, frqs = _sigtools.clip_spectr(inp, frqs, cf_low, cf_high)
 
-    total_nrgy = tools.fsum(vals)
-    total_nrgy[total_nrgy == 0.0] = 1.0    # Total energy is zero iff input signal is all zero.
-                                           # Replace these bin values with 1, so division by
-                                           # total energy will not lead to nans.
+def spl(amps: _Array, total: bool = False, ref: float = None) -> _Array:
+    """Computes sound pressure level.
 
-    centroid = frqs @ vals / total_nrgy
-    deviation = frqs[:, None] - centroid
+    The values of ``amp`` are assumed to be magnitudes of DFT bins.
 
-    spread = tools.fsum(_np.power(deviation, 2) * vals)
-    skew = tools.fsum(_np.power(deviation, 3) * vals)
-    kurt = tools.fsum(_np.power(deviation, 4) * vals)
+    The reference pressure defaults to the human hearing treshold of 20 μPa.
 
-    spread = _np.sqrt(spread/total_nrgy)
-    zero_spread = spread == 0
+    Args:
+        amps:     Amplitude values.
+        total:    If True, returns the total spl over all values. In case
+                  ``amp`` is two-dimensional, the first axis is aggregated.
+        ref:      Custom reference value.
 
-    skew = _np.divide(skew/total_nrgy, _np.power(spread, 3), where=~zero_spread)
-    kurt = _np.divide(kurt/total_nrgy, _np.power(spread, 4), where=~zero_spread)
-    skew[zero_spread] = 0
-    kurt[zero_spread] = 0
+    Returns:
+        Sound pressure level of ``amp``.
+    """
+    if ref is None:
+        ref = _defaults.SPL_REF
 
-    return container.FeatureSpace(centroid=centroid, spread=spread, skewness=skew, kurtosis=kurt)
+    vals = _np.power(amps/ref, 2)
+    if total:
+        vals = vals.sum(axis=0, keepdims=True)
+    vals = _np.maximum(1.0, vals)
+    return 10.0*_np.log10(vals)
+
+
+def splc(frqs: _Array, amps: _Array, total: bool = False,
+         ref: float = None) -> _Array:
+    """Apply C-weighted to SPL.
+
+    Args:
+        frqs:    Center frequency of DFT band.
+        amps:    Magnitude of DFT band.
+        ref:     Reference value for p_0.
+
+    Returns:
+        C-weighted sound pressure level.
+    """
+    return spl(_sigtools.c_weighting(frqs)*amps, total)
 
 
 def log_attack_time(inp: _Array, fps: int, ons_idx: _Array,
@@ -205,95 +208,71 @@ def log_attack_time(inp: _Array, fps: int, ons_idx: _Array,
     return _np.log(attack_time)
 
 
-def perceptual_shape(inp: _Array, frqs: _Array, cf_low: float = 50,
-                     cf_high: float = 16000) -> container.FeatureSpace:
-    """Extracts psychoacoustical features from the spectrum.
-
-    Returns:
-        Loudness, roughness, and sharpness.
-    """
-    if inp.ndim < 2:
-        inp = inp[:, None]
-
-    cbrs = _cb.filter_bank(frqs) @ inp
-    loud_specific = _np.maximum(_cb.specific_loudness(cbrs),
-                                _np.finfo('float64').eps)
-    loud_total = tools.fsum(loud_specific, axis=0)
-
-
-    zfn = _np.arange(1, 25)
-    sharp = ((zfn * _cb.weight_factor(zfn)) @ cbrs) / loud_total
-    rough = hrough(inp, frqs)
-
-    return container.FeatureSpace(loudness=loud_total, sharpness=sharp, roughness=rough)
-
-
-def loudness(inp: _Array, frqs: _Array) -> _Array:
+def loudness(frqs: _Array, bins: _Array) -> _Array:
     """Calculate a measure for the perceived loudness from a spectrogram.
 
     Args:
-        inp:  Magnitude spectrogram.
+        frqs:   Frquency axis.
+        bins:   Magnitude spectrogram.
 
     Returns:
-        Loudness
+        Estimate of the total loudness.
     """
-    cbrs = _cb.filter_bank(frqs) @ inp
+    cbrs = _cb.filter_bank(frqs) @ bins
     return _cb.total_loudness(cbrs)
 
 
-def hrough(bins: _Array, frqs: float, cf_low: float = 50,
-           cf_high: float = 16000, min_intensity: float = -48) -> _Array:
-    """Calculate Helmholtz Roughness from spectrogram.
-
-    Helmholtz Roughness assumes that the maximal roughness
-    occures at frequency distance of 33 Hz independently of
-    the frequency und consideration. Hence, the input spctrogram
-    should have sufficiently high frequency resolution.
-
-
-    Args:
-        bins:   Input spectral magnitudes.
-        frqs:   Frequency axis of spectrogram.
-        cf_low: Lower frequency bound.
-        cf_high: Upper requenc bound.
-        min_intensity:  Intensity threshold in dB.
-
-    Returns:
-        Roughness per spectrogram time instant.
-    """
-    d_frq = frqs[1] -  frqs[0]
-    max_bin = int(round(50 // d_frq))
-
-    frange = frqs[1:max_bin] / (33.5 * _np.exp(-1))
-    fdecay = _np.exp(-frqs[1:max_bin] / 33.5)
-    r_curve = frange * fdecay
-
-    logspc = 20 * _np.log10(bins/bins.max())
-    bins[logspc < min_intensity] = 0
-
-    rr = _np.zeros(bins.shape[1])
-
-    if cf_high + max_bin < bins.shape[0]:
-        upper_limit = cf_high
-    else:
-        upper_limit = bins.shape[0]
-
-    upper_limit = cf_high if cf_high + max_bin < bins.shape[0] else bins.shape[0]
-    for i in range(cf_low, upper_limit, max_bin):
-        amps = bins[i] * bins[i+1:i+max_bin]
-        rr += _np.sum(amps * r_curve.reshape(-1, 1), axis=0)
-    return rr
+def roughness_helmholtz(frqs: _Array, bins: _Array, frq_max: float,
+        total: bool = True) -> _Array:
+    frq_res = (frqs[1]-frqs[0]).item()
+    kernel = _roughnes_kernel(frq_res, frq_max)
+    out = _np.correlate(bins.squeeze(), kernel, mode='same')[:, None]
+    if total is True:
+        out = out.sum(keepdims=True)
+    return out
 
 
-def sharpness(inp: _Array, frqs: _Array) -> _Array:
+def sharpness(frqs: _Array, bins: _Array) -> _Array:
     """Calculate a measure for the perception of auditory sharpness from a spectrogram.
 
     Args:
-        inp:   Two-dimensional input array. Assumed to be an magnitude spectrogram.
-        frqs:  Frequency axis of the spectrogram.
+        frqs:    Frequencies.
+        bins:    DFT magnitudes.
 
     Returns:
-        Sharpness for each time instant of the spectragram.
+        Sharpness.
     """
-    cbrs = _cb.filter_bank(frqs) @ inp
-    return _cb.sharpness(cbrs)
+    cbrs = _cb.filter_bank(frqs.squeeze()) @ bins.squeeze()
+    return _cb.sharpness(cbrs)[:, None]
+
+
+def _power_distr(bins: _Array) -> _Array:
+    """Computes the spectral energy distribution.
+
+    Args:
+        bins:    NxM array of DFT bins.
+
+    Returns:
+        NxM array of spectral densities.
+    """
+    total_power = tools.fsum(bins, axis=0, keepdims=True)
+    total_power[total_power==0] = 1
+    return bins / total_power
+
+
+def _roughnes_kernel(frq_res: float, frq_max: float) -> _Array:
+    """Comput the convolution kernel for roughness computation.
+
+    Args:
+        frq_res:    Frequency resolution
+        frq_max:    Frequency bound.
+
+    Returns:
+        Weight for each frequency below ``frq_max``.
+    """
+    frm = 33.5
+    bin_idx = int(_np.round(frq_max/frq_res))
+    norm = frm * _np.exp(-1)
+    base = _np.abs(_np.arange(-bin_idx, bin_idx+1)) * frq_res
+    return base / norm * _np.exp(-base/frm)
+

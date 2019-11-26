@@ -10,6 +10,7 @@ Functions:
     acf                 Normalized autocorrelation.
     acf_pearson         Normalized Pearson acf.
     corr_coef_pearson   Correlation coefficient after Pearson.
+    c_weighting         C-weighting for SPL.
     freq2mel            Transform frequency to mel.
     limit               Limit dynamic range.
     mel2freq            Transform mel to frequency.
@@ -19,7 +20,6 @@ Functions:
     normalize           Scale data betwee -1.0 and 1.0.
     noise               Generate white noise.
     sinusoid            Generate sinusoidal signal.
-    spl                 Conpute sound pressure level.
     zero_padding        Append array with zeros.
     trim_spectrogram    Trim spectrogram to a frequency range.
 """
@@ -109,6 +109,21 @@ def corr_coef_pearson(x, y):
     r_xx_yy = (detr_x @ detr_x) * (detr_y @ detr_y)
 
     return r_xy / r_xx_yy
+
+
+def c_weighting(frqs: _Array) -> _Array:
+    """C-weighhting for SPL.
+
+    Args:
+        frq:    Frequencies.
+
+    Returns:
+        Weight for DFT bin with center frequency ``frq``.
+    """
+    aaa = 148693636.0
+    bbb = 424.36
+    sqf = _np.power(frqs, 2)
+    return _np.divide(aaa*sqf, (sqf+aaa)*(sqf+bbb))
 
 
 def freq2mel(f):
@@ -249,25 +264,6 @@ def sinusoid(frqs, amps=1, fps: int = 9000, length: float = 1.0,
     if comps:
         return sig
     return sig.sum(axis=1, keepdims=True)
-
-
-def spl(amp: _Array, ref: float = _defaults.SPL_REF) -> _Array:
-    """Computes sound pressure level.
-
-    The values of ``amp`` are assumed to be magnitudes of DFT bins.
-
-    The reference pressure defaults to the human hearing treshold of 20 μPa.
-
-    This function sets all values of ``amp`` smaller then ``ref`` to ``ref``,
-    hence eliminating inaudible singnal energy in the log domain.
-
-    Args:
-        amp:    Given amplitude values.
-
-    Returns:
-        Input scaled to deci Bel.
-    """
-    return 20.0 * _np.log10(_np.maximum(amp, ref) / ref)
 
 
 def amp(spl: _Array, ref: float = _defaults.SPL_REF) -> _Array:
