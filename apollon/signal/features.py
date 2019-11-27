@@ -243,7 +243,7 @@ def sharpness(frqs: _Array, bins: _Array) -> _Array:
         Sharpness.
     """
     cbrs = _cb.filter_bank(frqs.squeeze()) @ bins.squeeze()
-    return _cb.sharpness(cbrs)[:, None]
+    return _np.expand_dims(_cb.sharpness(cbrs), 1)
 
 
 def _power_distr(bins: _Array) -> _Array:

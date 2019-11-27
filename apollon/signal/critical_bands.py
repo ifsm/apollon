@@ -118,7 +118,7 @@ def sharpness(cbr_spctrm: _Array) -> _Array:
         (ndarray)    Sharpness for each time instant of the cbr_spctrm
     """
     loud_specific = _np.maximum(specific_loudness(cbr_spctrm), _np.finfo('float64').eps)
-    loud_total = _tools.fsum(loud_specific)
+    loud_total = _tools.fsum(loud_specific, keepdims=True)
 
     z = _np.arange(1, 25)
     return ((z * weight_factor(z)) @ cbr_spctrm) / loud_total
