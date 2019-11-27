@@ -132,15 +132,18 @@ def spectral_spread(frqs: _Array, bins: _Array) -> _Array:
     """Estimate spectral spread.
 
     Spectral spread is always computed along the second axis of ``bins``.
+    This function computes the square roote of spectral spread.
+
     Args:
         frqs:     Nx1 array of DFT frequencies.
         power:    NxM array of DFT bin values.
 
     Returns:
-        1xM array of spectral spread.
+        Square root of spectral spread.
     """
     deviation = _np.power(frqs-spectral_centroid(frqs, bins), 2)
-    return tools.fsum(deviation*_power_distr(bins), axis=0, keepdims=True)
+    return np.sqrt(tools.fsum(deviation*_power_distr(bins), axis=0,
+        keepdims=True))
 
 
 def spl(amps: _Array, total: bool = False, ref: float = None) -> _Array:
