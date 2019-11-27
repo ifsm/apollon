@@ -6,9 +6,8 @@
 
 
 double
-corrcoef (const double *data,
-          const size_t  off_x,
-          const size_t  off_y,
+corrcoef (const double *x,
+          const double *y,
           const size_t  n);
 
 int
