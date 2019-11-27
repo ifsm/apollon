@@ -69,9 +69,9 @@ def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
         raise ValueError(f'Unknown mode "{mode}". Expected either "bader", \
                 or "blass"')
 
-    return _np.array([cdim_func(seg, delay, m_dim, n_bins, scaling_size)
-                      for seg in inp])
-
+    cdim = _np.array([cdim_func(seg, delay, m_dim, n_bins, scaling_size)
+            for seg in inp])
+    return _np.nan_to_num(cdim, posinf=0, neginf=0)
 
 def correlogram(inp: _Array, wlen: int, n_delay: int,
         total: bool = False) -> _Array:
