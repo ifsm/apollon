@@ -142,7 +142,7 @@ def spectral_spread(frqs: _Array, bins: _Array) -> _Array:
         Square root of spectral spread.
     """
     deviation = _np.power(frqs-spectral_centroid(frqs, bins), 2)
-    return np.sqrt(tools.fsum(deviation*_power_distr(bins), axis=0,
+    return _np.sqrt(tools.fsum(deviation*_power_distr(bins), axis=0,
         keepdims=True))
 
 
