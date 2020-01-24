@@ -11,34 +11,26 @@ import typing
 import soundfile as sf
 import logging
 import time
+import warnings
 
 from .. import analyses
 from .. types import PathType
 from .. import io
 from .. audio import load_audio
 
-class ShortPiece(Exception):
-    pass
-
-class BadSampleRate(Exception):
-    pass
-
 
 def _check_audio(path):
     snd_info = sf.info(path)
     if snd_info.duration < 30:
-        logging.error('Piece to short: {}'.format(path))
-        # raise ShortPiece('Duration of {} is less than {} s.'.format(path, 30))
-        return 10
+        warnings.warn('Duration of {} is less than {} s.'.format(path, 30))
 
     if snd_info.samplerate != 44100:
-        logging.error('Bad sample rate: {}'.format(path))
-        # raise BadSampleRate('Sample rate of {} Hz cannot be processed'.format(snd_info.samplerate))
-        return 10
-    return 0
+        warnings.warn('Sample rate of {} Hz cannot be processed'.format(snd_info.samplerate))
+
 
 def main(argv: dict = None) -> int:
     logging.basicConfig(filename='fe.log', filemode='w', level=logging.DEBUG)
+    logging.captureWarnings(True)
     if argv is None:
         argv = sys.argv
 
@@ -48,9 +40,7 @@ def main(argv: dict = None) -> int:
         print('Processing: {}'.format(path), end=' ... ', flush=True)
         timer_start = time.time()
 
-        if _check_audio(path) != 0:
-            return 10
-
+        _check_audio(path)
         snd = load_audio(path)
         snd.cut(snd.fps*2, snd.size-(snd.fps*5))
 
