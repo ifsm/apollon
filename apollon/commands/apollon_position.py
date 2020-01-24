@@ -6,12 +6,13 @@ import argparse
 import pathlib
 import pickle
 import sys
+import warnings
 
 import numpy as np
 import pandas as pd
 
 from .. import io
-from .. som.utilities import get_winner
+from .. som import utilities as sut
 
 
 def main(argv=None) -> int:
@@ -24,7 +25,8 @@ def main(argv=None) -> int:
         for hmm in argv.objective_files:
             hmm = io.load_json(hmm)
             gamma_ = hmm.params.gamma_.astype('float64').flatten()
-            flat_idx = get_winner(weights, gamma_)
+            flat_idx = sot.best_match(weights, gamma_, 'euclidean')
+            warnings.warn('Metric not set. Using default metric "euclidean"')
             print(np.unravel_index(flat_idx, (30, 30)))
 
     elif argv.tt:
