@@ -12,7 +12,7 @@ Classes:
     stft
 
 Functions:
-    fft                 Easy to use discrete fourier transform
+    fft:  One-sided Fast fourier transform for real input.
 """
 import matplotlib.pyplot as _plt
 import numpy as _np
@@ -30,9 +30,9 @@ def fft(sig: _Array, window: str = None, n_fft: int = None) -> _Array:
     This is a simple wrapper around `numpy.fft.rfft`.
 
     Args:
-        sig:       Input signal.
-        n_fft:     FFT length in samples.
-        window:    Name of window function.
+        sig:     Input signal.
+        n_fft:   FFT length in samples.
+        window:  Name of window function.
 
     Returns:
         FFT bins.
@@ -69,13 +69,13 @@ class Spectrum:
         """Create a new spectrum
 
         Args:
-            fps:      Sample rate.
-            window:   Name of window function.
-            n_fft:    FFT length.
-            lcf:      Lower cut-off frequency.
-            ucf:      Upper cut-off frequency.
-            ldb:    Lower dB boundary.
-            udb:    Upper db_boundary.
+            fps:     Sample rate.
+            window:  Name of window function.
+            n_fft:   FFT length.
+            lcf:     Lower cut-off frequency.
+            ucf:     Upper cut-off frequency.
+            ldb:     Lower dB boundary.
+            udb:     Upper db_boundary.
         """
         self._params = container.SpectrumParams(fps, window, n_fft, lcf,
             ucf, ldb, udb)
@@ -178,7 +178,7 @@ class Spectrum:
 
 
 class Spectrogram:
-    """Compute a spectrogram from an one-dimensional input signal."""
+    """Compute spectrogram of an one-dimensional input array."""
 
     # pylint: disable=too-many-instance-attributes, too-many-arguments
 
@@ -196,12 +196,12 @@ class Spectrogram:
         array is cropped.
 
         Args:
-            inp      (ndarray)    Input signal.
-            fps      (int)        Sampling frequency of input signal.
-            window   (str)        Name of window function.
-            n_perseg (int)        Number of samples per DFT.
-            hop_size (int)        Number of samples to shift the window.
-            n_fft    (int)        Number of FFT bins.
+            inp:       Input signal.
+            fps:       Sampling frequency of input signal.
+            window:    Name of window function.
+            n_perseg:  Number of samples per DFT.
+            hop_size:  Number of samples to shift the window.
+            n_fft:     Number of FFT bins.
         """
         self.inp_size = inp.size
         self.fps = fps
