@@ -7,21 +7,9 @@
 Classes:
     FeatureSpace
 """
-import dataclasses
 import json
 import csv as _csv
 from typing import Any, Dict, List, Optional, Tuple
-
-
-@dataclasses.dataclass()
-class SpectrumParams:
-    fps: int
-    window: str = None
-    n_fft: int = None
-    lcf: float = None
-    ucf: float = None
-    ldb: float = None
-    udb: float = None
 
 
 class NameSpace:
