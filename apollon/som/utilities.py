@@ -27,24 +27,24 @@ from apollon.types import Array
 def grid_iter(n_rows: int, n_cols: int) -> Iterator[Tuple[int, int]]:
     """Compute grid indices of an two-dimensional array.
 
-    Params:
-        n_rows    Number of array rows.
-        n_cols    Number of array columns.
+    Args:
+        n_rows:  Number of array rows.
+        n_cols:  Number of array columns.
 
-    Return:
+    Returns:
         Multi-index iterator.
     """
     return itertools.product(range(n_rows), range(n_cols))
 
 
 def grid(n_rows: int, n_cols: int) -> Array:
-    """Compute grid indices of an two-dimensional array.
+    """Compute grid indices of a two-dimensional array.
 
-    Params:
-        n_rows    Number of array rows.
-        n_cols    Number of array columns.
+    Args:
+        n_rows:  Number of array rows.
+        n_cols:  Number of array columns.
 
-    Return:
+    Returns:
         Two-dimensional array in which each row represents an multi-index.
     """
     return _np.array(list(grid_iter(n_rows, n_cols)))
@@ -57,7 +57,7 @@ def activation_map(som, **kwargs):
 
 
 def decrease_linear(start, step, stop=1):
-    '''Linearily decrease `start`  in `step` steps to `stop`.'''
+    """Linearily decrease ``start``  in ``step`` steps to ``stop``."""
     if step < 1 or not isinstance(step, int):
         raise ValueError('Param `step` must be int >= 1.')
     elif step == 1:
@@ -69,7 +69,7 @@ def decrease_linear(start, step, stop=1):
 
 
 def decrease_expo(start, step, stop=1):
-    '''Exponentially decrease `start`  in `step` steps to `stop`.'''
+    """Exponentially decrease ``start``  in ``step`` steps to ``stop``."""
     if step < 1 or not isinstance(step, int):
         raise ValueError('Param `step` must be int >= 1.')
     elif step == 1:
@@ -117,15 +117,15 @@ def best_match(weights: Array, inp: Array, metric: str):
 
 
 def umatrix(weights, dxy, metric='euclidean'):
-    """ Compute unified distance matrix.
+    """Compute unified distance matrix.
 
-    Params:
-        weights (ndarray)    SOM weights matrix.
-        dxy (tuple)
-        metric (str)         Metric to use.
+    Args:
+        weights:  SOM weights matrix.
+        dxy:
+        metric:   Metric to use.
 
-    Return:
-        (ndarray)    unified distance matrix.
+    Returns:
+        Unified distance matrix.
     """
     out = _np.empty(dxy, dtype='float64')
 
@@ -149,9 +149,9 @@ def init_simplex(n_features, n_units):
     natural numbers, so that the weight vector is reshapeable to a square
     matrix.
 
-    Params:
-        n_features    Number of features in each vector.
-        n_units       Number of units on the SOM.
+    Args:
+        n_features:  Number of features in each vector.
+        n_units:     Number of units on the SOM.
 
     Returns:
         Two-dimensional array of shape (n_units, n_features), in which each
@@ -173,3 +173,4 @@ def init_simplex(n_features, n_units):
     st_matrix = _np.hstack([_stats.dirichlet.rvs(alpha=a, size=n_units)
                             for a in alpha])
     return st_matrix
+
