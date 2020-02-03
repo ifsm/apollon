@@ -56,7 +56,8 @@ def activation_map(som, **kwargs):
     ax.imshow(_np.flipud(am), vmin=0, vmax=som.activation_map.max(), **kwargs)
 
 
-def decrease_linear(start, step, stop=1):
+def decrease_linear(start: float, step: float, stop: float = 1.0
+        ) -> Iterator[float]:
     """Linearily decrease ``start``  in ``step`` steps to ``stop``."""
     if step < 1 or not isinstance(step, int):
         raise ValueError('Param `step` must be int >= 1.')
@@ -68,7 +69,8 @@ def decrease_linear(start, step, stop=1):
             yield a * x + start
 
 
-def decrease_expo(start, step, stop=1):
+def decrease_expo(start: float, step: float,stop: float = 1.0
+        ) -> Iterator[float]:
     """Exponentially decrease ``start``  in ``step`` steps to ``stop``."""
     if step < 1 or not isinstance(step, int):
         raise ValueError('Param `step` must be int >= 1.')
