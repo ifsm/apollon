@@ -27,10 +27,12 @@ from . import container
 def fft(sig: _Array, window: str = None, n_fft: int = None) -> _Array:
     """Compute the normalized Discrete Fourier Transform for real input.
 
-    This is a simple wrapper around `numpy.fft.rfft`.
+    This is a simple wrapper around ``numpy.fft.rfft``. Input signal must
+    either be one-, or two dimensional. One-dimensional arrays are implicitly
+    promoted.
 
     Args:
-        sig:     Input signal.
+        sig:     Two-dimensional input array.
         n_fft:   FFT length in samples.
         window:  Name of window function.
 
@@ -40,6 +42,11 @@ def fft(sig: _Array, window: str = None, n_fft: int = None) -> _Array:
     Raises:
         AttributeError
     """
+    if sig.ndim > 2:
+        raise ValueError(f'Input array has {sig.ndim} dimensions. However,'
+                ' ``fft`` expects either one-, or two-dimensional arrays, where'
+                ' each column represents an independent signal.')
+
     sig = _np.atleast_2d(sig).astype('float64')
     n_sig = sig.shape[0]
 
