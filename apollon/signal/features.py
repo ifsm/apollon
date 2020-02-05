@@ -8,6 +8,8 @@ apollon/signal/features.py -- Feature extraction routines
 Functions:
     cdim           Fractal correlation dimension.
     correlogram    Windowed auto-correlation.
+    energy    Total signal energy.
+    rms    Root mean square.
     spectral_centroid
     spectral_spread
     spectral_flux
@@ -97,6 +99,52 @@ def correlogram(inp: _Array, wlen: int, n_delay: int,
     if total is True:
         return crr.sum(keepdims=True) / _np.prod(crr.shape)
     return crr
+
+
+def energy(sig: _Array) -> _Array:
+    """Total energy of time domain signal.
+
+    Args:
+        sig:  Time domain signal.
+
+    Returns:
+        Energy along fist axis.
+    """
+    return np.sum(np.square(np.abs(sig)), axis=0)
+
+
+def frms(bins: _Array, n_sig: int, window: str = None) -> _Array:
+    """Root meann square of signal energy estimate in the specrtal domain.
+
+    Args:
+        bins:    DFT bins.
+        n_sig:   Size of original signal.
+        window:  Window function applied to original signal.
+
+    Returns:
+        Estimate of signal energy along first axis.
+    """
+    vals = bins * n_sig
+    if n_sig % 2:
+        vals /= 2
+    else:
+        vals[:-1] /= 2
+    foo = np.sqrt(2*energy(vals)) / n_sig
+    if window:
+        foo /= rms(getattr(np, window)(n_sig))
+    return foo
+
+
+def rms(sig: _Array) -> _Array:
+    """Root mean square of time domain signal.
+
+    Args:
+        sig:  Time domain signal
+
+    Returns:
+        RMS of signal along first axis.
+    """
+    return np.sqrt(np.mean(np.square(np.abs(sig)), axis=0))
 
 
 def spectral_centroid(frqs: _Array, bins: _Array) -> _Array:
