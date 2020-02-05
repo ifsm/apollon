@@ -12,16 +12,16 @@ Classes:
     stft
 
 Functions:
-    fft                 Easy to use discrete fourier transform
+    fft:  One-sided Fast fourier transform for real input.
 """
 import matplotlib.pyplot as _plt
 import numpy as _np
 
-from . import features as _features
-from . import tools as _sigtools
-from .. import container
 from .. import _defaults
 from .. types import Array as _Array
+from . import features as _features
+from . import tools as _sigtools
+from . import container
 
 
 def fft(sig: _Array, window: str = None, n_fft: int = None) -> _Array:
@@ -30,9 +30,9 @@ def fft(sig: _Array, window: str = None, n_fft: int = None) -> _Array:
     This is a simple wrapper around `numpy.fft.rfft`.
 
     Args:
-        sig:       Input signal.
-        n_fft:     FFT length in samples.
-        window:    Name of window function.
+        sig:     Input signal.
+        n_fft:   FFT length in samples.
+        window:  Name of window function.
 
     Returns:
         FFT bins.
@@ -63,26 +63,19 @@ def fft(sig: _Array, window: str = None, n_fft: int = None) -> _Array:
 
 
 class Spectrum:
-    def __init__(self, fps: int = None, window: str = None, n_fft: int = None,
-            lcf: float = None, ucf: float = None,
-            ldb: float = None, udb: float = None) -> None:
-        """Create a new spectrum
+    def __init__(self, params: container.SpectrumParams) -> None:
+        """Create a new spectrum.
 
         Args:
-            fps:      Sample rate.
-            window:   Name of window function.
-            n_fft:    FFT length.
-            lcf:      Lower cut-off frequency.
-            ucf:      Upper cut-off frequency.
-            ldb:    Lower dB boundary.
-            udb:    Upper db_boundary.
+            params:  Configuration object.
         """
-        self._params = container.SpectrumParams(fps, window, n_fft, lcf,
-            ucf, ldb, udb)
+        if not isinstance(params, container.SpectrumParams):
+            raise TypeError('Expected type SpectrumParams')
+        self._params = params
         self._frqs = None
         self._bins = None
 
-    def fit(self, inp: _Array) -> None:
+    def transform(self, inp: _Array) -> None:
         inp = _np.atleast_2d(inp)
         if inp.ndim > 2:
             raise ValueError(f'Input array has {inp.dim} dimensions, but it '
@@ -101,6 +94,16 @@ class Spectrum:
         self._frqs = self._frqs[trim]
 
     @property
+    def abs(self) -> _Array:
+        """Compute magintude spectrum."""
+        return self.__abs__()
+
+    @property
+    def bins(self) -> _Array:
+        """Raw FFT bins."""
+        return self._bins
+
+    @property
     def d_frq(self):
         try:
             return self._frqs[1, 0] - self._frqs[0, 0]
@@ -108,39 +111,31 @@ class Spectrum:
             return None
 
     @property
-    def abs(self) -> _Array:
-        """Return trimmed and clipped magintude spectrum."""
-        return self.__abs__()
-
-    @property
-    def bins(self) -> _Array:
-        """Return rimmed FFT bins."""
-        return self._bins
-
-    @property
     def frqs(self) -> _Array:
-        """Return trimmed frequency axis."""
+        """Frequency axis."""
         return self._frqs
 
     @property
     def params(self) -> container.SpectrumParams:
-        """Return the parsed parameters."""
+        """Initial parameters."""
         return self._params
 
     @property
     def phase(self):
-        """Return phase spectrum."""
+        """Compute phase spectrum."""
         if self._bins is None:
             return None
         return _np.angle(self._bins)
 
     @property
     def power(self):
-        """Retrun power spectrum."""
+        """Compute power spectrum."""
         return _np.square(self.__abs__())
 
-    def centroid(self, power=True):
-        return _np.multiply(self.abs(), self.frqs[:, None]).sum() / self.abs().sum()
+    @property
+    def centroid(self):
+        """Compute spectral centroid."""
+        return _np.multiply(self.abs, self.frqs).sum() / self.abs.sum()
 
     def plot(self, fmt='-'):
         import matplotlib.pyplot as plt
@@ -177,8 +172,18 @@ class Spectrum:
         return 'Spectrum()'
 
 
-class Spectrogram:
-    """Compute a spectrogram from an one-dimensional input signal."""
+class Spectrogram(Spectrum):
+    def __init__(self, params) -> None:
+        """Create a new spectrogram"""
+        if not isinstance(params, container.SpectrogramParams):
+            raise TypeError('Expected SpectrogramParams')
+        self._params = params
+        self._bins = None
+        self._frqs = None
+
+
+class __Spectrogram__old:
+    """Compute spectrogram of an one-dimensional input array."""
 
     # pylint: disable=too-many-instance-attributes, too-many-arguments
 
@@ -196,12 +201,12 @@ class Spectrogram:
         array is cropped.
 
         Args:
-            inp      (ndarray)    Input signal.
-            fps      (int)        Sampling frequency of input signal.
-            window   (str)        Name of window function.
-            n_perseg (int)        Number of samples per DFT.
-            hop_size (int)        Number of samples to shift the window.
-            n_fft    (int)        Number of FFT bins.
+            inp:       Input signal.
+            fps:       Sampling frequency of input signal.
+            window:    Name of window function.
+            n_perseg:  Number of samples per DFT.
+            hop_size:  Number of samples to shift the window.
+            n_fft:     Number of FFT bins.
         """
         self.inp_size = inp.size
         self.fps = fps
