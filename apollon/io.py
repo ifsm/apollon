@@ -18,6 +18,7 @@ Functions:
 """
 from contextlib import contextmanager as _contextmanager
 import json as _json
+import jsonschema as _jsonschema
 import pathlib as _pathlib
 import pickle
 import typing
@@ -26,6 +27,17 @@ import numpy as _np
 
 from . import types as _types
 from . import container
+
+
+ndarray = {
+    'type': 'object',
+    'properties': {
+        '__ndarray__': {'type': 'boolean'},
+        '__dtype__': {'type': 'string'},
+        'data': {'type': 'array'}
+    }
+}
+
 
 class ArrayEncoder(_json.JSONEncoder):
     # pylint: disable=E0202
@@ -48,25 +60,42 @@ class ArrayEncoder(_json.JSONEncoder):
         if isinstance(o, _np.ndarray):
             out = {'__ndarray__': True,
                    '__dtype__': o.dtype.str,
-                   'data': o.astype('float64').tolist()}
+                   'data': o.tolist()}
             return out
         return _json.JSONEncoder.default(self, o)
 
 
-def decode_array(json_data: dict) -> typing.Any:
+def encode_array(arr: _np.ndarray) -> typing.Dict[bool, str, list]:
+    """Transform an numpy array to a JSON-serializable dict.
+
+    Array must have a numerical dtype. Datetime objects are currently
+    not supported.
+
+    Args:
+        arr:    Numpy ndarray.
+
+    Returns:
+        JSON-serializable dict.
+    """
+    return {'__ndarray__': True, '__dtype__': arr.dtype, 'data': arr.tolist()}
+
+
+def decode_array(inp: dict) -> typing.Any:
     """Properly decodes numpy arrays from a JSON data stream.
 
     This method need to be called on the return value of ``json.load`` or ``json.loads``.
 
     Args:
-        json_data (dict)    JSON formatted dict to encode.
+        inp:  JSON formatted dict to encode.
 
     Returns:
-        (any)
+        Numpy array or raw data.
     """
-    if '__ndarray__' in json_data and '__dtype__' in json_data:
-        return _np.array(json_data['data'], dtype=json_data['__dtype__'])
-    return json_data
+    try:
+        _jsonschema.validate(inp, ndarray, _jsonschema.Draft7Validator)
+    except _jsonschema.ValidationError:
+        return inp
+    return _np.array(inp['data'], dtype=inp['__dtype__'])
 
 
 def generate_outpath(in_path: str, out_path: str = None,
@@ -141,7 +170,7 @@ def dump_json(obj, path: _types.PathType = None) -> None:
         path (PathType)    Output file path.
     """
     if path is None:
-        print(_json.dumps(obj, cls=ArrayEncoder))
+        return _json.dumps(obj, cls=ArrayEncoder)
     else:
         path = _pathlib.Path(path)
         with path.open('w') as json_file:
