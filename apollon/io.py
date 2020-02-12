@@ -1,8 +1,7 @@
-# Licensed under the terms of the BSD-3-Clause license.
-# Copyright (C) 2019 Michael Blaß
-# mblass@posteo.net
-
 """apollon/io.py -- General I/O functionallity.
+
+Licensed under the terms of the BSD-3-Clause license.
+Copyright (C) 2019 Michael Blaß, mblass@posteo.net
 
 Classes:
     ArrayEncoder            Serialize numpy array to JSON.
@@ -11,9 +10,12 @@ Classes:
 Functions:
     array_print_opt         Set format for printing numpy arrays.
     decode_ndarray          Decode numpy array from JSON.
+    dump_json               Serialize objects to JSON.
     encode_ndarray          Encode numpy array to JSON.
     files_in_folder         Iterate over all files in given folder.
+    generate_outpath        Compute path for feature output.
     load                    Load pickled data.
+    load_json               Load JSON data including numpy arrays.
     repath                  Change path but keep file name.
     save                    Pickle some data.
 """
@@ -90,7 +92,6 @@ def encode_ndarray(arr: _np.ndarray) -> dict:
     """
     return {'__ndarray__': True, '__dtype__': arr.dtype.str,
             'data': arr.tolist()}
-
 
 
 
@@ -230,12 +231,11 @@ def array_print_opt(*args, **kwargs):
     """Set print format for numpy arrays.
 
     Thanks to unutbu:
-    https://stackoverflow.com/questions/2891790/how-to-pretty-print-a-numpy-array-without-
-    scientific-notation-and-with-given-pre
+    https://stackoverflow.com/questions/2891790/how-to-pretty-print-a-
+    numpy-array-without-scientific-notation-and-with-given-pre
     """
     std_options = _np.get_printoptions()
     _np.set_printoptions(*args, **kwargs)
-
     try:
         yield
     finally:
