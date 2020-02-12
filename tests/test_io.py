@@ -5,6 +5,8 @@ Test cases for IO module.
 import json
 from pathlib import Path
 import unittest
+
+import numpy as np
 from hypothesis import given
 import hypothesis.extra.numpy as htn
 
@@ -35,26 +37,28 @@ class TestWavFileAccessControl(unittest.TestCase):
             MockFileLoader(self.not_a_file)
             MockFileLoader(self.not_a_wav_file)
 
-"""
-class Test(unittest.TestCase):
-    def test_encode_arrays(self, arr):
-        trans = aio.dump_json(arr)
-        restored = json.loads(trans, object_hook=aio.decode_array)
-        data = np.allclose(trans, restored, atol=0, btol=0, equal_nan=True)
-        self.assertTrue(data)
-        self.assertTrue(arr.dtype.type is restored.dtype.type)
-        self.assertTrue(arr.shape == restored.shape)
-"""
 
-class TestEncodeDecodeArray(unittest.TestCase):
+class TestEncodeNdarray(unittest.TestCase):
+    @given(htn.arrays(htn.floating_dtypes(), htn.array_shapes()))
+    def test_encode(self, arr):
+        encoded = aio.encode_ndarray(arr)
+        self.assertTrue('__ndarray__' in encoded)
+        self.assertTrue(encoded['__ndarray__'])
+        self.assertTrue('__dtype__' in encoded)
+        self.assertTrue(isinstance(encoded['__dtype__'], str))
+        self.assertTrue('data' in encoded)
+        self.assertTrue(isinstance(encoded['data'], list))
+
+
+class TestDecodeNdarray(unittest.TestCase):
     @given(htn.arrays(htn.floating_dtypes(), htn.array_shapes()))
     def test_arrays(self, arr):
-        restored = aio.decode_array(aio.encode_array(arr))
-        self.assertTrue(np.array_equal(arr, restored))
+        restored = aio.decode_ndarray(aio.encode_ndarray(arr))
+        self.assertTrue(arr.dtype.type is restored.dtype.type)
+        self.assertTrue(arr.shape == restored.shape)
+        self.assertTrue(np.allclose(arr, restored,
+            rtol=0, atol=0, equal_nan=True))
 
-
-class TestDecode_array(unittest.TestCase):
-    pass
 
 if __name__ == '__main__':
     unittest.main()

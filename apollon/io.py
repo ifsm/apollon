@@ -10,7 +10,8 @@ Classes:
 
 Functions:
     array_print_opt         Set format for printing numpy arrays.
-    decode_array            Decode numpy array from JSON.
+    decode_ndarray          Decode numpy array from JSON.
+    encode_ndarray          Encode numpy array to JSON.
     files_in_folder         Iterate over all files in given folder.
     load                    Load pickled data.
     repath                  Change path but keep file name.
@@ -21,7 +22,7 @@ import json as _json
 import jsonschema as _jsonschema
 import pathlib as _pathlib
 import pickle
-import typing
+from typing import Any, Union
 
 import numpy as _np
 
@@ -45,57 +46,52 @@ class ArrayEncoder(_json.JSONEncoder):
     # https://github.com/PyCQA/pylint/issues/414
     """Encode np.ndarrays to JSON.
 
-    Simply set the `cls` parameter of the dump method to this class.
+    Simply set the ``cls`` parameter of the dump method to this class.
     """
-    def default(self, o):
-        """Custon default JSON encoder. Properly handles numpy arrays and JSONEncoder.default
-        for all other types.
+    def default(self, inp):
+        """Custon SON encoder for numpy arrays. Other types are passed
+        on to ``JSONEncoder.default``.
 
-        Params:
-            o (any)  Object to encode.
+        Args:
+            inp:  Object to encode.
 
         Returns:
-            (dict)
+            JSON-serializable dictionary.
         """
-        if isinstance(o, _np.ndarray):
-            out = {'__ndarray__': True,
-                   '__dtype__': o.dtype.str,
-                   'data': o.tolist()}
-            return out
-        return _json.JSONEncoder.default(self, o)
+        if isinstance(obj, _np.ndarray):
+            return encode_ndarray(obj)
+        return _json.JSONEncoder.default(self, obj)
 
 
-def encode_array(arr: _np.ndarray) -> typing.Dict[bool, str, list]:
+def decode_ndarray(arr: dict) -> _np.ndarray:
+    """Decode numerical numpy arrays from a JSON data stream.
+
+    Args:
+        arr:  dict adhering ``ndarray`` schema.
+
+    Returns:
+        Numpy array.
+    """
+    _jsonschema.validate(arr, ndarray, _jsonschema.Draft7Validator)
+    return _np.array(arr['data'], dtype=arr['__dtype__'])
+
+
+def encode_ndarray(arr: _np.ndarray) -> dict:
     """Transform an numpy array to a JSON-serializable dict.
 
     Array must have a numerical dtype. Datetime objects are currently
     not supported.
 
     Args:
-        arr:    Numpy ndarray.
+        arr:  Numpy ndarray.
 
     Returns:
-        JSON-serializable dict.
+        JSON-serializable dict adhering the ``ndarray`` schema.
     """
-    return {'__ndarray__': True, '__dtype__': arr.dtype, 'data': arr.tolist()}
+    return {'__ndarray__': True, '__dtype__': arr.dtype.str,
+            'data': arr.tolist()}
 
 
-def decode_array(inp: dict) -> typing.Any:
-    """Properly decodes numpy arrays from a JSON data stream.
-
-    This method need to be called on the return value of ``json.load`` or ``json.loads``.
-
-    Args:
-        inp:  JSON formatted dict to encode.
-
-    Returns:
-        Numpy array or raw data.
-    """
-    try:
-        _jsonschema.validate(inp, ndarray, _jsonschema.Draft7Validator)
-    except _jsonschema.ValidationError:
-        return inp
-    return _np.array(inp['data'], dtype=inp['__dtype__'])
 
 
 def generate_outpath(in_path: str, out_path: str = None,
@@ -176,6 +172,7 @@ def dump_json(obj, path: _types.PathType = None) -> None:
         with path.open('w') as json_file:
             _json.dump(obj, json_file, cls=ArrayEncoder)
 
+
 def load_json(path: _types.PathType = None) -> None:
     """Load JSON file.
 
@@ -187,7 +184,7 @@ def load_json(path: _types.PathType = None) -> None:
     """
     path = _pathlib.Path(path)
     with path.open('r') as fobj:
-        data = _json.load(fobj, object_hook=decode_array)
+        data = _json.load(fobj, object_hook=_ndarray_hook)
     return container.FeatureSpace(**data)
 
 
@@ -245,7 +242,7 @@ def array_print_opt(*args, **kwargs):
         _np.set_printoptions(**std_options)
 
 
-def load(path: _types.PathType) -> typing.Any:
+def load(path: _types.PathType) -> Any:
     """Load a pickled file.
 
     Args:
@@ -283,7 +280,7 @@ def repath(current_path: _types.PathType, new_path: _types.PathType,
     return new_path
 
 
-def save(data: typing.Any, path: _types.PathType):
+def save(data: Any, path: _types.PathType):
     """Pickles data to path.
 
     Args:
@@ -293,3 +290,11 @@ def save(data: typing.Any, path: _types.PathType):
     path = _pathlib.Path(path)
     with path.open('wb') as file:
         pickle.dump(data, file)
+
+
+def _ndarray_hook(inp: dict) -> Union[_np.ndarray, dict]:
+    try:
+        arr = decode_ndarray(inp)
+        return arr
+    except _jsonschema.ValidationError:
+        return dict
