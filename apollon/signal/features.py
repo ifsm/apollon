@@ -8,6 +8,8 @@ apollon/signal/features.py -- Feature extraction routines
 Functions:
     cdim           Fractal correlation dimension.
     correlogram    Windowed auto-correlation.
+    energy    Total signal energy.
+    rms    Root mean square.
     spectral_centroid
     spectral_spread
     spectral_flux
@@ -26,8 +28,7 @@ from . import tools as _sigtools
 from .. import segment as _segment
 from .. import tools
 from .. types import Array as _Array
-from .. import container
-from .  import critical_bands as _cb
+from . import critical_bands as _cb
 from .. audio import fti16
 from .. import _defaults
 
@@ -64,17 +65,18 @@ def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
             inp = fti16(inp)
     elif mode == 'blass':
         raise NotImplementedError
-        #cdim_func = fractal.cdim
+        # cdim_func = fractal.cdim
     else:
         raise ValueError(f'Unknown mode "{mode}". Expected either "bader", \
                 or "blass"')
 
-    cdim = _np.array([cdim_func(seg, delay, m_dim, n_bins, scaling_size)
-            for seg in inp])
-    return _np.nan_to_num(cdim, posinf=0, neginf=0)
+    dims = _np.array([cdim_func(seg, delay, m_dim, n_bins, scaling_size)
+                      for seg in inp])
+    return _np.nan_to_num(dims)
+
 
 def correlogram(inp: _Array, wlen: int, n_delay: int,
-        total: bool = False) -> _Array:
+                total: bool = False) -> _Array:
     """Windowed autocorrelation of ``inp``.
 
     This function computes the autocorrelation of a ``wlen``-sized
@@ -97,6 +99,54 @@ def correlogram(inp: _Array, wlen: int, n_delay: int,
     if total is True:
         return crr.sum(keepdims=True) / _np.prod(crr.shape)
     return crr
+
+
+def energy(sig: _Array) -> _Array:
+    """Total energy of time domain signal.
+
+    Args:
+        sig:  Time domain signal.
+
+    Returns:
+        Energy along fist axis.
+    """
+    if not _np.isfinite(sig).all():
+        raise ValueError('Input ``sig`` contains NaNs or infinite values.')
+    return _np.sum(_np.square(_np.abs(sig)), axis=0, keepdims=True)
+
+
+def frms(bins: _Array, n_sig: int, window: str = None) -> _Array:
+    """Root meann square of signal energy estimate in the specrtal domain.
+
+    Args:
+        bins:    DFT bins.
+        n_sig:   Size of original signal.
+        window:  Window function applied to original signal.
+
+    Returns:
+        Estimate of signal energy along first axis.
+    """
+    vals = bins * n_sig
+    if n_sig % 2:
+        vals /= 2
+    else:
+        vals[:-1] /= 2
+    rms_ = _np.sqrt(2*energy(vals)) / n_sig
+    if window:
+        rms_ /= rms(getattr(_np, window)(n_sig))
+    return rms_
+
+
+def rms(sig: _Array) -> _Array:
+    """Root mean square of time domain signal.
+
+    Args:
+        sig:  Time domain signal
+
+    Returns:
+        RMS of signal along first axis.
+    """
+    return _np.sqrt(_np.mean(_np.square(_np.abs(sig)), axis=0))
 
 
 def spectral_centroid(frqs: _Array, bins: _Array) -> _Array:
@@ -143,7 +193,7 @@ def spectral_spread(frqs: _Array, bins: _Array) -> _Array:
     """
     deviation = _np.power(frqs-spectral_centroid(frqs, bins), 2)
     return _np.sqrt(tools.fsum(deviation*_power_distr(bins), axis=0,
-        keepdims=True))
+                               keepdims=True))
 
 
 def spl(amps: _Array, total: bool = False, ref: float = None) -> _Array:
@@ -184,7 +234,7 @@ def splc(frqs: _Array, amps: _Array, total: bool = False,
     Returns:
         C-weighted sound pressure level.
     """
-    return spl(_sigtools.c_weighting(frqs)*amps, total)
+    return spl(_sigtools.c_weighting(frqs)*amps, total, ref)
 
 
 def log_attack_time(inp: _Array, fps: int, ons_idx: _Array,
@@ -226,7 +276,7 @@ def loudness(frqs: _Array, bins: _Array) -> _Array:
 
 
 def roughness_helmholtz(frqs: _Array, bins: _Array, frq_max: float,
-        total: bool = True) -> _Array:
+                        total: bool = True) -> _Array:
     frq_res = (frqs[1]-frqs[0]).item()
     kernel = _roughnes_kernel(frq_res, frq_max)
     out = _np.correlate(bins.squeeze(), kernel, mode='same')[:, None]
@@ -236,7 +286,8 @@ def roughness_helmholtz(frqs: _Array, bins: _Array, frq_max: float,
 
 
 def sharpness(frqs: _Array, bins: _Array) -> _Array:
-    """Calculate a measure for the perception of auditory sharpness from a spectrogram.
+    """Calculate a measure for the perception of auditory sharpness from a
+    spectrogram.
 
     Args:
         frqs:    Frequencies.
@@ -259,7 +310,7 @@ def _power_distr(bins: _Array) -> _Array:
         NxM array of spectral densities.
     """
     total_power = tools.fsum(bins, axis=0, keepdims=True)
-    total_power[total_power==0] = 1
+    total_power[total_power == 0] = 1
     return bins / total_power
 
 
@@ -278,4 +329,3 @@ def _roughnes_kernel(frq_res: float, frq_max: float) -> _Array:
     norm = frm * _np.exp(-1)
     base = _np.abs(_np.arange(-bin_idx, bin_idx+1)) * frq_res
     return base / norm * _np.exp(-base/frm)
-

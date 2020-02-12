@@ -13,15 +13,23 @@ class TestFft(unittest.TestCase):
         self.fps = 9000
         self.frqs = np.array([440, 550, 660, 880, 1760])
         self.amps = np.array([1., .5, .25, .1, .05])
-        self.signal = sinusoid(self.frqs, self.amps, fps=self.fps)
-        self.signal_comp = sinusoid(self.frqs, self.amps, fps=self.fps, comps=True)
+        self.signal = sinusoid(self.frqs, self.amps, fps=self.fps, comps=True)
 
-    def test_fft_1d(self):
+    def test_input_shape(self):
+        with self.assertRaises(ValueError):
+            spectral.fft(np.random.randint(2, 100, (20, 20, 20)))
+
+    def test_window_exists(self):
+        with self.assertRaises(AttributeError):
+            spectral.fft(self.signal, window='whatever')
+
+    def test_nfft(self):
+        for val in np.random.randint(100, 44100, 10):
+            bins = spectral.fft(self.signal, n_fft=val)
+            self.assertEqual(bins.shape[0], val//2+1)
+
+    def test_transform(self):
         bins = np.absolute(spectral.fft(self.signal))
-        self.assertTrue(np.allclose(bins[self.frqs].T, self.amps))
-
-    def test_fft_2d(self):
-        bins = np.absolute(spectral.fft(self.signal_comp))
         idx = np.arange(self.frqs.size, dtype=int)
         self.assertTrue(np.allclose(bins[self.frqs, idx], self.amps))
 
