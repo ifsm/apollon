@@ -23,31 +23,18 @@ from . types import Array, PathType
 
 
 class AudioFile:
-    """Representation of an audio file.
-
+    """Representation of an audio file."""
+    def __init__(self, path: PathType) -> None:
+        """Load an audio file.
         Args:
             path:   Path to file.
-            norm:   If True, signal will be normalized ]-1, 1[.
-            mono:   If True, mixdown all channels.
-    """
-    def __init__(self, path: PathType, norm: bool = False,
-                 mono: bool = True) -> None:
-        """Load an audio file."""
-
+        """
         self._path = _pathlib.Path(path)
         self._file = _sf.SoundFile(self.path)
-        self.norm = norm
-        self.mono = mono
 
     @property
     def data(self) -> np.ndarray:
-        data = self._file.read(always_2d=True)
-        if self.mono and self.n_channels > 1:
-            data = data.sum(axis=1, keepdims=True) / self.n_channels
-        if self.norm:
-            data = _ast.normalize(data)
-        self._file.seek(0)
-        return data
+        return self.read()
 
     @property
     def n_channels(self) -> int:
@@ -86,7 +73,44 @@ class AudioFile:
         return self.__str__()
 
     def __len__(self):
-        return self.size
+        return self.n_frames
+
+    def read(self, n_frames: int = None, offset: int = None, norm: bool = False,
+             mono: bool = True, dtype: str = 'float64') -> np.ndarray:
+        """Read from audio file.
+
+        Args:
+            n_frames:  Number of frames to read.
+                       If negative, file is read until EOF.
+            offset:    Start position for reading.
+            norm:      If ``True``, normalize the data.
+            mono:      If ``True``, mixdown all channels.
+            dtype:     Dtype of output array.
+
+        Returns:
+            Two-dimensional numpy array of shape (n_frames, n_channels).
+        """
+        n_frames = n_frames or -1
+        offset = offset or 0
+        if offset >= 0:
+            self._file.seek(offset)
+            data = self._read(n_frames, dtype=dtype)
+        else:
+            data = np.zeros((n_frames, self.n_channels))
+            n_to_read = offset + n_frames
+            if n_to_read > 0:
+                self._file.seek(0)
+                data[-n_to_read:] = self._read(n_to_read, dtype=dtype)
+
+        if mono and self.n_channels > 1:
+            data = data.sum(axis=1, keepdims=True) / self.n_channels
+        if norm:
+            data = _ast.normalize(data)
+        return data
+
+    def _read(self, n_frames: int, dtype: str = 'float64') -> np.ndarray:
+        return self._file.read(n_frames, dtype=dtype, always_2d=True,
+                               fill_value=0)
 
 
 def fti16(inp: Array) -> Array:
@@ -101,16 +125,13 @@ def fti16(inp: Array) -> Array:
     return np.clip(np.floor(inp*2**15), -2**15, 2**15-1).astype('int16')
 
 
-def load_audio(path: PathType, norm: bool = False, mono: bool = True
-          ) -> AudioFile:
+def load_audio(path: PathType) -> AudioFile:
     """Load an audio file.
 
     Args:
-        path:   Path to audio file.
-        norm:   True if data should be normalized.
-        mono:   If True, mixdown channels.
+        path:  Path to audio file.
 
     Return:
         Audio file representation.
     """
-    return AudioFile(path, norm, mono)
+    return AudioFile(path)
