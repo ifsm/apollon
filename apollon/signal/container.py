@@ -1,8 +1,7 @@
-# Licensed under the terms of the BSD-3-Clause license.
-# Copyright (C) 2019 Michael Blaß
-# mblass@posteo.net
-
 """apollon/spectral/container.py
+
+Licensed under the terms of the BSD-3-Clause license.
+Copyright (C) 2019 Michael Blaß, mblass@posteo.net
 """
 from dataclasses import dataclass
 
@@ -32,4 +31,3 @@ class SpectrumParams(LimiterParams, FftParams):
 @dataclass
 class SpectrogramParams(LimiterParams, SegmentParams, FftParams):
     pass
-

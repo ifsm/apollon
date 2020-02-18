@@ -1,26 +1,75 @@
-#!/usr/bin/env python3
-
 import unittest
 import numpy as np
 
-from apollon.audio import load_audio, fti16
-from apollon.types import Array
+from apollon.audio import AudioFile
 
 
-class Test_ModulAudio(unittest.TestCase):
+class TestAudioFileReadMono(unittest.TestCase):
     def setUp(self):
-        self.snd = load_audio('audio/beat.wav')
+        self.snd = AudioFile('audio/beat.wav')
+        self.ref = self.snd._file.read(always_2d=True)
 
-    def test_AudioData(self):
-        self.assertTrue(isinstance(self.snd.fps, int))
-        self.assertTrue(isinstance(self.snd.data, Array))
+    def test_read_raw_multi(self):
+        data = self.snd.read(-1, norm=False, mono=False)
+        self.assertTrue(np.array_equal(self.ref, data))
 
-    def test_fti16(self):
-        res = fti16(self.snd.data)
-        self.assertTrue(isinstance(res, Array))
-        self.assertTrue(res.dtype == 'int16')
-        self.assertTrue(self.snd.data.shape == res.shape)
 
+    def test_read_raw_mono(self):
+        ref = self.ref.sum(axis=1, keepdims=True) / self.ref.shape[1]
+        data = self.snd.read(norm=False, mono=True)
+        self.assertTrue(np.array_equal(ref, data))
+
+    def test_read_norm_multi(self):
+        ref = self.ref / self.ref.max(axis=0, keepdims=True)
+        data = self.snd.read(norm=True, mono=False)
+        self.assertTrue(np.array_equal(ref, data))
+
+    def test_read_norm_mono(self):
+        ref = self.ref.sum(axis=1, keepdims=True) / self.ref.shape[1]
+        ref /= self.ref.max()
+        data = self.snd.read(norm=True, mono=True)
+        self.assertTrue(np.array_equal(ref, data))
+
+    def tearDown(self):
+        self.snd.close()
+
+
+class TestAudioFileReadMultiChannel(unittest.TestCase):
+    def setUp(self):
+        self.snd = AudioFile('audio/beat_5ch.wav')
+        self.ref = self.snd._file.read(always_2d=True)
+
+    def test_read_raw_multi(self):
+        data = self.snd.read(norm=False, mono=False)
+        self.assertTrue(np.array_equal(self.ref, data))
+
+    def test_read_raw_mono(self):
+        ref = self.ref.sum(axis=1, keepdims=True) / self.ref.shape[1]
+        data = self.snd.read(norm=False, mono=True)
+        self.assertTrue(np.array_equal(ref, data))
+
+    def test_read_norm_multi(self):
+        ref = self.ref / self.ref.max(axis=0, keepdims=True)
+        data = self.snd.read(norm=True, mono=False)
+        self.assertTrue(np.array_equal(ref, data))
+
+    def test_read_norm_mono(self):
+        ref = self.ref.sum(axis=1, keepdims=True) / self.ref.shape[1]
+        ref /= self.ref.max()
+        data = self.snd.read(norm=True, mono=True)
+        self.assertTrue(np.array_equal(ref, data))
+
+    def tearDown(self):
+        self.snd.close()
+
+
+"""
+def test_fti16(self):
+    res = fti16(self.snd_mono.data)
+    self.assertTrue(isinstance(res, Array))
+    self.assertTrue(res.dtype == 'int16')
+    self.assertTrue(self.snd_mono.data.shape == res.shape)
+"""
 
 if __name__ == '__main__':
     unittest.main()

@@ -29,6 +29,7 @@ wheels/
 .ipynb_checkpoints
 .mypy_cache
 .apollon-venv/
+notebooks/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
