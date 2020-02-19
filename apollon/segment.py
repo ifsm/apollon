@@ -11,6 +11,17 @@ from . types import Array as _Array
 
 
 @dataclass
+class SegmentParams:
+    """Encapsulates segmentation parameters."""
+    n_perseg: int
+    n_overlap: int
+    norm: bool = False
+    mono: bool = True
+    expand: bool = True
+    dtype: bool = 'float64'
+
+
+@dataclass
 class Segment:
     """Encapsulates audio segment data and meta data."""
     idx: int
