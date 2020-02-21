@@ -1,7 +1,8 @@
-#!/usr/bin/env python3
-
 import unittest
 import numpy as np
+
+from hypothesis import given
+from hypothesis.strategies import integers
 
 from apollon.signal import container
 from apollon.signal import spectral
@@ -20,13 +21,13 @@ class TestFft(unittest.TestCase):
             spectral.fft(np.random.randint(2, 100, (20, 20, 20)))
 
     def test_window_exists(self):
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(ValueError):
             spectral.fft(self.signal, window='whatever')
 
-    def test_nfft(self):
-        for val in np.random.randint(100, 44100, 10):
-            bins = spectral.fft(self.signal, n_fft=val)
-            self.assertEqual(bins.shape[0], val//2+1)
+    @given(integers(min_value=1, max_value=44100))
+    def test_nfft(self, n_fft):
+        bins = spectral.fft(self.signal, n_fft=n_fft)
+        self.assertEqual(bins.shape[0], n_fft//2+1)
 
     def test_transform(self):
         bins = np.absolute(spectral.fft(self.signal))

@@ -28,7 +28,7 @@ wheels/
 *.ipynb
 .ipynb_checkpoints
 .mypy_cache
-.apollon-venv/
+.apollon-devel/
 notebooks/
 
 # PyInstaller
