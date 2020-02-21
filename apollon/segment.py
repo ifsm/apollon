@@ -18,7 +18,7 @@ class SegmentParams:
     norm: bool = False
     mono: bool = True
     expand: bool = True
-    dtype: bool = 'float64'
+    dtype: str = 'float64'
 
 
 @dataclass
@@ -32,7 +32,45 @@ class Segment:
     data: _np.ndarray
 
 
-class Segments:
+class BlockSegment:
+    """Segementation"""
+    def __init__(self, n_perseg: int, n_overlap: int, extend=True,
+                 pad=True) -> None:
+        """Segment input
+
+        Input must be one-dimensional.
+
+        Args:
+            n_perseg:  Samples per segment.
+            n_overlap: Overlap in samples.
+            extend:    Extend a half window at start and end.
+            pad:       Pad extension.
+        """
+        self.n_perseg = n_perseg
+        self.n_overlap = n_overlap
+        self.step = self.n_perseg - self.n_overlap
+        self._extend = True
+        self._pad = True
+        self._ext_len = 0
+        self._pad_len = 0
+
+    def transform(self, data: _np.ndarray) -> _np.ndarray:
+        """Apply segmentation."""
+        n_sig = data.shape[0]
+
+        if self._extend:
+            self._ext_len = self.n_perseg // 2
+        if self._pad:
+            self._pad_len = (-(n_sig-self.n_perseg) % self.step) % self.n_perseg
+        data = _np.pad(data, (self._ext_len, self._ext_len+self._pad_len))
+
+        step = self.n_perseg - self.n_overlap
+        new_shape = data.shape[:-1] + ((data.shape[-1] - self.n_overlap) // self.step, self.n_perseg)
+        new_strides = data.strides[:-1] + (step * data.strides[-1], data.strides[-1])
+        return _np.lib.stride_tricks.as_strided(data, new_shape, new_strides, writeable=False).T
+
+
+class IterSegments:
     """Read segments from audio file."""
     def __init__(self, snd: AudioFile, n_perseg: int, n_overlap: int,
                  norm: bool = False, mono: bool = True,
