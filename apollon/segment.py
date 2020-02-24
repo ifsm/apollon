@@ -32,11 +32,11 @@ class Segment:
     data: _np.ndarray
 
 
-class BlockSegment:
+class Segments:
     """Segementation"""
     def __init__(self, n_perseg: int, n_overlap: int, extend=True,
                  pad=True) -> None:
-        """Segment input
+        """Divide a one-dimensional array into possibly overlapping segments.
 
         Input must be one-dimensional.
 
@@ -60,8 +60,10 @@ class BlockSegment:
 
         if self._extend:
             self._ext_len = self.n_perseg // 2
+
         if self._pad:
             self._pad_len = (-(n_sig-self.n_perseg) % self.step) % self.n_perseg
+
         data = _np.pad(data, (self._ext_len, self._ext_len+self._pad_len))
 
         step = self.n_perseg - self.n_overlap
@@ -70,7 +72,7 @@ class BlockSegment:
         return _np.lib.stride_tricks.as_strided(data, new_shape, new_strides, writeable=False).T
 
 
-class IterSegments:
+class LazySegments:
     """Read segments from audio file."""
     def __init__(self, snd: AudioFile, n_perseg: int, n_overlap: int,
                  norm: bool = False, mono: bool = True,

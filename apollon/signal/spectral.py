@@ -70,7 +70,7 @@ class Spectrum:
         Args:
             params:  Configuration object.
         """
-        if not isinstance(params, container.SpectrumParams):
+        if not isinstance(params, container.FftParams):
             raise TypeError('Expected type SpectrumParams')
         self._params = params
         self._frqs = None
@@ -177,3 +177,13 @@ class Spectrum:
 
     def __repr__(self):
         return 'Spectrum()'
+
+
+class Spectrogram(Spectrum):
+    """Spectra of consecutive data segments."""
+    def __init__(self, params: container.SpectrogramParams) -> None:
+        super().__init__(params)
+
+    def transform(self, data: _np.ndarray) -> None:
+        segmenter = BlockSegment(self.params.n_perseg, self.params.n_overlap,
+                                 self.params.extend, self.params.pad)

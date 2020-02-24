@@ -21,8 +21,10 @@ class LimiterParams:
 
 @dataclass
 class SegmentParams:
-    n_per_seg: int = 512
+    n_perseg: int = 512
     n_overlap: int = 256
+    extend: bool = True
+    pad: bool = True
 
 @dataclass
 class SpectrumParams(LimiterParams, FftParams):
