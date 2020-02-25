@@ -5,12 +5,8 @@ Copyright (C) 2019 Michael Blaß, mblass@posteo.net
 """
 from dataclasses import dataclass
 from typing import Union
+from .. segment import SegmentationParams
 
-@dataclass
-class FftParams:
-    fps: int
-    n_fft: Union[int, None] = None
-    window: Union[str, None] = None
 
 @dataclass
 class LimiterParams:
@@ -19,15 +15,14 @@ class LimiterParams:
     ldb: Union[float, None] = None
     udb: Union[float, None] = None
 
+
 @dataclass
-class SegmentParams:
-    n_per_seg: int = 512
+class STParams:
+    """Parameter set for spectral transforms."""
+    fps: int
+    window: str = 'hamming'
+    n_perseg: int = 512
     n_overlap: int = 256
-
-@dataclass
-class SpectrumParams(LimiterParams, FftParams):
-    pass
-
-@dataclass
-class SpectrogramParams(LimiterParams, SegmentParams, FftParams):
-    pass
+    n_fft: Union[int, None] = None
+    extend: bool = True
+    pad: bool = True
