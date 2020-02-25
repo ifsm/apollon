@@ -11,7 +11,7 @@ from . types import Array as _Array
 
 
 @dataclass
-class SegmentParams:
+class LazySegmentParams:
     """Encapsulates segmentation parameters."""
     n_perseg: int
     n_overlap: int
@@ -19,6 +19,25 @@ class SegmentParams:
     mono: bool = True
     expand: bool = True
     dtype: str = 'float64'
+
+
+@dataclass
+class SegmentationParams:
+    """Parameters for Segmentation."""
+    n_perseg: int = 512
+    n_overlap: int = 256
+    extend: bool = True
+    pad: bool = True
+
+
+@dataclass
+class SegmentsParams:
+    """Parameters for Segments."""
+    n_perseg: int
+    n_overlap: int
+    n_frames: int
+    extend: int
+    pad: int
 
 
 @dataclass
@@ -32,7 +51,7 @@ class Segment:
     data: _np.ndarray
 
 
-class Segments:
+class Segmentation:
     """Segementation"""
     def __init__(self, n_perseg: int, n_overlap: int, extend=True,
                  pad=True) -> None:
@@ -48,28 +67,56 @@ class Segments:
         """
         self.n_perseg = n_perseg
         self.n_overlap = n_overlap
-        self.step = self.n_perseg - self.n_overlap
-        self._extend = True
-        self._pad = True
+        self._extend = extend
+        self._pad = pad
         self._ext_len = 0
         self._pad_len = 0
 
     def transform(self, data: _np.ndarray) -> _np.ndarray:
         """Apply segmentation."""
         n_sig = data.shape[0]
+        step = self.n_perseg - self.n_overlap
 
         if self._extend:
             self._ext_len = self.n_perseg // 2
 
         if self._pad:
-            self._pad_len = (-(n_sig-self.n_perseg) % self.step) % self.n_perseg
+            self._pad_len = (-(n_sig-self.n_perseg) % step) % self.n_perseg
 
         data = _np.pad(data, (self._ext_len, self._ext_len+self._pad_len))
-
-        step = self.n_perseg - self.n_overlap
-        new_shape = data.shape[:-1] + ((data.shape[-1] - self.n_overlap) // self.step, self.n_perseg)
+        new_shape = data.shape[:-1] + ((data.shape[-1] - self.n_overlap) // step, self.n_perseg)
         new_strides = data.strides[:-1] + (step * data.strides[-1], data.strides[-1])
-        return _np.lib.stride_tricks.as_strided(data, new_shape, new_strides, writeable=False).T
+        segs = _np.lib.stride_tricks.as_strided(data, new_shape, new_strides, writeable=False).T
+        params = SegmentsParams(self.n_perseg, self.n_overlap, n_sig,
+                                    self._ext_len, self._pad_len)
+        return Segments(params, segs)
+
+
+class Segments:
+    """Segement"""
+    def __init__(self, params, segs: _np.ndarray) -> None:
+        self._segs = segs
+        self._params = params
+
+    @property
+    def n_segs(self) -> int:
+       return self._segs.shape[1]
+
+    @property
+    def n_frames(self) -> int:
+        return self._params.n_frames + self._params.extend + self._params.pad
+
+    @property
+    def n_perseg(self) -> int:
+        return self._params.n_perseg
+
+    @property
+    def n_overlap(self) -> int:
+        return self._params.n_overlap
+
+    @property
+    def step(self) -> int:
+        return self._params.n_perseg - self._params.n_overlap
 
 
 class LazySegments:
