@@ -205,7 +205,6 @@ class Dft(_FastFourierTransform):
             params:  Initial parameters
         """
         params = STParams(fps, window, n_fft=n_fft)
-        print(
         super().__init__(params)
 
     def transform(self, data: _np.ndarray) -> Spectrum:
