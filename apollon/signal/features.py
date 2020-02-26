@@ -1,9 +1,7 @@
-# Licensed under the terms of the BSD-3-Clause license.
-# Copyright (C) 2019 Michael Blaß
-# mblass@posteo.net
-
-"""
-apollon/signal/features.py -- Feature extraction routines
+"""apollon/signal/features.py -- Feature extraction routines
+Licensed under the terms of the BSD-3-Clause license.
+Copyright (C) 2019 Michael Blaß
+mblass@posteo.net
 
 Functions:
     cdim           Fractal correlation dimension.
@@ -54,10 +52,9 @@ def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
     Raises:
         ValueError
     """
-    inp = _np.atleast_2d(inp)
-    if inp.ndim < 1 or inp.ndim > 2:
-        raise ValueError(f'Dimension of input array must not exceed 2. \
-                Got {inp.ndim}')
+    if inp.ndim != 2:
+        raise ValueError(f'Dimension of input array must not exceed 2. '
+                         'Got {inp.ndim}')
 
     if mode == 'bader':
         cdim_func = _features.cdim_bader
@@ -69,10 +66,7 @@ def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
     else:
         raise ValueError(f'Unknown mode "{mode}". Expected either "bader", \
                 or "blass"')
-
-    dims = _np.array([cdim_func(seg, delay, m_dim, n_bins, scaling_size)
-                      for seg in inp])
-    return _np.nan_to_num(dims)
+    return _np.nan_to_num(cdim_func(inp, delay, m_dim, n_bins, scaling_size))
 
 
 def correlogram(inp: _Array, wlen: int, n_delay: int,
@@ -178,7 +172,7 @@ def spectral_flux(inp: _Array, delta: float = 1.0) -> _Array:
     return _np.maximum(_np.gradient(inp, delta, axis=-1), 0).squeeze()
 
 
-def spectral_spread(frqs: _Array, bins: _Array) -> _Array:
+def spectral_spread(frqs: _Array, bins: _Array, centroids: _Array=None) -> _Array:
     """Estimate spectral spread.
 
     Spectral spread is always computed along the second axis of ``bins``.
@@ -187,11 +181,14 @@ def spectral_spread(frqs: _Array, bins: _Array) -> _Array:
     Args:
         frqs:     Nx1 array of DFT frequencies.
         power:    NxM array of DFT bin values.
+        centroids:  Array Spectral Centroid values.
 
     Returns:
         Square root of spectral spread.
     """
-    deviation = _np.power(frqs-spectral_centroid(frqs, bins), 2)
+    if centroids is None:
+        centroids = spectral_centroid(frqs, bins)
+    deviation = _np.power(frqs-centroids, 2)
     return _np.sqrt(tools.fsum(deviation*_power_distr(bins), axis=0,
                                keepdims=True))
 

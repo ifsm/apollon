@@ -7,12 +7,22 @@ import hypothesis.extra.numpy as htn
 
 from apollon.types import Array
 from apollon.signal import features
-from apollon.signal import tools
+from apollon.signal.spectral import Dft
+from apollon.signal.tools import sinusoid
 from apollon._defaults import SPL_REF
 
 finite_float_arrays = htn.arrays(np.float,
         htn.array_shapes(min_dims=2, max_dims=2, min_side=2),
         elements = st.floats(allow_nan=False, allow_infinity=False))
+
+sample_rates = st.integers(min_value=4, max_value=100000)
+
+@st.composite
+def rates_and_frequencies(draw, elements=sample_rates):
+    fps = draw(elements)
+    frq = draw(st.integers(min_value=1, max_value=fps//2-1))
+    return fps, frq
+
 """
 class TestCdim(unittest.TestCase):
     def setUp(self):
@@ -46,6 +56,41 @@ class TestSpl(unittest.TestCase):
     def test_spl_range(self):
         cnd = np.all(features.spl(self.range) > 0)
         self.assertTrue(cnd)
+
+
+class TestSpectralCentroid(unittest.TestCase):
+    @given(rates_and_frequencies())
+    def test_centroid(self, params):
+        fps, frq = params
+        sig = sinusoid(frq, fps=fps)
+        dft = Dft(fps=fps, window=None)
+        sxx = dft.transform(sig)
+        spc = features.spectral_centroid(sxx.frqs, sxx.power)
+        self.assertAlmostEqual(spc.item(), frq)
+
+
+class TestSpectralSpread(unittest.TestCase):
+   @given(rates_and_frequencies())
+   def test_spread(self, params):
+       fps, frq = params
+       sig = sinusoid(frq, fps=fps)
+       dft = Dft(fps=fps, window=None)
+       sxx = dft.transform(sig)
+       sps = features.spectral_spread(sxx.frqs, sxx.power)
+       self.assertLess(sps.item(), 1.0)
+
+   @given(rates_and_frequencies())
+   def test_spread(self, params):
+       fps, frq = params
+       sig = sinusoid(frq, fps=fps)
+       dft = Dft(fps=fps, window=None)
+       sxx = dft.transform(sig)
+       spc = features.spectral_centroid(sxx.frqs, sxx.power)
+       sps = features.spectral_spread(sxx.frqs, sxx.power)
+       sps_wc = features.spectral_spread(sxx.frqs, sxx.power, spc)
+       self.assertEqual(sps.item(), sps_wc.item())
+       self.assertLess(sps.item(), 1.0)
+
 
 if __name__ == '__main__':
     unittest.main()
