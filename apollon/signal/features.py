@@ -53,8 +53,7 @@ def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
         ValueError
     """
     if inp.ndim != 2:
-        raise ValueError(f'Dimension of input array must not exceed 2. '
-                         'Got {inp.ndim}')
+        raise ValueError(f'Input array must be two-dimensional.')
 
     if mode == 'bader':
         cdim_func = _features.cdim_bader
@@ -89,7 +88,10 @@ def correlogram(inp: _Array, wlen: int, n_delay: int,
         raise TypeError(f'Argument ``inp`` is of type {type(inp)}. It has '
                         'to be an numpy array.')
 
-    crr = _features.correlogram(inp, wlen, n_delay)
+    if inp.ndim != 2:
+        raise ValueError('Input must be two-dimensional.')
+
+    crr = _features.correlogram(inp.squeeze(), wlen, n_delay)
     if total is True:
         return crr.sum(keepdims=True) / _np.prod(crr.shape)
     return crr
@@ -140,7 +142,7 @@ def rms(sig: _Array) -> _Array:
     Returns:
         RMS of signal along first axis.
     """
-    return _np.sqrt(_np.mean(_np.square(_np.abs(sig)), axis=0))
+    return _np.sqrt(_np.mean(_np.square(_np.abs(sig)), axis=0, keepdims=True))
 
 
 def spectral_centroid(frqs: _Array, bins: _Array) -> _Array:
