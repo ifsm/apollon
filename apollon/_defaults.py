@@ -6,7 +6,7 @@
 apollon/_defaults.py --  Defaut definitions
 """
 
-TIME_STAMP_FMT = '%Y-%m-%d %H:%M:%S'
+DATE_TIME = '%Y-%m-%d %H:%M:%S'
 
 SPL_REF = 2e-5
 

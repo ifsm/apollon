@@ -1,13 +1,10 @@
-# Licensed under the terms of the BSD-3-Clause license.
-# Copyright (C) 2019 Michael Blaß
-# mblass@posteo.net
-
-"""
-apollon/tools.py -- Common tool library.
+"""apollon/tools.py -- Common tool library.
+Licensed under the terms of the BSD-3-Clause license.
+Copyright (C) 2019 Michael Blaß
+mblass@posteo.net
 
 Functions:
     assert_array        Raise if array does not match given params.
-
     L1_Norm             Compute L1_Norm.
     normalize           Return _normalized version of input.
     in2out              Create a save from an input path.
@@ -21,7 +18,7 @@ Functions:
     within_any          Test wether val is in any of windows.
     array2d_fsum        Sum array entry with machine precision.
 """
-import datetime as _dt
+from datetime import datetime, timezone
 import math as _math
 from typing import Any, Tuple
 
@@ -214,11 +211,22 @@ def standardize(x: _np.ndarray) -> _np.ndarray:
     """
     return (x - x.mean(axis=0)) / x.std(axis=0)
 
+def time_stamp(fmt: str = None) -> str:
+    """Report call time as UTC time stamp.
 
-def time_stamp() -> str:
-    """Return default time stamp."""
-    return _dt.datetime.now().strftime(_defaults.TIME_STAMP_FMT)
+    If ``fmt`` is not given, this function returns time stampes
+    in ISO 8601 format.
 
+    Args:
+       fmt:  Format specification.
+
+    Returns:
+        Time stamp according to ``fmt``.
+    """
+    tsp = datetime.now(timezone.utc)
+    if fmt is None:
+        return tsp.isoformat()
+    return tsp.strftime(fmt)
 
 def within(val: float, bounds: Tuple[float, float]) -> bool:
     """Return True if x is in window.
