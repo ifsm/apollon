@@ -164,7 +164,7 @@ class Segments:
 
     def __iter__(self) -> Generator[_np.ndarray, None, None]:
         for seg in self._segs.T:
-            yield seg
+            yield _np.expand_dims(seg, 1)
 
     def __getitem__(self, key) -> _np.ndarray:
         out = self._segs[:, key]
