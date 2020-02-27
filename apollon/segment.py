@@ -3,6 +3,7 @@ Licensed under the terms of the BSD-3-Clause license.
 Copyright (C) 2019 Michael Blaß, mblass@posteo.net
 """
 from dataclasses import dataclass
+from typing import Generator, Tuple
 import numpy as _np
 
 from . audio import AudioFile
@@ -46,8 +47,8 @@ class Segment:
     idx: int
     start: int
     stop: int
+    center: int
     n_frames: int
-    fps: int
     data: _np.ndarray
 
 
@@ -97,6 +98,10 @@ class Segments:
     def __init__(self, params, segs: _np.ndarray) -> None:
         self._segs = segs
         self._params = params
+        if self._params.extend:
+            self._offset = 0
+        else:
+            self._offset = self._params.n_frames // 2
 
     @property
     def n_segs(self) -> int:
@@ -114,9 +119,58 @@ class Segments:
     def n_overlap(self) -> int:
         return self._params.n_overlap
 
+
     @property
     def step(self) -> int:
         return self._params.n_perseg - self._params.n_overlap
+
+    def center(self, seg_idx) -> int:
+        """Return the center of segment ``seg_idx`` as frame number
+        of the original signal.
+
+        Args:
+            seg_indx:  Segment index.
+
+        Returns:
+            Center frame index.
+        """
+        return seg_idx * self.step + self._offset
+
+    def bounds(self, seg_idx) -> Tuple[int, int]:
+        """Return the frame numbers of the lower and upper bound
+        of segment ``seg_idx``.
+
+        Args:
+            seg_idx:  Segment index.
+
+        Returns:
+            Lower and upper bound frame index.
+        """
+        lob = self.center(seg_idx) - self._params.n_perseg // 2
+        upb = lob + self._params.n_perseg
+        return lob, upb
+
+    def get(self, seg_idx) -> Segment:
+        """Retrun segment ``seg_idx`` wrapped in an ``Segment`` object.
+
+        Args:
+            seg_idx:  Segment index.
+
+        Returns:
+            Segment ``seg_idx``.
+        """
+        return Segment(seg_idx, *self.bounds(seg_idx), self.center(seg_idx),
+                       self._params.n_perseg, self[seg_idx])
+
+    def __iter__(self) -> Generator[_np.ndarray, None, None]:
+        for seg in self._segs.T:
+            yield seg
+
+    def __getitem__(self, key) -> _np.ndarray:
+        out = self._segs[:, key]
+        if out.ndim < 2:
+            return _np.expand_dims(out, 1)
+        return out
 
 
 class LazySegments:
