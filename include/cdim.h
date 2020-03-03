@@ -6,8 +6,15 @@
 #include <stdlib.h>
 
 
-/** Compute delay embedding
+/** Condensed distance matrix of delay embedding
  */
+void
+delay_embedding_dists (const double *inp,
+                       const size_t  n_vectors,
+                       const size_t  delay,
+                       const size_t  m_dim,
+                             double *dists);
+
 void
 comsar_fractal_embedding (const double *x,
                           const size_t  N_max,

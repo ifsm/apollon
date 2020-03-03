@@ -36,7 +36,8 @@ def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
     # pylint: disable = too-many-arguments
     """Compute an estimate of the correlation dimension of the input data.
 
-    If ``inp`` is two-dimensional, an estimated is computed for each row.
+    If ``mode`` is set to 'bader', the input array must have at least
+    2400 elements. Otherwise, the result is undefined.
 
     Args:
         inp:       Input array.
@@ -63,9 +64,13 @@ def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
         raise NotImplementedError
         # cdim_func = fractal.cdim
     else:
-        raise ValueError(f'Unknown mode "{mode}". Expected either "bader", \
-                or "blass"')
-    return _np.nan_to_num(cdim_func(inp, delay, m_dim, n_bins, scaling_size))
+        raise ValueError(f'Unknown mode "{mode}". Expected either "bader", '
+                         'or "blass"')
+    out = _np.zeros(inp.shape[1])
+    for i, seg in enumerate(inp.T):
+        out[i] = _np.nan_to_num(cdim_func(seg, delay, m_dim, n_bins,
+                                          scaling_size))
+    return _np.expand_dims(out, 0)
 
 
 def correlogram(inp: _Array, wlen: int, n_delay: int,
@@ -91,10 +96,12 @@ def correlogram(inp: _Array, wlen: int, n_delay: int,
     if inp.ndim != 2:
         raise ValueError('Input must be two-dimensional.')
 
-    crr = _features.correlogram(inp.squeeze(), wlen, n_delay)
+    out = _np.zeros((inp.shape[1], n_delay, inp.shape[0]-wlen-n_delay))
+    for i, seg in enumerate(inp.T):
+        out[i] = _features.correlogram(seg, wlen, n_delay)
     if total is True:
-        return crr.sum(keepdims=True) / _np.prod(crr.shape)
-    return crr
+        return out.sum(axis=(1, 2)) / _np.prod(out.shape[1:])
+    return out
 
 
 def energy(sig: _Array) -> _Array:
@@ -160,7 +167,8 @@ def spectral_centroid(frqs: _Array, bins: _Array) -> _Array:
     return tools.fsum(frqs*_power_distr(bins), axis=0, keepdims=True)
 
 
-def spectral_flux(inp: _Array, delta: float = 1.0) -> _Array:
+def spectral_flux(inp: _Array, delta: float = 1.0, total: bool = True
+        ) -> _Array:
     """Estimate the spectral flux
 
     Args:
@@ -171,7 +179,10 @@ def spectral_flux(inp: _Array, delta: float = 1.0) -> _Array:
         Array of Spectral flux.
     """
     inp = _np.atleast_2d(inp).astype('float64')
-    return _np.maximum(_np.gradient(inp, delta, axis=-1), 0).squeeze()
+    out = _np.maximum(_np.gradient(inp, delta, axis=-1), 0)
+    if total:
+        return out.sum(axis=0, keepdims=True)
+    return out
 
 
 def spectral_spread(frqs: _Array, bins: _Array, centroids: _Array=None) -> _Array:
@@ -195,8 +206,8 @@ def spectral_spread(frqs: _Array, bins: _Array, centroids: _Array=None) -> _Arra
                                keepdims=True))
 
 
-def spl(amps: _Array, total: bool = False, ref: float = None) -> _Array:
-    """Computes sound pressure level.
+def fspl(amps: _Array, total: bool = False, ref: float = None) -> _Array:
+    """Computes sound pressure level from spectrum.
 
     The values of ``amp`` are assumed to be magnitudes of DFT bins.
 
@@ -221,7 +232,7 @@ def spl(amps: _Array, total: bool = False, ref: float = None) -> _Array:
     return 10.0*_np.log10(vals)
 
 
-def splc(frqs: _Array, amps: _Array, total: bool = False,
+def fsplc(frqs: _Array, amps: _Array, total: bool = False,
          ref: float = None) -> _Array:
     """Apply C-weighted to SPL.
 
@@ -235,6 +246,18 @@ def splc(frqs: _Array, amps: _Array, total: bool = False,
     """
     return spl(_sigtools.c_weighting(frqs)*amps, total, ref)
 
+def spl(inp: _Array, ref=_defaults.SPL_REF):
+    """Computes the average sound pressure level of time domain signal.
+
+    Args:
+        inp:  Time domain signal.
+        ref:  Reference level.
+
+    Returns:
+        Average sound pressure level.
+    """
+    level = rms(inp)/ref
+    return 20 * _np.log10(level, where=level>0)
 
 def log_attack_time(inp: _Array, fps: int, ons_idx: _Array,
                     wlen: float = 0.05) -> _Array:
@@ -274,13 +297,15 @@ def loudness(frqs: _Array, bins: _Array) -> _Array:
     return _cb.total_loudness(cbrs)
 
 
-def roughness_helmholtz(frqs: _Array, bins: _Array, frq_max: float,
+def roughness_helmholtz(d_frq: float, bins: _Array, frq_max: float,
                         total: bool = True) -> _Array:
-    frq_res = (frqs[1]-frqs[0]).item()
-    kernel = _roughnes_kernel(frq_res, frq_max)
-    out = _np.correlate(bins.squeeze(), kernel, mode='same')[:, None]
+    kernel = _roughnes_kernel(d_frq, frq_max)
+    out = _np.empty((kernel.size, bins.shape[1]))
+    for i, bin_slice in enumerate(bins.T):
+        out[:, i] = _np.correlate(bin_slice, kernel, mode='same')
+
     if total is True:
-        out = out.sum(keepdims=True)
+        out = out.sum(axis=0, keepdims=True)
     return out
 
 
@@ -295,8 +320,8 @@ def sharpness(frqs: _Array, bins: _Array) -> _Array:
     Returns:
         Sharpness.
     """
-    cbrs = _cb.filter_bank(frqs.squeeze()) @ bins.squeeze()
-    return _np.expand_dims(_cb.sharpness(cbrs), 1)
+    cbrs = _cb.filter_bank(frqs.squeeze()) @ bins
+    return _cb.sharpness(cbrs)
 
 
 def _power_distr(bins: _Array) -> _Array:

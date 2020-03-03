@@ -1,5 +1,3 @@
-#!/usr/bin/env  python3
-
 from setuptools import setup, Extension
 from setuptools.config import read_configuration
 

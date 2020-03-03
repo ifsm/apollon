@@ -6,14 +6,14 @@
 #include "correlogram.h"
 #include "cdim.h"
 
-    /* Compute the correlogram of an audio signal
-     *
-     * Params:
-     *      wlen        Length of window in samples
-     *      delay       Window hop size
-     *      n_lags
-     *  Return 2d array
-     */
+/* Compute the correlogram of an audio signal
+ *
+ * Params:
+ *      wlen        Length of window in samples
+ *      delay       Window hop size
+ *      n_lags
+ *  Return 2d array
+ */
 
 static PyObject *
 apollon_correlogram_delay (PyObject* self, PyObject* args)
@@ -128,6 +128,49 @@ apollon_correlogram (PyObject* self, PyObject* args)
 
 
 static PyObject *
+apollon_delay_embedding_dists (PyObject *self, PyObject *args)
+{
+    PyObject *inp = NULL;
+    npy_intp  delay = 0;
+    npy_intp  m_dim = 0;
+
+    if (!PyArg_ParseTuple (args, "Okk", &inp, &delay, &m_dim))
+    {
+        return NULL;
+    }
+
+    PyArrayObject *arr_inp = (PyArrayObject *) PyArray_FROM_OTF (inp,
+            NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    if (arr_inp == NULL)
+    {
+        PyErr_SetString (PyExc_RuntimeError, "Could not convert input arrays.\n");
+        Py_RETURN_NONE;
+    }
+
+    npy_intp n_vectors = PyArray_SIZE (arr_inp) - ((m_dim -1) * delay);
+    npy_intp n_dists = n_vectors * (n_vectors - 1) / 2;
+
+    /*
+    PyArrayObject *dists = (PyArrayObject *) PyArray_NewFromDescr (
+            &PyArray_Type, PyArray_DescrFromType (NPY_DOUBLE),
+            1, &n_dists, NULL, NULL, 0, NULL);
+            */
+    PyArrayObject *dists = (PyArrayObject *) PyArray_ZEROS(1, &n_dists, 
+            NPY_DOUBLE, 0);
+    if (dists == NULL)
+    {
+        PyErr_SetString (PyExc_MemoryError, "Could not allocate correlogram.\n");
+        Py_RETURN_NONE;
+    }
+
+    delay_embedding_dists (PyArray_DATA (arr_inp), (size_t) n_vectors,
+            (size_t) delay, (size_t) m_dim, PyArray_DATA (dists));
+    
+    return (PyObject *) dists;
+}
+
+
+static PyObject *
 apollon_cdim_bader (PyObject *self, PyObject *args)
 {
     PyObject *op_snd = NULL;
@@ -144,6 +187,7 @@ apollon_cdim_bader (PyObject *self, PyObject *args)
 
     PyArrayObject *arr_snd = (PyArrayObject *) PyArray_FROM_OTF (op_snd,
             NPY_INT16, NPY_ARRAY_IN_ARRAY);
+
     if (arr_snd == NULL)
     {
         PyErr_SetString (PyExc_RuntimeError, "Could not convert input arrays.\n");
@@ -162,12 +206,15 @@ apollon_cdim_bader (PyObject *self, PyObject *args)
 }
 
 
+
 static PyMethodDef
 Features_Methods[] = {
     {"correlogram_delay", apollon_correlogram_delay, METH_VARARGS,
         "correlogram (signal, delays, wlen, off_max)"},
     {"correlogram", apollon_correlogram, METH_VARARGS,
         "correlogram (signal, wlen, delay_max)"},
+    {"emb_dists", apollon_delay_embedding_dists, METH_VARARGS,
+        "emb_dists(inp, delay, m_dim)"},
     {"cdim_bader", apollon_cdim_bader, METH_VARARGS,
      "cdim_bader (snd, delay, m_dim, n_bins, scaling_size)\n"
      "Estimate the correlation dimension Bader-style."},

@@ -1,6 +1,28 @@
 #include "cdim.h"
 
 void
+delay_embedding_dists (const double *inp,
+                       const size_t  n_vectors,
+                       const size_t  delay,
+                       const size_t  m_dim,
+                             double *dists)
+{
+    
+    for (size_t i = 0; i < n_vectors - 1; i++)
+    {
+        for (size_t j = i + 1; j < n_vectors; j++)
+        {
+            size_t flat_idx = i * n_vectors + j - i*(i+1)/2 - i - 1;
+            for (size_t m = 0; m < m_dim; m++)
+            {
+                dists[flat_idx] += pow (inp[i+m*delay] - inp[j+m*delay], 2);
+            }
+            dists[flat_idx] = sqrt (dists[flat_idx]);
+        }
+    }
+}
+
+void
 comsar_fractal_embedding (const double *x,
                           const size_t  N_max,
                           const size_t  m_dim,
@@ -149,7 +171,9 @@ corr_dim_bader (const short *snd, const size_t delay, const size_t m_dim,
     /* arbitrarily set boundary condition for distance matrix computation */
     const size_t bound = 10;
 
-    /* arbitrarily set number of samples to consume form the input array */
+    /* arbitrarily set number of samples to consume form the input array 
+     * If the input array has less than ``n_samples`` frames the behaviour
+     * of this function is undefined. */
     const size_t n_samples = 2400;
 
     size_t n_dists = (n_samples-bound) * (n_samples-bound+1) / 2;
@@ -220,10 +244,11 @@ corr_dim_bader (const short *snd, const size_t delay, const size_t m_dim,
      * To correct this implementation use either `j <= i`, or `j < i+1`.*/
     for (size_t i = 0; i < n_bins; i++)
     {
-        for (size_t j = 0; j < i; j++)
+        for (size_t j = 0; j < i+1; j++)
         {
             corr_sums[i] += corr_hist[j];
         }
+        // printf ("cs[%zu] = %zu\n", i, corr_sums[i]);
     }
 
     /* Find the bin with the most points in it and its index */
@@ -243,7 +268,13 @@ corr_dim_bader (const short *snd, const size_t delay, const size_t m_dim,
     double x2 = log ((double) ((max_bin + scaling_size) * step_size) + (double) dist_min);
     double y1 = log ((double) corr_sums[max_bin] / (double) n_dists);
     double y2 = log ((double) corr_sums[max_bin+scaling_size] / (double) n_dists);
-
+    /*
+    printf("x1: %f\nx2: %f\n", x1, x2);
+    printf("y1: %f\ny2: %f\n", y1, y2);
+    printf("corr_sums[max_bin]: %f\n", corr_sums[max_bin]);
+    printf("n_dists: %f\n", (double)n_dists);
+    printf("max_bin: %zu\n", max_bin);
+    */
     free (dists);
     free (corr_hist);
     free (corr_sums);
