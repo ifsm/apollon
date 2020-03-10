@@ -1,0 +1,7 @@
+build:
+  image: python:latest
+  before_script:
+    - pip install numpy
+    - which python  
+  script:
+    - pip install . 
