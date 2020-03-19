@@ -3,11 +3,14 @@ import numpy as np
 from scipy.signal import stft
 
 from hypothesis import given
-from hypothesis.strategies import integers
+from hypothesis.strategies import integers, floats
+from hypothesis.extra.numpy import arrays, array_shapes
 
-from apollon.signal.spectral import fft, Dft, StftSegments
-from apollon.signal.container import STParams
+from apollon.signal.spectral import fft, Dft, Stft, StftSegments
+from apollon.signal.container import StftParams
 from apollon.signal.tools import sinusoid
+
+from .. environment import Array
 
 
 class TestFft(unittest.TestCase):
@@ -36,59 +39,6 @@ class TestFft(unittest.TestCase):
         self.assertTrue(np.allclose(bins[self.frqs, idx], self.amps))
 
 
-class TestDft(unittest.TestCase):
-    def setUp(self):
-        self.fps = 9000
-        self.amps = np.array([1., .5, .25, .1, .05])
-        self.frqs = np.array([440, 550, 660, 880, 1760])
-        self.signal = sinusoid(self.frqs, self.amps, fps=self.fps)
-        self.dft = Dft(self.fps)
-        self.sxx = self.dft.transform(self.signal)
-
-    def test_abs(self):
-        vals = self.sxx.abs
-        self.assertTrue(isinstance(vals, np.ndarray))
-        self.assertTrue(vals.dtype is np.dtype('float64'))
-        self.assertTrue(np.all(vals > 0))
-
-    def test_bins(self):
-        vals = self.sxx.bins
-        self.assertTrue(isinstance(vals, np.ndarray))
-        self.assertTrue(vals.dtype is np.dtype('complex128'))
-
-    def test_centroid(self):
-        self.assertTrue(isinstance(self.sxx.centroid, float))
-
-    def test_dfrq(self):
-        vals = self.sxx.d_frq
-        self.assertTrue(isinstance(vals, float))
-        self.assertTrue(vals > 0)
-
-    def test_frqs(self):
-        vals = self.sxx.frqs
-        self.assertTrue(isinstance(vals, np.ndarray))
-        self.assertTrue(vals.dtype is np.dtype('float64'))
-        self.assertTrue(np.all(vals>=0))
-
-    def test_params(self):
-        self.assertTrue(isinstance(self.sxx.params, STParams))
-
-    def test_phase(self):
-        vals = self.sxx.phase
-        self.assertTrue(vals.dtype is np.dtype('float64'))
-        self.assertTrue(np.all(vals <= np.pi))
-        self.assertTrue(np.all(vals >= -np.pi))
-
-    def test_power(self):
-        vals = self.sxx.power
-        self.assertTrue(vals.dtype is np.dtype('float64'))
-        self.assertTrue(np.all(vals >= 0.))
-
-    def test_transform(self):
-        dft = Dft(self.fps)
-        spc = dft.transform(self.signal)
-        self.assertTrue(np.allclose(spc.abs[self.frqs].T, self.amps))
-
 
 class TestStftSegmentsTimes(unittest.TestCase):
     def setUp(self):
@@ -97,14 +47,13 @@ class TestStftSegmentsTimes(unittest.TestCase):
         self.n_overlap = 256
         self.amps = np.array([1., .5, .25, .1, .05])
         self.frqs = np.array([440, 550, 660, 880, 1760])
-        self.signal = sinusoid(self.frqs, self.amps, fps=fps)
-        self.params = StftParams(fps=fps)
-        self.stft = StftSegments(self.params)
+        self.signal = sinusoid(self.frqs, self.amps, fps=self.fps)
+        self.stft = StftSegments(self.fps)
 
     def times_extend_pad(self):
-        segmenter = Segmentation(self.n_perseg, self.n_overlap,
-                                 extend=True, pad=True)
-        segs = segmenter.transform(self.signal)
+        cutter = Segmentation(self.n_perseg, self.n_overlap,
+                              extend=True, pad=True)
+        segs = cutter.transform(self.signal)
         sxx = self.stft.transform(segs)
         frqs, times, bins = stft(self.signal.squeezs(), self.fps, 'hamming',
                                  self.n_perseg, self.n_overlap,
@@ -144,6 +93,67 @@ class TestStftSegmentsTimes(unittest.TestCase):
                                  boundary=None, padded=False)
         self.assertEqual(sxx.times.size, times.size)
         self.assertTrue(np.allclose(sxx.times.squeeze(), times))
+
+
+class TestSpectrum(unittest.TestCase):
+    real_floats = floats(0, 1, allow_nan=False, allow_infinity=False)
+    arr_2d_shapes = array_shapes(min_dims=2, max_dims=2,
+                               min_side=1, max_side=100)
+    float_2d_arrays = arrays(np.float, arr_2d_shapes,
+                             elements=real_floats)
+
+    @given(float_2d_arrays)
+    def test_abs_is_real(self, inp: Array) -> None:
+        dft = Dft(inp.shape[0], 'hamming', None)
+        spctrm = dft.transform(inp)
+        self.assertTrue(spctrm.abs.dtype.type is np.float64)
+
+    @given(float_2d_arrays)
+    def test_abs_ge_zero(self, inp: Array) -> None:
+        dft = Dft(inp.shape[0], 'hamming', None)
+        spctrm = dft.transform(inp)
+        self.assertTrue(np.all(spctrm.abs>=0))
+
+    @given(float_2d_arrays)
+    def test_d_frq_is_positive_float(self, inp: Array) -> None:
+        dft = Dft(inp.shape[0], 'hamming', None)
+        spctrm = dft.transform(inp)
+        dfrq = spctrm.d_frq
+        self.assertTrue(isinstance(dfrq, float))
+        self.assertTrue(dfrq>0)
+
+    @given(float_2d_arrays)
+    def test_frqs_is_positive_array(self, inp: Array) -> None:
+        dft = Dft(inp.shape[0], 'hamming', None)
+        spctrm = dft.transform(inp)
+        frqs = spctrm.frqs
+        self.assertTrue(isinstance(frqs, np.ndarray))
+        self.assertTrue(frqs.dtype.type is np.float64)
+        self.assertTrue(np.all(frqs>=0))
+
+    @given(float_2d_arrays)
+    def test_phase_within_pi(self, inp: Array) -> None:
+        dft = Dft(inp.shape[0], 'hamming', None)
+        spctrm = dft.transform(inp)
+        phase = spctrm.phase
+        self.assertTrue(phase.dtype.type is np.float64)
+        self.assertTrue(np.all(-np.pi<=phase))
+        self.assertTrue(np.all(phase<=np.pi))
+
+    @given(float_2d_arrays)
+    def test_power_is_positive_array(self, inp: Array) -> None:
+        dft = Dft(inp.shape[0], 'hamming', None)
+        spctrm = dft.transform(inp)
+        power = spctrm.power
+        self.assertTrue(power.dtype.type is np.float64)
+        self.assertTrue(np.all(power>=0.0))
+
+    @given(integers(min_value=1, max_value=10000))
+    def test_n_fft(self, n_samples: int) -> None:
+        sig = np.empty((n_samples, 1))
+        dft = Dft(n_samples, 'hamming', None)
+        y = dft.transform(sig)
+        self.assertEqual(y._n_fft, sig.size)
 
 
 if __name__ == '__main__':

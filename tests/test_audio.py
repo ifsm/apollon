@@ -3,6 +3,12 @@ import numpy as np
 
 from apollon.audio import AudioFile
 
+class TestAudioFile(unittest.TestCase):
+    def setUp(self):
+        self.snd = AudioFile('audio/beat.wav')
+
+    def test_path_is_sting(self):
+        self.assertIsInstance(self.snd.file_name, str)
 
 class TestAudioFileReadMono(unittest.TestCase):
     def setUp(self):
@@ -12,7 +18,6 @@ class TestAudioFileReadMono(unittest.TestCase):
     def test_read_raw_multi(self):
         data = self.snd.read(-1, norm=False, mono=False)
         self.assertTrue(np.array_equal(self.ref, data))
-
 
     def test_read_raw_mono(self):
         ref = self.ref.sum(axis=1, keepdims=True) / self.ref.shape[1]

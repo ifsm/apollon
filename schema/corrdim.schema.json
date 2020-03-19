@@ -1,0 +1,30 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "object",
+    "title": "cdim root",
+    "description": "Correlation Dimension parameters",
+    "required": ["delay", "m_dim", "n_bins", "scaling_size"],
+    "additionalProperties": false,
+    "properties": {
+        "delay": {
+            "$id": "#properties/delay",
+            "description": "Length of delay vectors",
+            "type": "integer"
+        },
+        "m_dim": {
+            "$id": "#properties/m_dim",
+            "description": "Number of embedding dimensions",
+            "type": "integer"
+        },
+        "n_bins": {
+            "$id": "#properties/n_bins",
+            "description": "Number of histogram bins (radius)",
+            "type": "integer"
+        },
+        "scaling_size": {
+            "$id": "#properties/scaling_size",
+            "description": "Length of scaling size",
+            "type": "integer"
+        }
+    }
+}

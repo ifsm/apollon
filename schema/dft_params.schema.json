@@ -1,0 +1,28 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "object",
+    "title": "DFT params, root",
+    "description": "Parameter for Discrete Fourier Transform",
+    "required": ["fps","window", "n_fft"],
+    "additionalProperties": false,
+    "properties": {
+        "fps": {
+            "$id": "#properties/fps",
+            "description": "Sample rate",
+            "type": "integer"
+        },
+        "window": {
+            "$id": "#properties/window",
+            "description": "Name of window function",
+            "type": "string"
+        },
+        "n_fft": {
+            "$id": "#properties/n_fft",
+            "description": "FFT length",
+            "anyOf": [
+                {"type": "integer"},
+                {"type": "null"}
+            ]
+        }
+    }
+}

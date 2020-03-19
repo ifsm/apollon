@@ -1,18 +1,62 @@
-# Licensed under the terms of the BSD-3-Clause license.
-# Copyright (C) 2019 Michael Blaß
-# mblass@posteo.net
+""" apollon/container.py -- Container Classes.
 
-"""apollon/io.py -- Container Classes.
+Licensed under the terms of the BSD-3-Clause license.
+Copyright (C) 2019 Michael Blaß
+mblass@posteo.net
 
 Classes:
     FeatureSpace
+    Params
 """
+import csv
+from dataclasses import dataclass, asdict
 import json
-import csv as _csv
-from typing import Any, Dict, List, Optional, Tuple
+import pathlib
+import sys
+from typing import (Any, ClassVar, Dict, List, Optional, Tuple, Type, TypeVar)
+
+import jsonschema
+
+from . import io
+from . types import Schema, PathType
+
+
+GenericParams = TypeVar('GenericParams', bound='Parent')
+
+@dataclass
+class Params:
+    """Parmeter base class."""
+    _schema: ClassVar[Schema] = {}
+
+    @property
+    def schema(self) -> dict:
+        """Returns the serialization schema."""
+        return self._schema
+
+    @classmethod
+    def from_dict(cls: Type[GenericParams], instance: dict) -> GenericParams:
+        """Construct Params from dictionary"""
+        return cls(**instance)
+
+    def to_dict(self) -> dict:
+        """Returns parameters as dictionary."""
+        return asdict(self)
+
+    def to_json(self, path: PathType) -> None:
+        """Write parameters to JSON file.
+
+        Args:
+            path:  File path.
+        """
+        instance = self.to_dict()
+        jsonschema.validate(instance, self.schema, jsonschema.Draft7Validator)
+        with pathlib.Path(path).open('w') as fobj:
+            json.dump(instance, fobj)
+
 
 
 class NameSpace:
+    """Simple name space object."""
     def __init__(self, **kwargs):
         for key, val in kwargs.items():
             if isinstance(val, dict):
@@ -91,11 +135,11 @@ class FeatureSpace(NameSpace):
         field_names.extend(features.keys())
 
         if path is None:
-            csv_writer = _csv.DictWriter(_sys.stdout, delimiter=',', fieldnames=field_names)
+            csv_writer = csv.DictWriter(sys.stdout, delimiter=',', fieldnames=field_names)
             self._write(csv_writer, features)
         else:
             with open(path, 'w', newline='') as csv_file:
-                csv_writer = _csv.DictWriter(csv_file, delimiter=',', fieldnames=field_names)
+                csv_writer = csv.DictWriter(csv_file, delimiter=',', fieldnames=field_names)
                 self._write(csv_writer, features)
 
     def __getitem__(self, key):
@@ -130,9 +174,9 @@ class FeatureSpace(NameSpace):
             else ``None``.
         """
         if path is None:
-            return _json.dumps(self.as_dict(), cls=ArrayEncoder)
+            return json.dumps(self.as_dict(), cls=ArrayEncoder)
 
         with open(path, 'w') as json_file:
-            _json.dump(self.as_dict(), json_file, cls=ArrayEncoder)
+            json.dump(self.as_dict(), json_file, cls=ArrayEncoder)
 
         return None

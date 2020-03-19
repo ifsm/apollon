@@ -1,0 +1,25 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "object",
+    "title": "cgram root",
+    "description": "Correlogram parameters",
+    "required": ["wlen", "n_delay", "total"],
+    "additionalProperties": false,
+    "properties": {
+        "wlen": {
+            "$id": "#properties/wlen",
+            "description": "Length of correlation window",
+            "type": "integer"
+        },
+        "n_delay": {
+            "$id": "#properties/n_delay",
+            "description": "Number of correlation lags",
+            "type": "integer"
+        },
+        "total": {
+            "$id": "#properties/total",
+            "description": "Sum correlogram",
+            "type": "boolean"
+        }
+    }
+}

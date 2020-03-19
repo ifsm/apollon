@@ -1,23 +1,18 @@
-# Licensed under the terms of the BSD-3-Clause license.
-# Copyright (C) 2019 Michael Blaß
-# mblass@posteo.net
-
-"""
+"""apollon/types.py -- Collection of static type hints.
+Licensed under the terms of the BSD-3-Clause license.
+Copyright (C) 2019 Michael Blaß
+mblass@posteo.net
 """
 import pathlib
-from typing import (Any, Dict, Generator, Iterable, List, Optional, Tuple, Union)
-import numpy as _np    # type: ignore
+from typing import (Any, Collection, Dict, Generator, Iterable, List, Optional,
+                    Sequence, Tuple, Union)
+import numpy as np
 
-Array = _np.ndarray    # pylint: disable = C0103
-MaskedArray = _np.ma.core.MaskedArray # pylint: disable = C0103
-
+Array = np.ndarray
 ArrayOrStr = Union[Array, str]
 IterOrNone = Union[Iterable, None]
 
 ParamsType = Dict[str, Any]
-ParameterSet = Optional[ParamsType]
-ParserType = Tuple[ParamsType, List[str]]
 PathType = Union[str, pathlib.Path]
 PathGen = Generator[PathType, None, None]
-Spectrum = Tuple[MaskedArray, MaskedArray]
-Spectrogram = Tuple[Array, Array, Array]
+Schema = Dict[str, Collection[str]]

@@ -1,0 +1,54 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "object",
+    "required": [
+        "fps",
+        "window",
+        "n_fft",
+        "n_perseg",
+        "n_overlap",
+        "extend",
+        "pad"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "fps": {
+            "$id": "#properties/fps",
+            "description": "Sample rate",
+            "type": "integer"
+        },
+        "window": {
+            "$id": "#properties/window",
+            "description": "Name of window function",
+            "type": "string"
+        },
+        "n_fft": {
+            "$id": "#properties/n_fft",
+            "description": "FTT length",
+            "anyOf": [
+                {"type": "integer"},
+                {"type": "null"}
+            ]
+        },
+        "n_perseg": {
+            "$id": "#properties/n_perseg",
+            "description": "Number of samples per segment",
+            "type": "integer"
+        },
+        "n_overlap": {
+            "$id": "#properties/n_overlap",
+            "description": "Number of overlapping samples per segment",
+            "type": "integer"
+        },
+        "extend": {
+            "$id": "#properties/extend",
+            "description": "Extend half-window before and after signal",
+            "type": "boolean"
+        },
+        "pad": {
+            "$id": "properties/pad",
+            "description": "Zero padding",
+            "type": "boolean"
+        }
+    }
+}

@@ -1,10 +1,8 @@
-# Licensed under the terms of the BSD-3-Clause license.
-# Copyright (C) 2019 Michael Blaß
-# mblass@posteo.net
+"""apollon/signal/tools.py
 
-"""apollon/signal/tools.py    (c) Michael Blaß 2016
-
-Signal processing tools
+Licensed under the terms of the BSD-3-Clause license.
+Copyright (C) 2019 Michael Blaß
+mblass@posteo.net
 
 Functions:
     acf                 Normalized autocorrelation.
@@ -24,33 +22,35 @@ Functions:
     trim_spectrogram    Trim spectrogram to a frequency range.
 """
 
-import numpy as _np
-import numpy.ma as _ma
-from scipy import stats as _stats
+import numpy as np
+from scipy import stats
 
 from .. import _defaults
-from .. types import Array as _Array
-from .. import types as _types
+from .. types import Array, Optional, Sequence, Union
 
 
-def acf(inp_sig):
-    """Normalized estimate of the autocorrelation function of `inp_sig`
-       by means of cross correlation."""
+def acf(inp: Array) -> Array:
+    """Normalized estimate of the autocorrelation function of ``inp``
+    by means of cross correlation.
 
-    N = len(inp_sig)
-    norm = inp_sig @ inp_sig
+    Args:
+        inp:  One-dimensional input array.
 
-    out = _np.empty(N)
+    Returns:
+        Autocorrelation function for all positive lags.
+    """
+    N = len(inp)
+    norm = inp @ inp
+    out = np.empty(N)
     out[0] = 1
-    for m in range(1, N):
-        a = inp_sig[:-m]
-        b = inp_sig[m:]
-        s = a @ b
-        if s == 0:
-            out[m] = 0
+    for lag in range(1, N):
+        pre = inp[:-lag]
+        post = inp[lag:]
+        prod = pre @ post
+        if prod == 0:
+            out[lag] = 0
         else:
-            out[m] = s / norm
-
+            out[lag] = prod / norm
     return out
 
 
@@ -59,59 +59,29 @@ def acf_pearson(inp_sig):
        by means of pearson correlation coefficient."""
 
     N = len(inp_sig)
-    out = _np.empty(N-1)
-
+    out = np.empty(N-1)
     out[0] = 1
-    for m in range(1, N-1):
-
-        a = inp_sig[:-m]
-        b = inp_sig[m:]
-
-        s = corr_coef_pearson(a, b)
-
-        if s == 0:
-            out[m] = 0
+    for lag in range(1, N-1):
+        pre = inp_sig[:-lag]
+        post = inp_sig[lag:]
+        prod = corr_coef_pearson(pre, post)
+        if prod == 0:
+            out[lag] = 0
         else:
-            out[m] = s
-
+            out[lag] = prod
     return out
 
 
-def trim_range(d_frq: float, lcf: float = None, ucf: float = None) -> slice:
-    """Return slice of trim indices regarding an array ``frqs`` of DFT
-    frquencies, such that both boundaries are included.
-
-    Args:
-        d_frq:   Frequency spacing.
-        lcf:     Lower cut-off frequency.
-        ucf:     Upper cut-off frequency.
-
-    Returns:
-        Slice of trim indices.
-    """
-    try:
-        lcf = int(lcf//d_frq)
-    except TypeError:
-        lcf = None
-    try:
-        ucf = int(ucf//d_frq)
-    except TypeError:
-        ucf = None
-    return slice(lcf, ucf)
-
-
-def corr_coef_pearson(x, y):
+def corr_coef_pearson(x_sig: Array, y_sig: Array) -> float:
     """Fast perason correlation coefficient."""
-    detr_x = x - _np.mean(x)
-    detr_y = y - _np.mean(y)
-
-    r_xy = _np.convolve(detr_x, detr_y[::-1], mode='valid')
-    r_xx_yy = (detr_x @ detr_x) * (detr_y @ detr_y)
-
+    x_dtr = x_sig - np.mean(x_sig)
+    y_dtr = y_sig - np.mean(y_sig)
+    r_xy = np.convolve(x_dtr, y_dtr[::-1], mode='valid')
+    r_xx_yy = (x_dtr @ x_dtr) * (y_dtr @ y_dtr)
     return r_xy / r_xx_yy
 
 
-def c_weighting(frqs: _Array) -> _Array:
+def c_weighting(frqs: Array) -> Array:
     """C-weighhting for SPL.
 
     Args:
@@ -122,61 +92,70 @@ def c_weighting(frqs: _Array) -> _Array:
     """
     aaa = 148693636.0
     bbb = 424.36
-    sqf = _np.power(frqs, 2)
-    return _np.divide(aaa*sqf, (sqf+aaa)*(sqf+bbb))
+    sqf = np.power(frqs, 2)
+    return np.divide(aaa*sqf, (sqf+aaa)*(sqf+bbb))
 
 
-def freq2mel(f):
+def freq2mel(frqs):
     """Transforms Hz to Mel-Frequencies.
 
     Params:
-        f:    (real number) Frequency in Hz
+        frqs:  Frequency in Hz.
 
     Return:
-        (real number) Mel-Frequency
+        Frequency transformed to Mel scale.
     """
-    f = _np.atleast_1d(f)
-    return 1125 * _np.log(1 + f / 700)
+    frqs = np.atleast_1d(frqs)
+    return 1125 * np.log(1 + frqs / 700)
 
 
-def limit(inp: _Array, ldb: float = None, udb: float = None):
+def limit(inp: Array, ldb: Union[float] = None,
+          udb: Union[float] = None) -> Array:
     """Limit the dynamic range of ``inp`` to  [``ldb``, ``udb``].
 
     Boundaries are given in dB SPL.
 
     Args:
-        inp:    DFT bin magnitudes.
-        ldb:    Lower clip boundary in deci Bel.
-        udb:    Upper clip boundary in deci Bel.
+        inp:  DFT bin magnitudes.
+        ldb:  Lower clip boundary in deci Bel.
+        udb:  Upper clip boundary in deci Bel.
 
     Returns:
         Copy of ``inp`` with values clipped.
     """
-    try:
-        lth = amp(ldb)
-    except TypeError:
+    if ldb is None:
         lth = 0.0
+    elif isinstance(ldb, int) or isinstance(ldb, float):
+        lth = amp(ldb)
+    else:
+        msg = (f'Argument to ``ldb`` must be of types ``int``, or ``float``.\n'
+               f'Found {type(ldb)}.')
+        raise TypeError(msg)
 
-    try:
-        uth = amp(udb)
-    except TypeError:
-        uth  = inp.max()
+    if udb is None:
+        uth = 0.0
+    elif isinstance(udb, int) or isinstance(udb, float):
+        uth = inp.max()
+    else:
+        msg = (f'Argument to ``udb`` must be of types ``int``, or ``float``.\n'
+               f'Found {type(ldb)}.')
+        raise TypeError(msg)
 
-    low = _np.where(inp<lth, 0.0, inp)
-    return _np.minimum(low, uth)
+    low = np.where(inp < lth, 0.0, inp)
+    return np.minimum(low, uth)
 
 
-def mel2freq(z):
-    """Transforms Mel-Frequencies to Hz.
+def mel2freq(zfrq):
+    """Transforms Mel-Frequencies to Hzfrq.
 
-    Params:
-        z:     (real number) Mel-Frequency.
+    Args:
+        zfrq:  Mel-Frequency.
 
-    Return:
-        (real number) Frequency in Hz.
+    Returns:
+        Frequency in Hz.
     """
-    z = _np.atleast_1d(z)
-    return 700 * (_np.exp(z / 1125) - 1)
+    zfrq = np.atleast_1d(zfrq)
+    return 700 * (np.exp(zfrq / 1125) - 1)
 
 
 def maxamp(sig):
@@ -188,7 +167,7 @@ def maxamp(sig):
     Return:
         (scalar) Maximal amplitude.
     """
-    return _np.max(_np.absolute(sig))
+    return np.max(np.absolute(sig))
 
 
 def minamp(sig):
@@ -200,7 +179,7 @@ def minamp(sig):
     Return:
         (scalar) Maximal amplitude.
     """
-    return _np.min(_np.absolute(sig))
+    return np.min(np.absolute(sig))
 
 
 def noise(level, n=9000):
@@ -213,7 +192,7 @@ def noise(level, n=9000):
     Return:
         (ndarray)   White noise signal.
     """
-    return _stats.norm.rvs(0, level, size=n)
+    return stats.norm.rvs(0, level, size=n)
 
 
 def normalize(sig):
@@ -225,11 +204,13 @@ def normalize(sig):
     Return:
         (np.ndarray) Normalized signal.
     """
-    return sig / _np.max(_np.absolute(sig), axis=0)
+    return sig / np.max(np.absolute(sig), axis=0)
 
 
-def sinusoid(frqs, amps=1, fps: int = 9000, length: float = 1.0,
-             noise: float = None, comps: bool = False) -> _Array:
+def sinusoid(frqs: Union[Sequence, Array, int, float],
+             amps: Union[Sequence, Array, int, float] = 1,
+             fps: int = 9000, length: float = 1.0,
+             noise: float = None, comps: bool = False) -> Array:
     """Generate sinusoidal signal.
 
     Args:
@@ -248,28 +229,29 @@ def sinusoid(frqs, amps=1, fps: int = 9000, length: float = 1.0,
     Return:
         Array of signals.
     """
-    frqs = _np.atleast_1d(frqs)
-    amps = _np.atleast_1d(amps)
+    frqs_: Array = np.atleast_1d(frqs)
+    amps_: Array = np.atleast_1d(amps)
 
-    if frqs.shape == amps.shape or amps.size == 1:
-        txs = _np.arange(fps*length)[:, None] / fps
-        sig = _np.sin(2*_np.pi*txs*frqs) * amps
+    if frqs_.shape == amps_.shape or amps_.size == 1:
+        txs = np.arange(fps*length)[:, None] / fps
+        sig = np.sin(2*np.pi*txs*frqs_) * amps_
     else:
-        raise ValueError(f'Shapes of ``frqs`` {frqs.shape} and ``amps``'
-               '{ams.shape} differ.')
-
+        raise ValueError(f'Shape of ``frqs`` ({frqs_.shape}) differs from shape '
+                         f' of ``amps``({amps_.shape}).')
     if noise:
-        sig += _stats.norm.rvs(0, noise, size=sig.shape)
+        sig += stats.norm.rvs(0, noise, size=sig.shape)
 
     if comps:
         return sig
     return sig.sum(axis=1, keepdims=True)
 
 
-def amp(spl: _Array, ref: float = _defaults.SPL_REF) -> _Array:
+def amp(spl: Union[Array, int, float],
+        ref: float = _defaults.SPL_REF) -> Union[Array, float]:
     """Computes amplitudes form sound pressure level.
 
-    The reference pressure defaults to the human hearing treshold of 20 μPa.
+    The reference pressure defaults to the human hearing
+    treshold of 20 μPa.
 
     Args:
         spl:    Sound pressure level.
@@ -277,46 +259,22 @@ def amp(spl: _Array, ref: float = _defaults.SPL_REF) -> _Array:
     Returns:
         DFT magnituds.
     """
-    return _np.power(10.0, 0.05*spl) * ref
+    return np.power(10.0, 0.05*spl) * ref
 
 
-def zero_padding(sig: _Array, n_pad: int, dtype: str = None):
+def zero_padding(sig: Array, n_pad: int,
+                 dtype: Optional[Union[str, np.dtype]] = None) -> Array:
     """Append n zeros to signal. `sig` must be 1D array.
 
-    Params:
-        sig      Array to be padded.
-        n_pad    Number of zeros to be appended.
+    Args:
+        sig:    Array to be padded.
+        n_pad:  Number of zeros to be appended.
 
-    Return:
+    Returns:
         Zero-padded input signal.
     """
     if dtype is None:
         dtype = sig.dtype
-    container = _np.zeros(sig.size+n_pad, dtype=dtype)
+    container = np.zeros(sig.size+n_pad, dtype=dtype)
     container[:sig.size] = sig
     return container
-
-
-def clip_spectr(inp: _Array, frqs: _Array, lcf: float = None,
-        ucf: float = None, dbt: float = None) -> _types.Spectrum:
-    """Trim a spectral array to the frequency range [low, high].
-
-    Additionally, clip amplitudes to ``dbt`` dB SPL.
-
-    Args:
-        inp:    Input spectrogram.
-        frqs:   Spectrogram frequency axis.
-        lcf:    Lower cut-off frequency.
-        ucf:    Upper cut-off frequency.
-        dbt:    Amplitude threshold in dB.
-
-    Returns:
-        Clipped spectral array, and frequencies.
-    """
-    lower_bound = frqs[0] if lcf is None else lcf
-    upper_bound = frqs[-1] if ucf is None else ucf
-    thr = _np.power(10, dbt/20) * _defaults.SPL_REF
-    out_frqs = _ma.masked_outside(frqs, lower_bound, upper_bound)
-    out_bins = _ma.masked_where(_np.absolute(inp) < thr, inp)
-
-    return out_bins, out_frqs

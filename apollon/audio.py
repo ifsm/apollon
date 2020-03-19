@@ -10,11 +10,9 @@ Functions:
     fti16        Cast float to int16.
     load_audio   Load .wav file.
 """
-from dataclasses import dataclass
-import pathlib as _pathlib
-from typing import Generator
+import pathlib
 
-import matplotlib.pyplot as _plt
+import matplotlib.pyplot as plt
 import numpy as np
 import soundfile as _sf
 
@@ -29,39 +27,51 @@ class AudioFile:
         Args:
             path:   Path to file.
         """
-        self._path = _pathlib.Path(path)
+        self._path = pathlib.Path(path)
         self._file = _sf.SoundFile(self.path)
 
     @property
-    def data(self) -> np.ndarray:
+    def data(self) -> Array:
+        """Return audio data as array."""
         return self.read()
 
     @property
+    def file_name(self) -> str:
+        """Return source file name."""
+        return self._path.name
+
+    @property
     def n_channels(self) -> int:
+        """Return number of channels."""
         return self._file.channels
 
     @property
     def n_frames(self) -> int:
+        """Return number of frames."""
         return self._file.frames
 
     @property
     def fps(self) -> int:
+        """Return sample rate."""
         return self._file.samplerate
 
     @property
     def path(self) -> str:
+        """Return path of audio file."""
         return str(self._path)
 
     @property
     def shape(self) -> tuple:
+        """Return (n_frames, n_channels)."""
         return self.n_frames, self.n_channels
 
     def close(self) -> None:
+        """Close the file."""
         self._file.close()
 
     def plot(self) -> None:
         """Plot audio as wave form."""
-        fig = _plt.figure(figsize=(14, 7))
+        fig = plt.figure(figsize=(14, 7))
         ax1 = fig.add_subplot(1, 1, 1)
         ax1.plot(self.data)
 
@@ -76,7 +86,8 @@ class AudioFile:
         return self.n_frames
 
     def read(self, n_frames: int = None, offset: int = None, norm: bool = False,
-             mono: bool = True, dtype: str = 'float64') -> np.ndarray:
+             mono: bool = True, dtype: str = 'float64') -> Array:
+        # pylint: disable=too-many-arguments
         """Read from audio file.
 
         Args:
@@ -108,7 +119,7 @@ class AudioFile:
             data = _ast.normalize(data)
         return data
 
-    def _read(self, n_frames: int, dtype: str = 'float64') -> np.ndarray:
+    def _read(self, n_frames: int, dtype: str = 'float64') -> Array:
         return self._file.read(n_frames, dtype=dtype, always_2d=True,
                                fill_value=0)
 

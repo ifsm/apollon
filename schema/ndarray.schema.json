@@ -1,0 +1,25 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "object",
+    "title": "ndarray root schema",
+    "description": "The root schema comprises the entire JSON document.",
+    "required": ["__ndarray__", "__dtype__", "data"],
+    "additionalProperties": false,
+    "properties": {
+        "__ndarray__": {
+            "$id": "#/properties/__ndarray__",
+            "description": "ndarray indicator",
+            "type": "boolean"
+            },
+        "__dtype__": {
+            "$id": "#/properties/__dtype__",
+            "description": "Data type descriptor",
+            "type": "string"
+            },
+        "data": {
+            "$id": "#/properties/data",
+            "description": "Actual array elements",
+            "type": "array"
+        }
+    }
+}

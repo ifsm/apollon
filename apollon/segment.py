@@ -3,12 +3,15 @@ Licensed under the terms of the BSD-3-Clause license.
 Copyright (C) 2019 Michael Blaß, mblass@posteo.net
 """
 from dataclasses import dataclass
-from typing import Generator, Tuple
+from typing import ClassVar, Generator, Tuple, Union
+
 import numpy as _np
+from numpy.lib.stride_tricks import as_strided
 
 from . audio import AudioFile
+from . container import Params
 from . signal.tools import zero_padding as _zero_padding
-from . types import Array as _Array
+from . types import Array, Schema
 
 
 @dataclass
@@ -22,23 +25,25 @@ class LazySegmentParams:
     dtype: str = 'float64'
 
 
+SEGMENTATION_PARAMS = {
+    "type": "object",
+    "properties": {
+        "n_perseg": {"type": "integer"},
+        "n_overlap": {"type": "integer"},
+        "extend": {"anyOf": [{"type": "boolean"}, {"type": "integer"}]},
+        "pad": {"anyOf": [{"type": "boolean"}, {"type": "integer"}]}
+    }
+}
+
+
 @dataclass
-class SegmentationParams:
+class SegmentationParams(Params):
     """Parameters for Segmentation."""
+    _schema: ClassVar[Schema] = SEGMENTATION_PARAMS
     n_perseg: int = 512
     n_overlap: int = 256
-    extend: bool = True
-    pad: bool = True
-
-
-@dataclass
-class SegmentsParams:
-    """Parameters for Segments."""
-    n_perseg: int
-    n_overlap: int
-    n_frames: int
-    extend: int
-    pad: int
+    extend: Union[bool, int] = True
+    pad: Union[bool, int] = True
 
 
 @dataclass
@@ -52,64 +57,24 @@ class Segment:
     data: _np.ndarray
 
 
-class Segmentation:
-    """Segementation"""
-    def __init__(self, n_perseg: int, n_overlap: int, extend=True,
-                 pad=True) -> None:
-        """Divide a one-dimensional array into possibly overlapping segments.
-
-        Input must be one-dimensional.
-
-        Args:
-            n_perseg:  Samples per segment.
-            n_overlap: Overlap in samples.
-            extend:    Extend a half window at start and end.
-            pad:       Pad extension.
-        """
-        self.n_perseg = n_perseg
-        self.n_overlap = n_overlap
-        self._extend = extend
-        self._pad = pad
-        self._ext_len = 0
-        self._pad_len = 0
-
-    def transform(self, data: _np.ndarray) -> _np.ndarray:
-        """Apply segmentation."""
-        n_sig = data.shape[0]
-        step = self.n_perseg - self.n_overlap
-
-        if self._extend:
-            self._ext_len = self.n_perseg // 2
-
-        if self._pad:
-            self._pad_len = (-(n_sig-self.n_perseg) % step) % self.n_perseg
-
-        data = _np.pad(data, (self._ext_len, self._ext_len+self._pad_len))
-        new_shape = data.shape[:-1] + ((data.shape[-1] - self.n_overlap) // step, self.n_perseg)
-        new_strides = data.strides[:-1] + (step * data.strides[-1], data.strides[-1])
-        segs = _np.lib.stride_tricks.as_strided(data, new_shape, new_strides, writeable=False).T
-        params = SegmentsParams(self.n_perseg, self.n_overlap, n_sig,
-                                    self._ext_len, self._pad_len)
-        return Segments(params, segs)
-
-
 class Segments:
     """Segement"""
-    def __init__(self, params, segs: _np.ndarray) -> None:
+    def __init__(self, params: SegmentationParams, segs: _np.ndarray) -> None:
         self._segs = segs
         self._params = params
         if self._params.extend:
             self._offset = 0
         else:
-            self._offset = self._params.n_frames // 2
+            self._offset = self._params.n_perseg // 2
+
+    @property
+    def data(self) -> Array:
+        """Return the raw segment data array."""
+        return self._segs
 
     @property
     def n_segs(self) -> int:
        return self._segs.shape[1]
-
-    @property
-    def n_frames(self) -> int:
-        return self._params.n_frames + self._params.extend + self._params.pad
 
     @property
     def n_perseg(self) -> int:
@@ -119,10 +84,14 @@ class Segments:
     def n_overlap(self) -> int:
         return self._params.n_overlap
 
-
     @property
     def step(self) -> int:
         return self._params.n_perseg - self._params.n_overlap
+
+    @property
+    def params(self) -> SegmentationParams:
+        """Parameter set used to compute this instance."""
+        return self._params
 
     def center(self, seg_idx) -> int:
         """Return the center of segment ``seg_idx`` as frame number
@@ -134,11 +103,14 @@ class Segments:
         Returns:
             Center frame index.
         """
+        if not (0 <= seg_idx < self.n_segs):
+            raise IndexError('Requested index out of range.')
         return seg_idx * self.step + self._offset
 
     def bounds(self, seg_idx) -> Tuple[int, int]:
         """Return the frame numbers of the lower and upper bound
-        of segment ``seg_idx``.
+        of segment ``seg_idx``. Lower bound index is inclusive,
+        upper bound index is exclusive.
 
         Args:
             seg_idx:  Segment index.
@@ -146,6 +118,8 @@ class Segments:
         Returns:
             Lower and upper bound frame index.
         """
+        if not (0 <= seg_idx < self.n_segs):
+            raise IndexError('Requested index out of range.')
         lob = self.center(seg_idx) - self._params.n_perseg // 2
         upb = lob + self._params.n_perseg
         return lob, upb
@@ -171,6 +145,96 @@ class Segments:
         if out.ndim < 2:
             return _np.expand_dims(out, 1)
         return out
+
+    def __repr__(self) -> str:
+        return f'Segments(params={self._params!s}, segs={self._segs!s})'
+
+    def __str__(self) -> str:
+        return f'<n_segs: {self.n_segs}, len_seg: {self._params.n_perseg}>'
+
+
+class Segmentation:
+    """Segementation"""
+    def __init__(self, n_perseg: int, n_overlap: int, extend: bool = True,
+                pad: bool = True) -> None:
+        """Subdivide input array.
+
+        Args:
+            n_perseg:  Samples per segment.
+            n_overlap: Overlap in samples.
+            extend:    Extend a half window at start and end.
+            pad:       Pad extension.
+        """
+        if n_perseg > 0:
+            self.n_perseg = n_perseg
+        else:
+            msg = (f'Argument to ``n_perseg`` must be greater than '
+                   f'zero.\nFound ``n_perseg`` = {n_perseg}.')
+            raise ValueError(msg)
+
+        if 0 < n_overlap < n_perseg:
+            self.n_overlap = n_overlap
+        else:
+            msg = (f'Argument to ``n_overlap`` must be greater than '
+                   f'zero and less then ``n_perseg``.\n Found '
+                   f'``n_perseg`` = {self.n_perseg} and ``n_overlap`` '
+                   f' = {n_overlap}.')
+            raise ValueError(msg)
+
+        self._extend = extend
+        self._pad = pad
+        self._ext_len = 0
+        self._pad_len = 0
+
+    def transform(self, data: _np.ndarray) -> Segments:
+        """Apply segmentation.
+
+        Input array must be either one-, or two-dimensional.
+        If ``data`` is two-dimensional, it must be of shape
+        (n_elements, 1).
+
+        Args:
+            data:  Input array.
+
+        Returns:
+            ``Segments` object.
+        """
+        self._validate_data_shape(data)
+        self._validate_nps(data.shape[0])
+        n_frames = data.shape[0]
+        step = self.n_perseg - self.n_overlap
+
+        if self._extend:
+            self._ext_len = self.n_perseg // 2
+
+        if self._pad:
+            self._pad_len = (-(n_frames-self.n_perseg) % step) % self.n_perseg
+
+        data = _np.pad(data.squeeze(), (self._ext_len, self._ext_len+self._pad_len))
+        new_shape = data.shape[:-1] + ((data.shape[-1] - self.n_overlap) // step, self.n_perseg)
+        new_strides = data.strides[:-1] + (step * data.strides[-1], data.strides[-1])
+        segs = as_strided(data, new_shape, new_strides, writeable=False).T
+        params = SegmentationParams(self.n_perseg, self.n_overlap,
+                                    self._extend, self._pad)
+        return Segments(params, segs)
+
+    def _validate_nps(self, n_frames: int) -> None:
+        if self.n_perseg > n_frames:
+            msg = (f'Input data length ({n_frames}) incompatible with '
+                    'parameter ``n_perseg`` = {self.n_perseg}. ``n_perseg`` '
+                    'must be less then or equal to input data length.')
+            raise ValueError(msg)
+
+    def _validate_data_shape(self, data: _np.ndarray) -> None:
+        if not (0 < data.ndim < 3):
+            msg = (f'Input array must have one or two dimensions.\n'
+                   f'Found ``data.shape`` = {data.shape}.')
+        elif data.ndim == 2 and data.shape[1] != 1:
+            msg = (f'Two-dimensional import arrays can only have one '
+                   f'column.\nFound ``data.shape``= {data.shape}.')
+        else:
+            return None
+        raise ValueError(msg)
 
 
 class LazySegments:
@@ -260,7 +324,7 @@ class LazySegments:
             yield self.compute_bounds(i)
 
 
-def _by_samples(x: _Array, n_perseg: int) -> _Array:
+def _by_samples(x: Array, n_perseg: int) -> Array:
     """Split ``x`` into segments of lenght ``n_perseg`` samples.
 
     This function automatically applies zero padding for inputs that cannot be
@@ -286,7 +350,7 @@ def _by_samples(x: _Array, n_perseg: int) -> _Array:
     return x.reshape(-1, n_perseg)
 
 
-def _by_samples_with_hop(x: _Array, n_perseg: int, hop_size: int) -> _Array:
+def _by_samples_with_hop(x: Array, n_perseg: int, hop_size: int) -> Array:
     """Split `x` into segments of lenght `n_perseg` samples. Move the
     extraction window `hop_size` samples.
 
@@ -328,7 +392,7 @@ def _by_samples_with_hop(x: _Array, n_perseg: int, hop_size: int) -> _Array:
     return out
 
 
-def by_samples(x: _Array, n_perseg: int, hop_size: int = 0) -> _Array:
+def by_samples(x: Array, n_perseg: int, hop_size: int = 0) -> Array:
     """Segment the input into n segments of length n_perseg and move the
     window `hop_size` samples.
 
@@ -353,7 +417,7 @@ def by_samples(x: _Array, n_perseg: int, hop_size: int = 0) -> _Array:
         return _by_samples_with_hop(x, n_perseg, hop_size)
 
 
-def by_ms(x: _Array, fps: int, ms_perseg: int, hop_size: int = 0) -> _Array:
+def by_ms(x: Array, fps: int, ms_perseg: int, hop_size: int = 0) -> Array:
     """Segment the input into n segments of length ms_perseg and move the
     window `hop_size` milliseconds.
 
@@ -378,8 +442,8 @@ def by_ms(x: _Array, fps: int, ms_perseg: int, hop_size: int = 0) -> _Array:
     return by_samples(x, n_perseg, hop_size)
 
 
-def by_onsets(x: _Array, n_perseg: int, ons_idx: _Array, off: int = 0
-              ) -> _Array:
+def by_onsets(x: Array, n_perseg: int, ons_idx: Array, off: int = 0
+              ) -> Array:
     """Split input `x` into len(ons_idx) segments of length `n_perseg`.
 
     Extraction windos start at `ons_idx[i]` + `off`.
