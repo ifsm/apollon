@@ -57,7 +57,6 @@ def generate_outpath(in_path: PathType,
             raise ValueError(msg)
     return out_path
 
-
 class PoissonHmmEncoder(ArrayEncoder):
     """JSON encoder for PoissonHmm.
     """
@@ -82,7 +81,6 @@ class PoissonHmmEncoder(ArrayEncoder):
                     items[attr] = getattr(o, attr)
             return items
         return ArrayEncoder.default(self, o)
-
 
 class WavFileAccessControl:
     """Control initialization and access to the ``file`` attribute of class:``AudioData``.

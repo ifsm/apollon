@@ -12,7 +12,7 @@ import matplotlib.pyplot as _plt
 from scipy import stats as _stats
 from scipy.spatial import distance as _distance
 
-from apollon.io import save as _save
+from apollon.io.io import save as _save
 from apollon.som import defaults as _defaults
 from . import neighbors as _neighbors
 from . import utilities as _som_utils
