@@ -21,12 +21,13 @@ import pandas as pd
 import scipy.signal as _sps
 
 from . container import Params
+from . io import io
 from . signal import features
-from . import fractal as _fractal
-from . import segment as _segment
 from . signal import tools as _ast
 from . signal.spectral import Stft, StftParams
-from . types import Array
+from . import fractal as _fractal
+from . import segment as _segment
+from . types import Array, PathType
 
 
 T = TypeVar('T')
@@ -53,13 +54,68 @@ pp_params = {'n_before': 10, 'n_after': 10, 'alpha': .1,
 class OnsetDetector:
     """Onset detection base class.
     """
-    def __init__(self):
-        pass
+    def __init__(self) -> None:
+        self._odf: Optional[pd.DataFrame] = None
+
+    @property
+    def odf(self) -> Array:
+        return self._odf
+
+    @property
+    def onsets(self) -> pd.DataFrame:
+        """Returns the index of each detected onset.
+
+        The resulting data frame has two columns:
+        `frame` is number of the center frame of the segment in which
+        the onset was detected.
+
+        `time` is the time difference between the center frame of the segment
+        in which the onset was detected and the start of the audio signal.
+
+        The data frame index represents the segments.
+
+        Returns:
+            Index of each onset as data frame.
+        """
+        return self._odf.iloc[self._peaks][['frame', 'time']]
 
     def detect(self, inp: Array) -> None:
         """Detect onsets."""
         self._odf = self._compute_odf(inp)
-        self._peaks = peak_picking(self._odf.to_numpy().squeeze())
+        self._peaks = self._ppkr.detect(self._odf['value'].to_numpy().squeeze())
+
+    def to_csv(self, path: PathType) -> None:
+        """Serialize odf in csv format.
+
+        Args:
+            path: Path to save location.
+        """
+        self.odf.to_csv(path)
+
+    def to_json(self, path: PathType) -> None:
+        """Serialize odf in JSON format.
+
+        Args:
+            path: Path to save location.
+        """
+        self.odf.to_json(path)
+
+    def to_pickle(self, path: PathType) -> None:
+        """Serialize object to pickle file.
+
+        Args:
+            path: Path to save location.
+        """
+        io.save_to_pickle(self, path)
+
+    def plot(self, mode: str ='time') -> None:
+        """Plot odf against time or index.
+
+        Args:
+            mode:  Either `time`, or `index`.
+        """
+        pass
+
 
 
 class EntropyOnsetDetector(OnsetDetector):
@@ -129,22 +185,15 @@ class FluxOnsetDetector(OnsetDetector):
         """
         super().__init__()
         self._stft = Stft(fps, window, n_perseg, n_overlap)
-
-    @property
-    def index(self) -> Array:
-        return self.times * self._stft.params.fps
-
-    @property
-    def odf(self) -> Array:
-        return self._odf
+        if pp_params:
+            self._ppkr = FilterPeakPicker(**pp_params)
+        else:
+            self._ppkr = FilterPeakPicker()
 
     @property
     def params(self):
         return self._params
 
-    @property
-    def times(self) -> Array:
-        return self._odf.iloc[self._peaks].index.to_numpy()
 
     def _compute_odf(self, inp: Array) -> Array:
         """Onset detection function based on spectral flux.
@@ -157,16 +206,22 @@ class FluxOnsetDetector(OnsetDetector):
         """
         sxx = self._stft.transform(inp)
         flux = features.spectral_flux(sxx.abs, total=True)
-        odf = np.maximum(flux.squeeze(), flux.mean())
-        return pd.DataFrame(odf, index=sxx.times.squeeze(), columns=['odf'])
+        times = sxx.times.squeeze()
+        odf = {'frame': (times * sxx.params.fps).astype(int),
+               'time': times,
+               'value': np.maximum(flux.squeeze(), flux.mean())}
+        return pd.DataFrame(odf)
 
 
 class FilterPeakPicker:
-    def __init__(self, odf: Array, n_after: int = 10, n_before: int = 10,
-                 alpha: float = .1, delta: float=.1) -> Array:
-        pass
+    def __init__(self, n_after: int = 10, n_before: int = 10,
+                 alpha: float = .1, delta: float=.1) -> None:
+        self.n_after = n_after
+        self.n_before = n_before
+        self.alpha = alpha
+        self.delta = delta
 
-    def detect(self)
+    def detect(self, inp: Array) -> Array:
         """Pick local maxima from a numerical time series.
 
         Pick local maxima from the onset detection function `odf`, which is assumed
@@ -186,15 +241,15 @@ class FilterPeakPicker:
         g = [0]
         out = []
 
-        for n, val in enumerate(odf):
+        for n, val in enumerate(inp):
             # set local window
-            idx = np.arange(n-n_before, n+n_after+1, 1)
-            window = np.take(odf, idx, mode='clip')
+            idx = np.arange(n-self.n_before, n+self.n_after+1, 1)
+            window = np.take(inp, idx, mode='clip')
 
             cond1 = np.all(val >= window)
-            cond2 = val >= (np.mean(window) + delta)
+            cond2 = val >= (np.mean(window) + self.delta)
 
-            foo = max(val, alpha*g[n] + (1-alpha)*val)
+            foo = max(val, self.alpha*g[n] + (1-self.alpha)*val)
             g.append(foo)
             cond3 = val >= foo
 
