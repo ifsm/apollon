@@ -26,7 +26,7 @@ from . signal import features
 from . signal import tools as _ast
 from . signal.spectral import Stft, StftParams
 from . import fractal as _fractal
-from . import segment as _segment
+from . import segment as aseg
 from . types import Array, PathType
 
 
@@ -58,7 +58,7 @@ class OnsetDetector:
         self._odf: Optional[pd.DataFrame] = None
 
     @property
-    def odf(self) -> Array:
+    def odf(self) -> pd.DataFrame:
         return self._odf
 
     @property
@@ -78,6 +78,11 @@ class OnsetDetector:
             Index of each onset as data frame.
         """
         return self._odf.iloc[self._peaks][['frame', 'time']]
+
+    @property
+    def params(self):
+        """Return initial parameters."""
+        return self._params
 
     def detect(self, inp: Array) -> None:
         """Detect onsets."""
@@ -117,13 +122,12 @@ class OnsetDetector:
         pass
 
 
-
 class EntropyOnsetDetector(OnsetDetector):
     """Detect onsets based on entropy maxima.
     """
-    def __init__(self, inp: Array, m_dims: int = 3, delay: int = None,
-                 bins: int = 10, n_perseg: int = 1024, hop_size: int = 512,
-                 pp_params = None) -> None:
+    def __init__(self, fps: int, m_dims: int = 3, delay: int = 10,
+                 bins: int = 10, n_perseg: int = 1024, n_overlap: int = 512,
+                 pp_params: Optional[dict] = None) -> None:
         """Detect onsets as local maxima of information entropy of consecutive
         windows.
 
@@ -131,7 +135,7 @@ class EntropyOnsetDetector(OnsetDetector):
         sampling rate of the input signal.
 
         Params:
-            inp:         Audio signal.
+            fps:         Audio signal.
             m_dim:       Embedding dimension.
             bins:        Boxes per axis.
             delay:       Embedding delay.
@@ -140,48 +144,52 @@ class EntropyOnsetDetector(OnsetDetector):
             smooth:      Smoothing filter length.
         """
         super().__init__()
-
+        self.fps = fps
         self.m_dims = m_dims
         self.bins = bins
         self.delay = delay
-        self.n_perseg = n_perseg
-        self.hop_size = hop_size
+        self.cutter = aseg.Segmentation(n_perseg, n_overlap)
 
-        if pp_params is not None:
-            self.pp_params = pp_params
-        self.odf = self._odf(inp)
-        self.peaks = self._detect()
+        if pp_params:
+            self._ppkr = FilterPeakPicker(**pp_params)
+        else:
+            self._ppkr = FilterPeakPicker()
 
-    def _odf(self, inp: Array) -> Array:
+    def _compute_odf(self, inp: Array) -> Array:
         """Compute onset detection function as the information entropy of
         ``m_dims``-dimensional delay embedding per segment.
 
         Args:
-            inp:    Audio data.
+            inp:  Audio data.
 
         Returns:
             Onset detection function.
         """
-        segments = _segment.by_samples(inp, self.n_perseg, self.hop_size)
-        odf = np.empty(segments.shape[0])
-        for i, seg in enumerate(segments):
-            emb = _fractal.delay_embedding(seg, self.delay, self.m_dims)
-            odf[i] = _fractal.embedding_entropy(emb, self.bins)
-        return np.maximum(odf, odf.mean())
+        segs = self.cutter.transform(inp)
+        odf = np.empty((segs.n_segs, 3))
+        for i, seg in enumerate(segs):
+            emb = _fractal.delay_embedding(seg.squeeze(), self.delay, self.m_dims)
+            odf[i, 0] = segs.center(i)
+            odf[i, 0] = odf[i, 0] / self.fps
+            odf[i, 2] = _fractal.embedding_entropy(emb, self.bins)
+        odf[i, 2] = np.maximum(odf[i, 2], odf[i, 2].mean())
+        return pd.DataFrame(data=odf, columns=['frame', 'time', 'value'])
 
 
 class FluxOnsetDetector(OnsetDetector):
     """Onset detection based on spectral flux.
     """
     def __init__(self, fps: int, window: str = 'hamming', n_perseg: int = 1024,
-                 n_overlap: int = 512, pp_params = None) -> None:
+                 n_overlap: int = 512, pp_params: Optional[dict] = None) -> None:
         """Detect onsets as local maxima in the energy difference of
         consecutive stft time steps.
 
         Args:
-            fps:          Sample rate.
-            stft_params:  Keyword args for STFT.
-            pp_params:    Keyword args for peak picking.
+            fps:        Sample rate.
+            window:     Name of window function.
+            n_perseg:   Samples per segment.
+            n_overlap:  Numnber of overlapping samples per segment.
+            pp_params:  Keyword args for peak picking.
         """
         super().__init__()
         self._stft = Stft(fps, window, n_perseg, n_overlap)
@@ -189,11 +197,6 @@ class FluxOnsetDetector(OnsetDetector):
             self._ppkr = FilterPeakPicker(**pp_params)
         else:
             self._ppkr = FilterPeakPicker()
-
-    @property
-    def params(self):
-        return self._params
-
 
     def _compute_odf(self, inp: Array) -> Array:
         """Onset detection function based on spectral flux.

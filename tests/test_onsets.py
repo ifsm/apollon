@@ -4,19 +4,16 @@ import numpy as np
 import pandas as pd
 
 from apollon.audio import AudioFile
-from apollon.onsets import OnsetDetector, FluxOnsetDetector, FilterPeakPicker
-
+from apollon.onsets import (OnsetDetector, EntropyOnsetDetector,
+        FluxOnsetDetector, FilterPeakPicker)
 
 
 class TestOnsetDetector(unittest.TestCase):
     def setUp(self):
-        ond = OnsetDetector()
+        self.osd = OnsetDetector()
 
     def test_init(self):
         pass
-
-    def test_odf(self):
-        self.assertIsInstance(self.flux_od.odf, pd.DataFrame)
 
     def test_to_csv(self):
         pass
@@ -28,11 +25,30 @@ class TestOnsetDetector(unittest.TestCase):
         pass
 
 
+class TestEntropyOnsetDetector(unittest.TestCase):
+    def setUp(self):
+        self.snd = AudioFile('audio/beat.wav')
+        self.osd = EntropyOnsetDetector(self.snd.fps)
+
+    def test_detect(self):
+        self.osd.detect(self.snd.data)
+
+    def test_odf(self):
+        self.osd.detect(self.snd.data)
+        self.assertIsInstance(self.osd.odf, pd.DataFrame)
+
+
 class TestFluxOnsetDetector(unittest.TestCase):
     def setUp(self):
         self.snd = AudioFile('audio/beat.wav')
-        self.flux_od = FluxOnsetDetector(self.snd.fps)
-        self.flux_od.detect(self.snd.data)
+        self.osd = FluxOnsetDetector(self.snd.fps)
+
+    def test_detect(self):
+        self.osd.detect(self.snd.data)
+
+    def test_odf(self):
+        self.osd.detect(self.snd.data)
+        self.assertIsInstance(self.osd.odf, pd.DataFrame)
 
 
 class TestPeakPicking(unittest.TestCase):
