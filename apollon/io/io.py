@@ -22,7 +22,7 @@ from typing import Any, Optional
 import numpy as np
 
 from .. types import PathType
-
+from . json import ArrayEncoder
 
 def generate_outpath(in_path: PathType,
                      out_path: Optional[PathType],
