@@ -20,17 +20,19 @@ from typing import Any, Union
 import jsonschema
 import numpy as np
 
+from .. import APOLLON_PATH
+from .. _defaults import SCHEMA_DIR_PATH, SCHEMA_EXT
 from .. types import Array, PathType
 
 
 def load_schema(schema_name: str) -> dict:
     """Load a JSON schema.
 
-    This function first searches within apollon's own schema repository.
+    This function searches within apollon's own schema repository.
     If a schema is found it is additionally validated agains Draft 7.
 
     Args:
-        schema_name:  Name of schema.
+        schema_name:  Name of schema. Must be file name without extension.
 
     Returns:
         Schema instance.
@@ -38,15 +40,13 @@ def load_schema(schema_name: str) -> dict:
     Raises:
         IOError
     """
-    default_path='/Users/michael/devel/apollon/schema/'
-    schema_name += '.schema.json'
-    path = pathlib.Path(default_path+schema_name)
-    if path.exists():
-        with path.open('r') as fobj:
+    schema_path = SCHEMA_DIR_PATH.joinpath(schema_name+SCHEMA_EXT)
+    if schema_path.exists():
+        with schema_path.open('r') as fobj:
             schema = json.load(fobj)
         jsonschema.Draft7Validator.check_schema(schema)
         return schema
-    raise IOError('Schema ``{schema_name}`` not found.')
+    raise IOError(f'Schema ``{schema_path.name}`` not found.')
 
 
 def dump(obj: Any, path: PathType) -> None:

@@ -5,6 +5,13 @@
 """
 apollon/_defaults.py --  Defaut definitions
 """
+import pathlib
+
+from . import APOLLON_PATH
+
+
+SCHEMA_EXT = '.schema.json'
+SCHEMA_DIR_PATH = pathlib.Path(APOLLON_PATH).parent.joinpath('schema')
 
 DATE_TIME = '%Y-%m-%d %H:%M:%S'
 
