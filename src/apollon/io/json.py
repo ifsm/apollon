@@ -15,6 +15,7 @@ Functions:
 """
 import json
 import pathlib
+import pkg_resources
 from typing import Any, Union
 
 import jsonschema
@@ -40,10 +41,10 @@ def load_schema(schema_name: str) -> dict:
     Raises:
         IOError
     """
-    schema_path = SCHEMA_DIR_PATH.joinpath(schema_name+SCHEMA_EXT)
-    if schema_path.exists():
-        with schema_path.open('r') as fobj:
-            schema = json.load(fobj)
+    schema_path = 'schema/' + schema_name + SCHEMA_EXT
+    if pkg_resources.resource_exists('apollon', schema_path):
+        schema = pkg_resources.resource_string('apollon', schema_path)
+        schema = json.loads(schema)
         jsonschema.Draft7Validator.check_schema(schema)
         return schema
     raise IOError(f'Schema ``{schema_path.name}`` not found.')
