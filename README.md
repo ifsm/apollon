@@ -5,7 +5,7 @@ Apollon is a framework for modelling audio feature time series. It comprises
 * Self-Organizing Map
 
 ## 1. Installation
-Download apollon or clone this repository. Navigate the packages root directory
+Download apollon or clone this repository. Navigate the package's root directory
 and install apollon using pip.
 ```
 cd path/to/apollon_repo
