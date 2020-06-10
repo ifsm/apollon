@@ -119,7 +119,7 @@ class OnsetDetector:
         Args:
             mode:  Either `time`, or `index`.
         """
-        pass
+        raise NotImplementedError
 
 
 class EntropyOnsetDetector(OnsetDetector):
