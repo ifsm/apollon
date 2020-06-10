@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from scipy.signal import stft
+import scipy as sp
 
 from hypothesis import given
 from hypothesis.strategies import integers, floats
@@ -10,8 +10,8 @@ from apollon.signal.spectral import fft, Dft, Stft, StftSegments
 from apollon.signal.container import StftParams
 from apollon.signal.tools import sinusoid
 
-from .. environment import Array
 
+Array = np.ndarray
 
 class TestFft(unittest.TestCase):
     def setUp(self):
@@ -154,6 +154,21 @@ class TestSpectrum(unittest.TestCase):
         dft = Dft(n_samples, 'hamming', None)
         y = dft.transform(sig)
         self.assertEqual(y._n_fft, sig.size)
+
+
+class TestSpectrogram(unittest.TestCase):
+
+    sp_args = {'window': 'hamming', 'nperseg': 512, 'noverlap': 256}
+    ap_args = {'window': 'hamming', 'n_perseg': 512, 'n_overlap': 256}
+
+    @given(integers(min_value=1000, max_value=20000))
+    def test_times(self, fps) -> None:
+        sig = np.random.rand(fps, 1)
+        _, times, _ = sp.signal.stft(sig.squeeze(), fps,
+                                     **TestSpectrogram.sp_args)
+        stft = Stft(fps, **TestSpectrogram.ap_args)
+        sxx = stft.transform(sig)
+        self.assertTrue(np.allclose(times, sxx.times))
 
 
 if __name__ == '__main__':

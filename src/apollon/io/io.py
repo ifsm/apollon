@@ -10,9 +10,9 @@ Functions:
     array_print_opt         Set format for printing numpy arrays.
     files_in_folder         Iterate over all files in given folder.
     generate_outpath        Compute path for feature output.
-    load                    Load pickled data.
+    load_from_pickle        Load pickled data.
     repath                  Change path but keep file name.
-    save                    Pickle some data.
+    save_to_pickle          Pickle some data.
 """
 from contextlib import contextmanager as _contextmanager
 import pathlib
@@ -135,14 +135,14 @@ def array_print_opt(*args, **kwargs):
         np.set_printoptions(**std_options)
 
 
-def load(path: PathType) -> Any:
+def load_from_pickle(path: PathType) -> Any:
     """Load a pickled file.
 
     Args:
-        path    (str) Path to file.
+        path:  Path to file.
 
     Returns:
-        (object) unpickled object
+        Unpickled object
     """
     path = pathlib.Path(path)
     with path.open('rb') as file:
@@ -172,7 +172,7 @@ def repath(current_path: PathType, new_path: PathType,
     return new_path
 
 
-def save(data: Any, path: PathType) -> None:
+def save_to_pickle(data: Any, path: PathType) -> None:
     """Pickles data to path.
 
     Args:
