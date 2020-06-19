@@ -12,7 +12,7 @@ import matplotlib.pyplot as _plt
 from scipy import stats as _stats
 from scipy.spatial import distance as _distance
 
-from apollon.io.io import save as _save
+from apollon.io import io as _io
 from apollon.som import defaults as _defaults
 from . import neighbors as _neighbors
 from . import utilities as _som_utils
@@ -100,7 +100,7 @@ class _SomBase:
         Args:
             path: Save SOM to this path.
         """
-        _save(self, path)
+        _io.save_to_pickle(self, path)
 
 
     def transform(self, data, flat=True):
