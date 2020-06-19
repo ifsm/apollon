@@ -170,6 +170,14 @@ class TestSpectrogram(unittest.TestCase):
         sxx = stft.transform(sig)
         self.assertTrue(np.allclose(times, sxx.times))
 
+    @given(integers(min_value=2, max_value=44100))
+    def test_frqs_and_bins_have_same_first_dim(self, nfft) -> None:
+        fps = 9000
+        sig = np.random.rand(fps, 1)
+        stft = Stft(fps, **TestSpectrogram.ap_args)
+        sxx = stft.transform(sig)
+        self.assertEqual(sxx.frqs.shape[0], sxx.bins.shape[0])
+
 
 if __name__ == '__main__':
     unittest.main()
