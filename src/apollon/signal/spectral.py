@@ -253,7 +253,7 @@ class Stft(SpectralTransform):
         """Transform ``data`` to spectral domain."""
         segs = self._cutter.transform(data)
         bins = fft(segs.data, self.params.window, self.params.n_fft)
-        return Spectrogram(self._params, bins, data.shape[0])
+        return Spectrogram(self._params, bins, segs.params.n_perseg)
 
 
 class StftSegments(SpectralTransform):
