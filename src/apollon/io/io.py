@@ -21,7 +21,7 @@ from typing import Any, Optional
 
 import numpy as np
 
-from .. types import PathType
+from .. types import Array, PathType
 from . json import ArrayEncoder
 
 def generate_outpath(in_path: PathType,
@@ -177,8 +177,36 @@ def save_to_pickle(data: Any, path: PathType) -> None:
 
     Args:
         data:  Pickleable object.
-        path:  Path to safe the file.
+        path:  Path to save the file.
     """
     path = pathlib.Path(path)
     with path.open('wb') as file:
         pickle.dump(data, file)
+
+
+def save_to_npy(data: Array, path: PathType) -> None:
+    """Save an array to numpy binary format without using pickle.
+
+    Args:
+        data:  Numpy array.
+        path:  Path to save the file.
+    """
+    path = pathlib.Path(path)
+    with path.open('wb') as file:
+        np.save(file, data, allow_pickle=False)
+
+
+def load_from_npy(path: PathType) -> Array:
+    """Load data from numpy's binary format.
+
+    Args:
+        path:  File path.
+
+    Returns:
+        Data as numpy array.
+    """
+    path = pathlib.Path(path)
+    with path.open('rb') as file:
+        data = np.load(file, allow_pickle=False)
+    return data
+

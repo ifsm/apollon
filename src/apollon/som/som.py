@@ -232,13 +232,21 @@ class SomBase:
         bmi, _ = asu.best_match(self.weights, data, self.metric)
         return bmi
 
-    def save(self, path):
+    def save(self, path) -> None:
         """Save som object to file using pickle.
 
         Args:
             path: Save SOM to this path.
         """
         aio.save_to_pickle(self, path)
+
+    def save_weights(self, path) -> None:
+        """Save weights only.
+
+        Args:
+            path:  File path
+        """
+        aio.save_to_npy(self._weights, path)
 
     def transform(self, data: Array) -> Array:
         """Transform each item in ``data`` to feature space.
