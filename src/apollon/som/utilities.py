@@ -119,27 +119,6 @@ def best_match(weights: Array, inp: Array, metric: str):
     return dists.argmin(axis=0), dists.min(axis=0)
 
 
-def umatrix(weights: Array, shape: Shape, metric: str = 'euclidean', norm: bool = True):
-    """Compute unified distance matrix.
-
-    Args:
-        weights:  SOM weight matrix.
-        shape:    SOM shape
-        metric:   Feature space distance metric.
-        norm:     Normalize U-matrix if ``True``.
-
-    Returns:
-        Unified distance matrix.
-    """
-    out = np.empty(shape, dtype='float64')
-
-    for i, mi in enumerate(np.ndindex(shape)):
-        nh_flat_idx = _topologies.vn_neighbourhood(*mi, *shape, flat=True)
-        p = weights[i][None]
-        nh = weights[nh_flat_idx]
-        out[mi] = _distance.cdist(p, nh).sum() / len(nh)
-
-    return out# / out.max()
 
 
 def init_simplex(n_features, n_units):

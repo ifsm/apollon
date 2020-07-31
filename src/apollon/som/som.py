@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 from scipy.spatial import cKDTree
+from scipy.spatial import distance
 
 from apollon.io import io as aio
 from apollon.som import defaults as _defaults
@@ -55,6 +56,7 @@ class SomGrid:
     def cr(self):
         for row, col in zip(self.rows.flat, self.cols.flat):
             yield col, row
+
 
 class SomBase:
     def __init__(self, dims: Tuple[int, int, int], n_iter: int, eta: float,
@@ -171,11 +173,6 @@ class SomBase:
         """Return topographic error."""
         return self._trr
 
-    @property
-    def umatrix(self) -> Array:
-        """Return the U-matrix."""
-        return asu.umatrix(self._weights, self.shape, self.metric)
-
     def calibrate(self, data: Array, target: Array) -> Array:
         """Retrieve the target value of the best matching input data vector
         for each unit weight vector.
@@ -206,7 +203,7 @@ class SomBase:
         """
         return asu.distribute(self.match(data), self.n_units)
 
-    def match(self, data: Array) -> Array:
+    def match_flat(self, data: Array) -> Array:
         """Return the index of the best matching unit for each vector in
         ``data``.
 
@@ -218,6 +215,20 @@ class SomBase:
         """
         bmu, _ = asu.best_match(self._weights, data, self.metric)
         return bmu
+
+    def match(self, data: Array) -> Array:
+        """Return the multi_index of the best matching unit for each vector in
+        ``data``.
+
+        Args:
+            data:  Input data set.
+
+        Returns:
+            Array of SOM unit indices.
+        """
+        bmu = self.match_flat(data)
+        pos_y, pos_x = np.unravel_index(bmu, self.shape)
+        return np.column_stack((pos_x, pos_y))
 
     def predict(self, data: Array) -> Array:
         """Predict the SOM index of the best matching unit
@@ -262,6 +273,30 @@ class SomBase:
         bmi = self.predict(data)
         return self.weights[bmi]
 
+
+    def umatrix(self, radius: int = 1, scale: bool = True, norm: bool = True):
+        """Compute U-matrix of SOM instance.
+
+        Args:
+            radius:   Map neighbourhood radius.
+            scale:    If ``True``, scale each U-height by the number of the
+                      associated unit's neighbours.
+            norm:     Normalize U-matrix if ``True``.
+
+        Returns:
+            Unified distance matrix.
+        """
+        u_height = np.empty(self.n_units, dtype='float64')
+        nhd_per_unit = self._grid.nhb_idx(self._grid.pos, radius)
+        for i, nhd_idx in enumerate(nhd_per_unit):
+            cwv = self._weights[[i]]
+            nhd = self._weights[nhd_idx]
+            u_height[i] = distance.cdist(cwv, nhd).sum()
+            if scale:
+                u_height[i] /= len(nhd_idx)
+        if norm:
+            u_height /= u_height.max()
+        return u_height.reshape(self.shape)
 
 
 class BatchMap(SomBase):
