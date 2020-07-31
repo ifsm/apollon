@@ -14,6 +14,28 @@ from apollon import tools
 from apollon.types import Array, Axis, Shape
 
 
+def umatrix(ax: Axis, umx: Array, outline: bool = False, **kwargs) -> None:
+    """Plot the U-matrix.
+
+    Args:
+        ax:   Axis subplot.
+        umx:  U-matrix data.
+
+    Returns:
+        Image.
+    """
+    defaults = {
+            'cmap': 'terrain',
+            'levels': 20}
+
+    for k, v in kwargs.items():
+        _ = kwargs.setdefault(k, v)
+    ax.contourf(umx, **kwargs)
+    if outline:
+        ax.contour(umx, cmap='Greys_r', alpha=.7)
+    return ax
+
+
 def plot_calibration(self, lables=None, ax=None, cmap='plasma', **kwargs):
     """Plot calibrated map.
 
@@ -84,23 +106,6 @@ def plot_qerror(self, ax=None, **kwargs):
             label='Quantizationerror')
 
 
-def umatrix(ax: Axis, udm: Array, **kwargs) -> mpl.image.AxesImage:
-    """Plot the U-matrix.
-
-    Args:
-        ax:   Axis subplot.
-        udm:  U-matrix data.
-
-    Returns:
-        Image.
-    """
-    defaults = {
-            'cmap': 'viridis',
-            'interpolation': 'None',
-            'origin': 'lower',}
-    for k, v in kwargs.items():
-        _ = kwargs.setdefault(k, v)
-    return ax.imshow(udm, **kwargs)
 
 
 def plot_umatrix3d(self, w=1, cmap='viridis', **kwargs):
