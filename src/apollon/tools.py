@@ -22,15 +22,15 @@ from datetime import datetime, timezone
 import math as _math
 from typing import Any, Tuple
 
-import numpy as _np
+import numpy as np
 
 from . import _defaults
-from . types import Array as _Array
+from . types import Array as Array
 
 
-def assert_array(arr: _Array, ndim: int, size: int,     # pylint: disable=R0913
-                 lower_bound: float = -_np.inf,
-                 upper_bound: float = _np.inf,
+def assert_array(arr: Array, ndim: int, size: int,     # pylint: disable=R0913
+                 lower_bound: float = -np.inf,
+                 upper_bound: float = np.inf,
                  name: str = 'arr'):
     """Raise an error if shape of `arr` does not match given arguments.
 
@@ -52,11 +52,11 @@ def assert_array(arr: _Array, ndim: int, size: int,     # pylint: disable=R0913
         raise ValueError(('Size of {} does not match. Expected '
                           '{}, got {}.\n').format(name, size, arr.size))
 
-    if _np.any(arr < lower_bound):
+    if np.any(arr < lower_bound):
         raise ValueError(('Elements of {} must '
                           'be >= {}.'.format(name, lower_bound)))
 
-    if _np.any(arr > upper_bound):
+    if np.any(arr > upper_bound):
         raise ValueError(('Elements of {} must '
                           'be <= {}.'.format(name, upper_bound)))
 
@@ -85,19 +85,19 @@ def jsonify(inp: Any):
     if any(xx) or any(yy):
         return inp
 
-    if isinstance(inp, _np.ndarray):
+    if isinstance(inp, np.ndarray):
         return inp.to_list()
 
     return str(inp)
 
 
 #TODO Move to better place
-def L1_Norm(arr: _Array) -> float:
+def L1_Norm(arr: Array) -> float:
     """Compute the L_1 norm of input vector `x`.
 
     This implementation is generally faster than np.norm(arr, ord=1).
     """
-    return _np.abs(arr).sum(axis=0)
+    return np.abs(arr).sum(axis=0)
 
 
 def normalize(arr, mode='array'):
@@ -113,16 +113,16 @@ def normalize(arr, mode='array'):
         (array) Normalized input.
     """
 
-    arr = _np.atleast_1d(arr)
+    arr = np.atleast_1d(arr)
 
     if mode == 'array':
         return _normalize(arr)
 
     if mode == 'rows':
-        return _np.vstack(_normalize(row) for row in arr)
+        return np.vstack(_normalize(row) for row in arr)
 
     if mode == 'cols':
-        return _np.hstack(_normalize(col[:, None]) for col in arr.T)
+        return np.hstack(_normalize(col[:, None]) for col in arr.T)
 
     raise ValueError('Unknown normalization mode')
 
@@ -156,7 +156,7 @@ def rowdiag(v, k=0):
     Return:
         (1d-array) Values of diagonal.
     """
-    return _np.diag(v, k)[:, None]
+    return np.diag(v, k)[:, None]
 
 
 def scale(x, new_min=0, new_max=1, axis=-1):
@@ -197,10 +197,10 @@ def smooth_stat(sig):
         else:
             out.append(sig_mean)
 
-    return _np.array(out)
+    return np.array(out)
 
 
-def standardize(x: _np.ndarray) -> _np.ndarray:
+def standardize(x: np.ndarray) -> np.ndarray:
     """Retrun z-transformed values of x.
 
     Params:
@@ -240,17 +240,17 @@ def within(val: float, bounds: Tuple[float, float]) -> bool:
     return bounds[0] <= val <= bounds[1]
 
 
-def within_any(val: float, windows: _Array) -> bool:
+def within_any(val: float, windows: Array) -> bool:
     """Return True if x is in any of the given windows"""
     a = windows[:, 0] <= val
     b = val <= windows[:, 1]
-    c = _np.logical_and(a, b)
+    c = np.logical_and(a, b)
 
-    return _np.any(c)
+    return np.any(c)
 
 
-def fsum(arr: _Array, axis: int = None, keepdims: bool = False,
-         dtype: 'str' = 'float64') -> _Array:
+def fsum(arr: Array, axis: int = None, keepdims: bool = False,
+         dtype: 'str' = 'float64') -> Array:
     """Return math.fsum along the specifyed axis.
 
     This function supports at most two-dimensional arrays.
@@ -265,17 +265,17 @@ def fsum(arr: _Array, axis: int = None, keepdims: bool = False,
         Sums along axis.
     """
     if axis is None:
-        out = _np.float64(_math.fsum(arr.flatten()))
+        out = np.float64(_math.fsum(arr.flatten()))
         if keepdims:
-            out = _np.array(out, ndmin=arr.ndim)
+            out = np.array(out, ndmin=arr.ndim)
     elif axis == 0:
-        out = _np.array([_math.fsum(col) for col in arr.T], dtype=dtype)
+        out = np.array([_math.fsum(col) for col in arr.T], dtype=dtype)
         if keepdims:
-            out = _np.expand_dims(out, 0)
+            out = np.expand_dims(out, 0)
     elif axis == 1:
-        out = _np.array([_math.fsum(row) for row in arr], dtype=dtype)
+        out = np.array([_math.fsum(row) for row in arr], dtype=dtype)
         if keepdims:
-            out = _np.expand_dims(out, 1)
+            out = np.expand_dims(out, 1)
     else:
         raise ValueError(f'``Axis is {axis} but must be 0, 1, or ``None``.')
     return out
