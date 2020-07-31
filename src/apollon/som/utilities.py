@@ -128,7 +128,7 @@ def init_pca(data: Array, shape: Shape, adapt: bool = True) -> Array:
                 coincides with principal component with the largest variance.
 
     Returns:
-        Matrix of SOM weights.
+        Array of SOM weights.
     """
     vals, vects, trans_data = tools.pca(data, 2)
     data_limits = np.column_stack((trans_data.min(axis=0),
@@ -141,6 +141,22 @@ def init_pca(data: Array, shape: Shape, adapt: bool = True) -> Array:
     points = np.vstack((grid_x.ravel(), grid_y.ravel()))
     weights = points.T @ vects + data.mean(axis=0)
     return weights
+
+
+def init_random(data: Array, shape: Shape) -> Array:
+    """Compute initial SOM weights by sampling uniformly from the data space.
+
+    Args:
+        data:   Input data set
+        shape:  Shape of SOM.
+
+    Returns:
+        Array of SOM weights.
+    """
+    n_units = np.prod(shape)
+    data_limits = np.column_stack((data.max(axis=0), data.min(axis=0)))
+    return np.column_stack((np.random.uniform(*data_limits[0], n_units),
+                            np.random.uniform(*data_limits[1], n_units)))
 
 
 def init_simplex(n_features, n_units):
