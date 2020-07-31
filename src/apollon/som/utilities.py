@@ -115,9 +115,9 @@ def best_match(weights: Array, inp: Array, metric: str):
     return dists.argmin(axis=0), dists.min(axis=0)
 
 
-def init_pca(data: Array, shape: Shape, adapt: bool = True) -> Array:
-    """Compute initial SOM weights by the first two principal components of the
-    input data.
+def sample_pca(data: Array, shape: Shape, adapt: bool = True) -> Array:
+    """Compute initial SOM weights by sampling from the first two principal
+    components of the input data.
 
     Args:
         data:   Input data set.
@@ -143,7 +143,7 @@ def init_pca(data: Array, shape: Shape, adapt: bool = True) -> Array:
     return weights
 
 
-def init_random(data: Array, shape: Shape) -> Array:
+def sample_rnd(data: Array, shape: Shape) -> Array:
     """Compute initial SOM weights by sampling uniformly from the data space.
 
     Args:
@@ -159,7 +159,7 @@ def init_random(data: Array, shape: Shape) -> Array:
                             np.random.uniform(*data_limits[1], n_units)))
 
 
-def init_simplex(n_features, n_units):
+def sample_stm(n_features, n_units):
     """Initialize the weights with stochastic matrices.
 
     The rows of each n by n stochastic matrix are sampes drawn from the
