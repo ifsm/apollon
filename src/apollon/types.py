@@ -7,7 +7,7 @@ import pathlib
 from typing import (Any, Collection, Dict, Generator, Iterable, List, Optional,
                     Sequence, Tuple, Union)
 import numpy as np
-import matplotlib as mpl
+from matplotlib import axes
 
 
 Array = np.ndarray
@@ -23,4 +23,4 @@ Shape = Tuple[int, int]
 Coord = Tuple[int, int]
 AdIndex = Tuple[List[int], List[int]]
 
-Axis = mpl.axes._axes.Axes
+Axis = axes._axes.Axes
