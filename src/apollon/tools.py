@@ -28,6 +28,29 @@ from . import _defaults
 from . types import Array as Array
 
 
+def pca(data: Array, n_comps: int = 2) -> Tuple[Array, Array, Array]:
+    """Compute a PCA based on ``numpy.linalg.svd``.
+
+    Interanlly, ``data`` will be centered but not scaled.
+
+    Args:
+        data:     Data set.
+        n_comps:  Number of principal components.
+
+    Returns:
+        ``n_comps`` largest singular values,
+        ``n_comps`` largest eigen vectors,
+        transformed input data.
+    """
+    data_centered = (data - data.mean(axis=0)) / data.std(axis=0)
+    _, vals, vects = np.linalg.svd(data_centered)
+
+    ord_idx = np.flip(vals.argsort())[:n_comps]
+    vals = vals[ord_idx]
+    vects = vects[ord_idx]
+    return vals, vects, data_centered @ vects.T
+
+
 def assert_array(arr: Array, ndim: int, size: int,     # pylint: disable=R0913
                  lower_bound: float = -np.inf,
                  upper_bound: float = np.inf,
