@@ -1,27 +1,20 @@
-# Licensed under the terms of the BSD-3-Clause license.
-# Copyright (C) 2019 Michael Blaß
-# mblass@posteo.net
-
-"""apollon/som/uttilites.py
+"""apollon/som/utilites.py
 
 Utilities for self.organizing maps.
 
-Functions:
-    activation_map    Plot activation map
-    distance_map      Plot a distance map
-    distance_map3d    Plot a 3d distance map
+Licensed under the terms of the BSD-3-Clause license.
+Copyright (C) 2019 Michael Blaß
+mblass@posteo.net
 """
-import collections
 import itertools
-from functools import lru_cache
 from typing import Dict, Iterable, Iterator, List, Tuple
 
 import numpy as np
 from scipy.spatial import distance as _distance
 from scipy import stats as _stats
 
-import apollon.som.topologies as _topologies
 from apollon.types import Array, Shape
+from apollon import tools
 
 
 def grid_iter(n_rows: int, n_cols: int) -> Iterator[Tuple[int, int]]:
@@ -51,7 +44,7 @@ def grid(n_rows: int, n_cols: int) -> Array:
 
 
 def decrease_linear(start: float, step: float, stop: float = 1.0
-        ) -> Iterator[float]:
+                    ) -> Iterator[float]:
     """Linearily decrease ``start``  in ``step`` steps to ``stop``."""
     if step < 1 or not isinstance(step, int):
         raise ValueError('Param `step` must be int >= 1.')
@@ -63,8 +56,8 @@ def decrease_linear(start: float, step: float, stop: float = 1.0
             yield a * x + start
 
 
-def decrease_expo(start: float, step: float,stop: float = 1.0
-        ) -> Iterator[float]:
+def decrease_expo(start: float, step: float, stop: float = 1.0
+                  ) -> Iterator[float]:
     """Exponentially decrease ``start``  in ``step`` steps to ``stop``."""
     if step < 1 or not isinstance(step, int):
         raise ValueError('Param `step` must be int >= 1.')
@@ -75,13 +68,13 @@ def decrease_expo(start: float, step: float,stop: float = 1.0
         for x in range(step):
             yield start * np.exp(b*x)
 
-
+"""
 def match(weights: Array, data: Array, kth, metric: str):
     dists = _distance.cdist(weights, data, metric)
     idx = dists.argpartition(kth, axis=0)
     min_vals = dists[min_idx]
     return (min_idx, min_vals)
-
+"""
 
 def best_match(weights: Array, inp: Array, metric: str):
     """Compute the best matching unit of ``weights`` for each
@@ -102,23 +95,52 @@ def best_match(weights: Array, inp: Array, metric: str):
         Index and error of best matching units.
     """
     if weights.ndim != 2:
-        raise ValueError(f'Array ``weights`` has {weights.ndim} dimensions, it'
-            'has to have exactly two dimensions.')
+        msg = (f'Array ``weights`` has {weights.ndim} dimensions, it '
+               'has to have exactly two dimensions.')
+        raise ValueError(msg)
 
     if weights.shape[-1] != inp.shape[-1]:
-        raise ValueError(f'Feature dimension of ``weights`` has '
-            '{weights.shape[0]} elemets, whereas ``inp`` has {inp.shape[-1]} '
-            'elemets. but they have, however, ' 'to match exactly.')
+        msg = (f'Feature dimension of ``weights`` has {weights.shape[0]} '
+               'elemets, whereas ``inp`` has {inp.shape[-1]} elemets. '
+               'However, both dimensions have to match exactly.')
+        raise ValueError(msg)
 
     inp = np.atleast_2d(inp)
     if inp.ndim > 2:
-        raise ValueError(f'Array ``inp`` has {weights.ndim} dimensions, it '
-            'has to have one or two dimensions.')
+        msg = (f'Array ``inp`` has {weights.ndim} dimensions, it '
+               'has to have one or two dimensions.')
+        raise ValueError(msg)
 
     dists = _distance.cdist(weights, inp, metric)
     return dists.argmin(axis=0), dists.min(axis=0)
 
 
+def init_pca(data: Array, shape: Shape, adapt: bool = True) -> Array:
+    """Compute initial SOM weights by the first two principal components of the
+    input data.
+
+    Args:
+        data:   Input data set.
+        shape:  Shape of SOM.
+        adapt:  If ``True``, the largest value of ``shape`` is applied to the
+                principal component with the largest sigular value. This
+                orients the map, such that map dimension with the most units
+                coincides with principal component with the largest variance.
+
+    Returns:
+        Matrix of SOM weights.
+    """
+    vals, vects, trans_data = tools.pca(data, 2)
+    data_limits = np.column_stack((trans_data.min(axis=0),
+                                   trans_data.max(axis=0)))
+    if adapt:
+        shape = sorted(shape, reverse=True)
+    dim_x = np.linspace(*data_limits[0], shape[0])
+    dim_y = np.linspace(*data_limits[1], shape[1])
+    grid_x, grid_y = np.meshgrid(dim_x, dim_y)
+    points = np.vstack((grid_x.ravel(), grid_y.ravel()))
+    weights = points.T @ vects + data.mean(axis=0)
+    return weights
 
 
 def init_simplex(n_features, n_units):
@@ -143,8 +165,9 @@ def init_simplex(n_features, n_units):
     # check for square matrix
     n_rows = np.sqrt(n_features)
     if bool(n_rows - int(n_rows)):
-        raise ValueError(f'Weight vector (len={n_features}) is not'
-                'reshapeable to square matrix.')
+        msg = (f'Weight vector (len={n_features}) is not '
+               'reshapeable to square matrix.')
+        raise ValueError(msg)
     else:
         n_rows = int(n_rows)
 
@@ -154,12 +177,12 @@ def init_simplex(n_features, n_units):
 
     # sample from dirichlet distributions
     st_matrix = np.hstack([_stats.dirichlet.rvs(alpha=a, size=n_units)
-                            for a in alpha])
+                           for a in alpha])
     return st_matrix
 
 
 def distribute(bmu_idx: Iterable[int], n_units: int
-        ) -> Dict[int, List[int]]:
+               ) -> Dict[int, List[int]]:
     """List training data matches per SOM unit.
 
     This method assumes that the ith element of ``bmu_idx`` corresponds to the
