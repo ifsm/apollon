@@ -1,9 +1,10 @@
-# Licensed under the terms of the BSD-3-Clause license.
-# Copyright (C) 2019 Michael Blaß
-# mblass@posteo.net
+"""apollon/aplot.py
 
-"""
-aplot.py -- General plotting routines.
+General plotting routines.
+
+Licensed under the terms of the BSD-3-Clause license.
+Copyright (C) 2019 Michael Blaß
+mblass@posteo.net
 
 Functions:
     fourplot            Create a four plot of time a signal.
@@ -12,8 +13,7 @@ Functions:
     onest_decoding      Plot decoded onsets over a signal.
     signal              Plot a time domain signal.
 """
-
-from typing import Optional, Tuple
+from typing import Iterable, Optional, Tuple, Union
 
 import matplotlib.pyplot as _plt
 import matplotlib.cm as _cm
@@ -22,32 +22,52 @@ from scipy import stats as _stats
 
 from . import _defaults
 from . import tools as _tools
-from . types import Array as _Array
+from . types import Array as _Array, Axis
 
 
 Limits = Optional[Tuple[int, int]]
 MplFig = Optional[_plt.Figure]
 FigSize = Tuple[float, float]
 SubplotPos = Optional[Tuple[int, int, int]]
+Axes = Union[Axis, Iterable[Axis]]
 
 
-def _nice_spines(ax, offset: int = 10) -> None:
+def outward_spines(axs: Axes, offset: float = 10.0) -> None:
     """Display only left and bottom spine and displace them.
+
+    Args:
+        axs:     Axis or iterable of axes.
+        offset:  Move the spines ``offset`` pixels in the negative direction.
 
     Note:
         Increasing ``offset`` may breaks the layout. Since the spine is moved,
-        so is the axis label, which is in turn forced out of the figure's bounds.
+        so is the axis label, which is in turn forced out of the figure's
+        bounds.
+    """
+    for ax in _np.atleast_1d(axs).ravel():
+        ax.spines['left'].set_position(('outward', offset))
+        ax.spines['bottom'].set_position(('outward', offset))
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.xaxis.set_ticks_position('bottom')
+        ax.yaxis.set_ticks_position('left')
+
+
+def center_spines(axs: Axes,
+                  intersect: Tuple[float, float] = (0.0, 0.0)) -> None:
+    """Display axes in crosshair fashion.
 
     Args:
-        ax:        Axes to be modified.
-        offset:    Move the spines ``offset`` pixels in the negative direction.
+        axs:        Axis or iterable of axes.
+        intersect:  Coordinate of axes' intersection point.
     """
-    ax.spines['left'].set_position(('outward', offset))
-    ax.spines['bottom'].set_position(('outward', offset))
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.xaxis.set_ticks_position('bottom')
-    ax.yaxis.set_ticks_position('left')
+    for ax in _np.atleast_1d(axs).ravel():
+        ax.spines['left'].set_position(('axes', intersect[0]))
+        ax.spines['bottom'].set_position(('axes', intersect[1]))
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.xaxis.set_ticks_position('bottom')
+        ax.yaxis.set_ticks_position('left')
 
 
 def _new_axis(spines: str = 'nice', fig: MplFig = None, sp_pos: SubplotPos = None,
