@@ -4,7 +4,7 @@
 
 """apollon/som/plot.py
 """
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -250,9 +250,10 @@ def weights_line(weights: Array, dims: Tuple, color: str = 'r',
     return fig, axs
 
 
-def wire(ax: Axis, weights: Array, shape: Shape,
-         unit_sizes: Optional[Array] = None, line_width: float = .4,
-         highlight: Optional[Array] = None):
+def wire(ax: Axis, weights: Array, shape: Shape, *,
+         unit_size: Union[int, float, Array] = 100.0,
+         line_width: Union[int, float] = 1.0,
+         highlight: Optional[Array] = None, labels: bool = False, **kwargs):
     """Plot the weight vectors of a SOM with two-dimensional feature space.
 
     Neighbourhood relations are indicate by connecting lines.
@@ -261,9 +262,10 @@ def wire(ax: Axis, weights: Array, shape: Shape,
         ax:          The axis subplot.
         weights:     SOM weigth matrix.
         shape:       SOM shape.
-        unit_sizes:  Size for each unit.
+        unit_size:   Size for each unit.
         line_width:  Width of the wire lines.
         highlight:   Index of units to be marked in different color.
+        labels:      If ``True``, attach a box with coordinates to each unit.
 
     Returns:
         vlines, hlines, bgmarker, umarker
@@ -273,11 +275,14 @@ def wire(ax: Axis, weights: Array, shape: Shape,
     hl_color = 'r'
     alpha = .7
 
-    min_marker_size = 10
-    marker_size = min_marker_size
-    if unit_sizes is not None:
-        scaled_unit_sizes = tools.scale(unit_sizes, 0, 100)
-        marker_size += scaled_unit_sizes
+    if isinstance(unit_size, np.ndarray):
+        marker_size = tools.scale(unit_size, 10, 110)
+    elif isinstance(unit_size, float) or isinstance(unit_size, int):
+        marker_size = np.repeat(unit_size, weights.shape[0])
+    else:
+        msg = (f'Argument of parameter ``unit_size`` must be real scalar '
+                'or one-dimensional numpy array.')
+        raise ValueError(msg)
     marker_size_bg = marker_size + marker_size / 100 * 30
 
     if highlight is not None:
@@ -289,7 +294,7 @@ def wire(ax: Axis, weights: Array, shape: Shape,
     ax.set_aspect('equal')
     vlines = ax.plot(vx, vy, unit_color, alpha=alpha, lw=line_width, zorder=9)
     hlines = ax.plot(hx, hy, unit_color, alpha=alpha, lw=line_width, zorder=9)
-    bgmarker = ax.scatter(vx, vy, s=marker_size_bg, c=bg_color, alpha=.9,
+    bgmarker = ax.scatter(vx, vy, s=marker_size_bg, c=bg_color,
                           edgecolors='None', zorder=11)
     umarker = ax.scatter(vx, vy, s=marker_size, c=unit_color, alpha=alpha,
                          edgecolors='None', zorder=12)
@@ -304,8 +309,11 @@ def wire(ax: Axis, weights: Array, shape: Shape,
             'facecolor': '#dddddd',
             'linewidth': .5,
             }
-    for (py, px), (ix, iy) in zip(weights, np.ndindex(shape)):
-        ax.text(px+1.3, py, f'({ix}, {iy})', font, bbox=bbox, zorder=13)
+
+    if labels is True:
+        for (px, py), (ix, iy) in zip(weights, np.ndindex(shape)):
+            ax.text(px+1.3, py, f'({ix}, {iy})', font, bbox=bbox, zorder=13)
+
     return vlines, hlines, bgmarker, umarker
 
 
