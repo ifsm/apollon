@@ -20,7 +20,7 @@ import warnings as _warnings
 
 import numpy as _np
 
-import chains_addiction as _ca
+import chainsaddiction as _ca
 
 import apollon
 from apollon import types as _at

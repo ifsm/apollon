@@ -7,6 +7,8 @@ import pathlib
 from typing import (Any, Collection, Dict, Generator, Iterable, List, Optional,
                     Sequence, Tuple, Union)
 import numpy as np
+from matplotlib import axes
+
 
 Array = np.ndarray
 ArrayOrStr = Union[Array, str]
@@ -16,3 +18,9 @@ ParamsType = Dict[str, Any]
 PathType = Union[str, pathlib.Path]
 PathGen = Generator[PathType, None, None]
 Schema = Dict[str, Collection[str]]
+
+Shape = Tuple[int, int]
+Coord = Tuple[int, int]
+AdIndex = Tuple[List[int], List[int]]
+
+Axis = axes._axes.Axes

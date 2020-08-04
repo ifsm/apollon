@@ -1,27 +1,20 @@
-# Licensed under the terms of the BSD-3-Clause license.
-# Copyright (C) 2019 Michael Blaß
-# mblass@posteo.net
-
-"""apollon/som/uttilites.py
+"""apollon/som/utilites.py
 
 Utilities for self.organizing maps.
 
-Functions:
-    activation_map    Plot activation map
-    distance_map      Plot a distance map
-    distance_map3d    Plot a 3d distance map
+Licensed under the terms of the BSD-3-Clause license.
+Copyright (C) 2019 Michael Blaß
+mblass@posteo.net
 """
 import itertools
-from typing import Iterator, Tuple
+from typing import Dict, Iterable, Iterator, List, Tuple
 
-import matplotlib.pyplot as _plt
-from mpl_toolkits.mplot3d import Axes3D
-import numpy as _np
+import numpy as np
 from scipy.spatial import distance as _distance
 from scipy import stats as _stats
 
-import apollon.som.topologies as _topologies
-from apollon.types import Array
+from apollon.types import Array, Shape
+from apollon import tools
 
 
 def grid_iter(n_rows: int, n_cols: int) -> Iterator[Tuple[int, int]]:
@@ -47,17 +40,11 @@ def grid(n_rows: int, n_cols: int) -> Array:
     Returns:
         Two-dimensional array in which each row represents an multi-index.
     """
-    return _np.array(list(grid_iter(n_rows, n_cols)))
-
-
-def activation_map(som, **kwargs):
-    ax = _plt.gca()
-    am = som.activation_map.reshape(som.shape[:2])
-    ax.imshow(_np.flipud(am), vmin=0, vmax=som.activation_map.max(), **kwargs)
+    return np.array(list(grid_iter(n_rows, n_cols)))
 
 
 def decrease_linear(start: float, step: float, stop: float = 1.0
-        ) -> Iterator[float]:
+                    ) -> Iterator[float]:
     """Linearily decrease ``start``  in ``step`` steps to ``stop``."""
     if step < 1 or not isinstance(step, int):
         raise ValueError('Param `step` must be int >= 1.')
@@ -69,18 +56,25 @@ def decrease_linear(start: float, step: float, stop: float = 1.0
             yield a * x + start
 
 
-def decrease_expo(start: float, step: float,stop: float = 1.0
-        ) -> Iterator[float]:
+def decrease_expo(start: float, step: float, stop: float = 1.0
+                  ) -> Iterator[float]:
     """Exponentially decrease ``start``  in ``step`` steps to ``stop``."""
     if step < 1 or not isinstance(step, int):
         raise ValueError('Param `step` must be int >= 1.')
     elif step == 1:
         yield start
     else:
-        b = _np.log(stop / start) / (step-1)
+        b = np.log(stop / start) / (step-1)
         for x in range(step):
-            yield start * _np.exp(b*x)
+            yield start * np.exp(b*x)
 
+"""
+def match(weights: Array, data: Array, kth, metric: str):
+    dists = _distance.cdist(weights, data, metric)
+    idx = dists.argpartition(kth, axis=0)
+    min_vals = dists[min_idx]
+    return (min_idx, min_vals)
+"""
 
 def best_match(weights: Array, inp: Array, metric: str):
     """Compute the best matching unit of ``weights`` for each
@@ -101,78 +95,126 @@ def best_match(weights: Array, inp: Array, metric: str):
         Index and error of best matching units.
     """
     if weights.ndim != 2:
-        raise ValueError(f'Array ``weights`` has {weights.ndim} dimensions, it'
-            'has to have exactly two dimensions.')
+        msg = (f'Array ``weights`` has {weights.ndim} dimensions, it '
+               'has to have exactly two dimensions.')
+        raise ValueError(msg)
 
     if weights.shape[-1] != inp.shape[-1]:
-        raise ValueError(f'Feature dimension of ``weights`` has '
-            '{weights.shape[0]} elemets, whereas ``inp`` has {inp.shape[-1]} '
-            'elemets. but they have, however, ' 'to match exactly.')
+        msg = (f'Feature dimension of ``weights`` has {weights.shape[0]} '
+               'elemets, whereas ``inp`` has {inp.shape[-1]} elemets. '
+               'However, both dimensions have to match exactly.')
+        raise ValueError(msg)
 
-    inp = _np.atleast_2d(inp)
+    inp = np.atleast_2d(inp)
     if inp.ndim > 2:
-        raise ValueError(f'Array ``inp`` has {weights.ndim} dimensions, it '
-            'has to have one or two dimensions.')
+        msg = (f'Array ``inp`` has {weights.ndim} dimensions, it '
+               'has to have one or two dimensions.')
+        raise ValueError(msg)
 
     dists = _distance.cdist(weights, inp, metric)
     return dists.argmin(axis=0), dists.min(axis=0)
 
 
-def umatrix(weights, dxy, metric='euclidean'):
-    """Compute unified distance matrix.
+def sample_pca(data: Array, shape: Shape, adapt: bool = True) -> Array:
+    """Compute initial SOM weights by sampling from the first two principal
+    components of the input data.
 
     Args:
-        weights:  SOM weights matrix.
-        dxy:
-        metric:   Metric to use.
+        data:   Input data set.
+        shape:  Shape of SOM.
+        adapt:  If ``True``, the largest value of ``shape`` is applied to the
+                principal component with the largest sigular value. This
+                orients the map, such that map dimension with the most units
+                coincides with principal component with the largest variance.
 
     Returns:
-        Unified distance matrix.
+        Array of SOM weights.
     """
-    out = _np.empty(dxy, dtype='float64')
+    vals, vects, trans_data = tools.pca(data, 2)
+    data_limits = np.column_stack((trans_data.min(axis=0),
+                                   trans_data.max(axis=0)))
+    if adapt:
+        shape = sorted(shape, reverse=True)
+    dim_x = np.linspace(*data_limits[0], shape[0])
+    dim_y = np.linspace(*data_limits[1], shape[1])
+    grid_x, grid_y = np.meshgrid(dim_x, dim_y)
+    points = np.vstack((grid_x.ravel(), grid_y.ravel()))
+    weights = points.T @ vects + data.mean(axis=0)
+    return weights
 
-    for i, mi in enumerate(_np.ndindex(dxy)):
-        nh_flat_idx = _topologies.vn_neighbourhood(*mi, *dxy, flat=True)
-        p = weights[i][None]
-        nh = weights[nh_flat_idx]
-        out[mi] = _distance.cdist(p, nh).sum() / len(nh)
 
-    return out / out.max()
+def sample_rnd(data: Array, shape: Shape) -> Array:
+    """Compute initial SOM weights by sampling uniformly from the data space.
+
+    Args:
+        data:   Input data set
+        shape:  Shape of SOM.
+
+    Returns:
+        Array of SOM weights.
+    """
+    n_units = np.prod(shape)
+    data_limits = np.column_stack((data.max(axis=0), data.min(axis=0)))
+    weights = [np.random.uniform(*lim, n_units) for lim in data_limits]
+    return np.column_stack(weights)
 
 
-def init_simplex(n_features, n_units):
-    """Initialize the weights with stochastic matrices.
+def sample_stm(data: Array, shape: Shape):
+    """Compute initial SOM weights by sampling stochastic matrices from
+    Dirichlet distribution.
 
     The rows of each n by n stochastic matrix are sampes drawn from the
     Dirichlet distribution, where n is the number of rows and cols of the
     matrix. The diagonal elemets of the matrices are set to twice the
     probability of the remaining elements.
-    The square root n of the weight vectors' size must be element of the
-    natural numbers, so that the weight vector is reshapeable to a square
-    matrix.
+    The square root of the weight vectors' size must be a real integer.
 
     Args:
-        n_features:  Number of features in each vector.
-        n_units:     Number of units on the SOM.
+        data:   Input data set.
+        shape:  Shape of SOM.
 
     Returns:
-        Two-dimensional array of shape (n_units, n_features), in which each
-        row is a flattened random stochastic matrix.
+        Array of SOM weights.
+
+    Notes:
+        Each row of the output array is to be considered a flattened
+        stochastic matrix, such that each ``N = sqrt(data.shape[1])`` values
+        are a discrete probability distribution forming the ``N``th row of
+        the matrix.
     """
-    # check for square matrix
-    n_rows = _np.sqrt(n_features)
+    n_rows = np.sqrt(data.shape[1])
     if bool(n_rows - int(n_rows)):
-        raise ValueError(f'Weight vector (len={n_features}) is not'
-                'reshapeable to square matrix.')
-    else:
-        n_rows = int(n_rows)
+        msg = (f'Weight vector with {n_rows} elements is not '
+               'reshapeable to square matrix.')
+        raise ValueError(msg)
 
-    # set alpha
-    alpha = _np.full((n_rows, n_rows), 500)
-    _np.fill_diagonal(alpha, 1000)
-
-    # sample from dirichlet distributions
-    st_matrix = _np.hstack([_stats.dirichlet.rvs(alpha=a, size=n_units)
-                            for a in alpha])
+    n_rows = int(n_rows)
+    n_units = np.prod(shape)
+    alpha = np.random.randint(1, 10, (n_rows, n_rows))
+    st_matrix = np.hstack([_stats.dirichlet.rvs(alpha=a, size=n_units)
+                           for a in alpha])
     return st_matrix
 
+
+def distribute(bmu_idx: Iterable[int], n_units: int
+               ) -> Dict[int, List[int]]:
+    """List training data matches per SOM unit.
+
+    This method assumes that the ith element of ``bmu_idx`` corresponds to the
+    ith vetor in a array of input data vectors.
+
+    Empty units result in empty list.
+
+    Args:
+        bmu_idx:  Indices of best matching units.
+        n_units:  Number of units on the SOM.
+
+    Returns:
+        Dictionary in which the keys represent the flat indices of SOM units.
+        The corresponding value is a list of indices of those training data
+        vectors that have been mapped to this unit.
+    """
+    unit_matches = {i:[] for i in range(n_units)}
+    for data_idx, bmu in enumerate(bmu_idx):
+        unit_matches[bmu].append(data_idx)
+    return unit_matches
