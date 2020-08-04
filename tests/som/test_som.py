@@ -9,7 +9,7 @@ import scipy as sp
 from apollon.som.som import SomBase, SomGrid
 
 SomDim = Tuple[int, int, int]
-dimension = hst.integers(min_value=1, max_value=100)
+dimension = hst.integers(min_value=2, max_value=50)
 som_dims = hst.tuples(dimension, dimension, dimension)
 
 
@@ -67,23 +67,27 @@ class TestSomBase(unittest.TestCase):
         data = np.random.rand(100, dims[2])
         self.assertIsInstance(som.match(data), np.ndarray)
 
+    @given(som_dims)
+    def test_umatrix_has_map_shape(self, dims: SomDim) -> None:
+        som = SomBase(dims, 100, 0.1, 10, 'gaussian', 'uniform', 'euclidean')
+        um = som.umatrix()
+        self.assertEqual(um.shape, som.shape)
 
-"""
-class TestSelfOrganizingMap(unittest.TestCase):
-    def setUp(self):
-        N = 100
+    @given(som_dims)
+    def test_umatrix_scale(self, dims: SomDim) -> None:
+        som = SomBase(dims, 100, 0.1, 10, 'gaussian', 'uniform', 'euclidean')
+        som._weights = np.tile(np.arange(som.n_features), (som.n_units, 1))
+        som._weights[:, -1] = np.arange(som.n_units)
+        um = som.umatrix(scale=True, norm=False)
+        self.assertEqual(um[0, 0], um[-1, -1])
+        self.assertEqual(um[0, -1], um[-1, 0])
 
-        m1 = (0, 0)
-        m2 = (10, 15)
-        c1 = ((10, 0), (0, 10))
-        c2 = ((2, 0), (0, 2))
+    @given(som_dims)
+    def test_umatrix_norm(self, dims: SomDim) -> None:
+        som = SomBase(dims, 100, 0.1, 10, 'gaussian', 'uniform', 'euclidean')
+        um = som.umatrix(norm=True)
+        self.assertEqual(um.max(), 1.0)
 
-        seg1 = np.random.multivariate_normal(m1, c1, N)
-        seg2 = np.random.multivariate_normal(m2, c2, N)
-
-        self.data = np.vstack((seg1, seg2))
-        self.dims = (10, 10, 2)
-"""
 
 if __name__ == '__main__':
     unittest.main()

@@ -289,11 +289,15 @@ class SomBase:
         for i, nhd_idx in enumerate(nhd_per_unit):
             cwv = self._weights[[i]]
             nhd = self._weights[nhd_idx]
-            u_height[i] = distance.cdist(cwv, nhd).sum()
+            u_height[i] = distance.cdist(cwv, nhd, self.metric).sum()
             if scale:
                 u_height[i] /= len(nhd_idx)
         if norm:
-            u_height /= u_height.max()
+            umax = u_height.max()
+            if umax == 0:
+                u_height = np.zeros_like(u_height)
+            else:
+                u_height /= u_height.max()
         return u_height.reshape(self.shape)
 
 
