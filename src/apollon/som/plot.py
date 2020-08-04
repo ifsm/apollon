@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from apollon import tools
+from apollon import aplot
 from apollon.types import Array, Axis, Shape
 
 
@@ -339,4 +340,5 @@ def data_2d(ax: Axis, data: Array, colors: Array,
             's': 10}
     for k, v in defaults.items():
         _ = kwargs.setdefault(k, v)
+    aplot.outward_spines(ax)
     return ax.scatter(*data.T, **kwargs)
