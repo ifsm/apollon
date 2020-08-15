@@ -1,7 +1,7 @@
 # Licensed under the terms of the BSD-3-Clause license.
 # Copyright (C) 2019 Michael Blaß
 # mblass@posteo.net
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from scipy.spatial import cKDTree
@@ -13,10 +13,13 @@ from . import neighbors as _neighbors
 from . import utilities as asu
 from .. types import Array, Shape, Coord
 
+WeightInit = Union[Callable[[Array, Shape], Array], str]
+Metric = Union[Callable[[Array, Array], float], str]
+SomDims = Tuple[int, int, int]
+
 
 class SomGrid:
     def __init__(self, shape: Shape) -> None:
-
         if not all(isinstance(val, int) and val >= 1 for val in shape):
             raise ValueError('Dimensions must be integer > 0.')
         self.shape = shape
@@ -62,9 +65,9 @@ class SomGrid:
 
 
 class SomBase:
-    def __init__(self, dims: Tuple[int, int, int], n_iter: int, eta: float,
-                 nhr: float, nh_shape: str, init_distr: str, metric: str,
-                 seed: Optional[float] = None):
+    def __init__(self, dims: SomDims, n_iter: int, eta: float,
+                 nhr: float, nh_shape: str, init_weights: WeightInit,
+                 metric: Metric, seed: Optional[float] = None):
 
         self._grid = SomGrid(dims[:2])
         self.n_features = dims[2]
@@ -73,6 +76,7 @@ class SomBase:
         self.metric = metric
         self._qrr = np.zeros(n_iter)
         self._trr = np.zeros(n_iter)
+        self._weights: Optional[Array] = None
 
         try:
             self._neighbourhood = getattr(_neighbors, nh_shape)
@@ -98,16 +102,13 @@ class SomBase:
         if seed is not None:
             np.random.seed(seed)
 
-        if init_distr == 'uniform':
-            self._weights = np.random.uniform(0, 1,
-                                              size=(self.n_units, self.dw))
-        elif init_distr == 'simplex':
-            self._weights = asu.init_simplex(self.dw, self.n_units)
-        elif init_distr == 'pca':
-            raise NotImplementedError
+        if isinstance(init_weights, str):
+            self.init_weights = asu.weight_initializer[init_weights]
+        elif callable(init_weights):
+            self.init_weights = init_weights
         else:
-            raise ValueError(f'Unknown initializer "{init_distr}". Use'
-                             '"uniform", "simplex", or "pca".')
+            msg = f'Initializer must be string or callable.'
+            raise ValueError(msg)
 
         self._dists: Optional[Array] = None
 
@@ -302,23 +303,24 @@ class SomBase:
 
 
 class BatchMap(SomBase):
-    def __init__(self, dims: tuple, n_iter: int, eta: float, nhr: float,
-                 nh_shape: str = 'gaussian', init_distr: str = 'uniform',
-                 metric: str = 'euclidean', seed: int = None):
+    def __init__(self, dims: SomDims, n_iter: int, eta: float, nhr: float,
+                 nh_shape: str = 'gaussian', init_weights: WeightInit  = 'rnd',
+                 metric: Metric = 'euclidean', seed: int = None):
 
-        super().__init__(dims, n_iter, eta, nhr, nh_shape, init_distr, metric,
+        super().__init__(dims, n_iter, eta, nhr, nh_shape, init_weights, metric,
                          seed=seed)
 
 
 class IncrementalMap(SomBase):
-    def __init__(self, dims: tuple, n_iter: int, eta: float, nhr: float,
-                 nh_shape: str = 'gaussian', init_distr: str = 'uniform',
-                 metric: str = 'euclidean', seed: int = None):
+    def __init__(self, dims: SomDims, n_iter: int, eta: float, nhr: float,
+                 nh_shape: str = 'gaussian', init_weights: WeightInit = 'rnd',
+                 metric: Metric = 'euclidean', seed: int = None):
 
-        super().__init__(dims, n_iter, eta, nhr, nh_shape, init_distr, metric,
+        super().__init__(dims, n_iter, eta, nhr, nh_shape, init_weights, metric,
                          seed=seed)
 
     def fit(self, train_data, verbose=False, output_weights=False):
+        self._weights = self.init_weights(train_data, self.shape)
         eta_ = asu.decrease_linear(self.init_eta, self.n_iter, _defaults.final_eta)
         nhr_ = asu.decrease_expo(self.init_nhr, self.n_iter, _defaults.final_nhr)
 
@@ -353,6 +355,7 @@ class IncrementalKDTReeMap(SomBase):
 
     def fit(self, train_data, verbose=False):
         """Fit SOM to input data."""
+        self._weights = self.init_weights(train_data, self.shape)
         eta_ = asu.decrease_linear(self.init_eta, self.n_iter, _defaults.final_eta)
         nhr_ = asu.decrease_expo(self.init_nhr, self.n_iter, _defaults.final_nhr)
         iter_ = range(self.n_iter)

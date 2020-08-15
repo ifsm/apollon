@@ -218,3 +218,9 @@ def distribute(bmu_idx: Iterable[int], n_units: int
     for data_idx, bmu in enumerate(bmu_idx):
         unit_matches[bmu].append(data_idx)
     return unit_matches
+
+
+weight_initializer = {
+    'rnd': sample_rnd,
+    'stm': sample_stm,
+    'pca': sample_pca,}
