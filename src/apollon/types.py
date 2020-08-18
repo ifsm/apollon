@@ -20,6 +20,7 @@ PathGen = Generator[PathType, None, None]
 Schema = Dict[str, Collection[str]]
 
 Shape = Tuple[int, int]
+SomDims = Tuple[int, int, int]
 Coord = Tuple[int, int]
 AdIndex = Tuple[List[int], List[int]]
 

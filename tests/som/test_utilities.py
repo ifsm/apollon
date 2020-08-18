@@ -1,12 +1,15 @@
 import unittest
 
 from hypothesis import strategies as hst
+from hypothesis import given
 import numpy as np
 from scipy.spatial import distance
-import scipy as sp
 
 from apollon.som import utilities as asu
+from apollon.types import SomDims
 
+dimension = hst.integers(min_value=2, max_value=50)
+som_dims = hst.tuples(dimension, dimension, dimension)
 """
 class TestMatch(unittest.TestCase):
     def setUp(self) -> None:
@@ -39,6 +42,24 @@ class TestDistribute(unittest.TestCase):
         self.assertIsInstance(res, dict)
 
 
+class TestSampleHist(unittest.TestCase):
+    def setUp(self) -> None:
+        pass
+
+    @given(som_dims)
+    def test_rows_are_stochastic(self, dims: SomDims) -> None:
+        weights = asu.sample_hist(dims)
+        comp =np.isclose(weights.sum(axis=1), 1)
+        self.assertTrue(comp.all())
+
+
+class TestSamplePca(unittest.TestCase):
+    def setUp(self) -> None:
+        pass
+
+    @given(som_dims)
+    def test_x(self, dims: SomDims) -> None:
+        weights = asu.sample_pca(dims)
 """
 class TestSelfOrganizingMap(unittest.TestCase):
     def setUp(self):
