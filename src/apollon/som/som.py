@@ -11,11 +11,10 @@ from apollon.io import io as aio
 from apollon.som import defaults as _defaults
 from . import neighbors as _neighbors
 from . import utilities as asu
-from .. types import Array, Shape, Coord
+from .. types import Array, Shape, SomDims, Coord
 
 WeightInit = Union[Callable[[Array, Shape], Array], str]
 Metric = Union[Callable[[Array, Array], float], str]
-SomDims = Tuple[int, int, int]
 
 
 class SomGrid:
@@ -320,7 +319,7 @@ class IncrementalMap(SomBase):
                          seed=seed)
 
     def fit(self, train_data, verbose=False, output_weights=False):
-        self._weights = self.init_weights(train_data, self.shape)
+        self._weights = self.init_weights(self.dims, train_data)
         eta_ = asu.decrease_linear(self.init_eta, self.n_iter, _defaults.final_eta)
         nhr_ = asu.decrease_expo(self.init_nhr, self.n_iter, _defaults.final_nhr)
 

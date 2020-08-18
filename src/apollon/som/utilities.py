@@ -7,13 +7,13 @@ Copyright (C) 2019 Michael Blaß
 mblass@posteo.net
 """
 import itertools
-from typing import Dict, Iterable, Iterator, List, Tuple
+from typing import Dict, Iterable, Iterator, List, Optional, Tuple
 
 import numpy as np
 from scipy.spatial import distance as _distance
 from scipy import stats as _stats
 
-from apollon.types import Array, Shape
+from apollon.types import Array, Shape, SomDims
 from apollon import tools
 
 
@@ -115,13 +115,13 @@ def best_match(weights: Array, inp: Array, metric: str):
     return dists.argmin(axis=0), dists.min(axis=0)
 
 
-def sample_pca(data: Array, shape: Shape, adapt: bool = True) -> Array:
+def sample_pca(dims: SomDims, data: Optional[Array] = None, **kwargs) -> Array:
     """Compute initial SOM weights by sampling from the first two principal
     components of the input data.
 
     Args:
+        dims:   Dimensions of SOM.
         data:   Input data set.
-        shape:  Shape of SOM.
         adapt:  If ``True``, the largest value of ``shape`` is applied to the
                 principal component with the largest sigular value. This
                 orients the map, such that map dimension with the most units
@@ -130,36 +130,45 @@ def sample_pca(data: Array, shape: Shape, adapt: bool = True) -> Array:
     Returns:
         Array of SOM weights.
     """
+    n_rows, n_cols, n_feats = dims
+    n_units = n_rows * n_cols
+    if data is None:
+        data = np.random.randint(-100, 100, (300, n_feats))
     vals, vects, trans_data = tools.pca(data, 2)
     data_limits = np.column_stack((trans_data.min(axis=0),
                                    trans_data.max(axis=0)))
-    if adapt:
+    if 'adapt' in kwargs and kwargs['adapt'] is True:
         shape = sorted(shape, reverse=True)
-    dim_x = np.linspace(*data_limits[0], shape[0])
-    dim_y = np.linspace(*data_limits[1], shape[1])
+    dim_x = np.linspace(*data_limits[0], n_rows)
+    dim_y = np.linspace(*data_limits[1], n_cols)
     grid_x, grid_y = np.meshgrid(dim_x, dim_y)
     points = np.vstack((grid_x.ravel(), grid_y.ravel()))
     weights = points.T @ vects + data.mean(axis=0)
     return weights
 
 
-def sample_rnd(data: Array, shape: Shape) -> Array:
+def sample_rnd(dims: SomDims, data: Optional[Array] = None, **kwargs) -> Array:
     """Compute initial SOM weights by sampling uniformly from the data space.
 
     Args:
-        data:   Input data set
-        shape:  Shape of SOM.
+        dims:  Dimensions of SOM.
+        data:  Input data set. If ``None``, sample from [-10, 10].
 
     Returns:
         Array of SOM weights.
     """
-    n_units = np.prod(shape)
-    data_limits = np.column_stack((data.max(axis=0), data.min(axis=0)))
+    n_rows, n_cols, n_feats = dims
+    n_units = n_rows * n_cols
+    if data is not None:
+        data_limits = np.column_stack((data.min(axis=0), data.max(axis=0)))
+    else:
+        data_limits = np.random.randint(-10, 10, (n_feats, 2))
+        data_limits.sort()
     weights = [np.random.uniform(*lim, n_units) for lim in data_limits]
     return np.column_stack(weights)
 
 
-def sample_stm(data: Array, shape: Shape):
+def sample_stm(dims: SomDims, data: Optional[Array] = None, **kwargs) -> Array:
     """Compute initial SOM weights by sampling stochastic matrices from
     Dirichlet distribution.
 
@@ -170,8 +179,8 @@ def sample_stm(data: Array, shape: Shape):
     The square root of the weight vectors' size must be a real integer.
 
     Args:
-        data:   Input data set.
-        shape:  Shape of SOM.
+        dims:  Dimensions of SOM.
+        data:  Input data set.
 
     Returns:
         Array of SOM weights.
@@ -182,18 +191,33 @@ def sample_stm(data: Array, shape: Shape):
         are a discrete probability distribution forming the ``N``th row of
         the matrix.
     """
-    n_rows = np.sqrt(data.shape[1])
-    if bool(n_rows - int(n_rows)):
-        msg = (f'Weight vector with {n_rows} elements is not '
+    n_rows, n_cols, n_feats = dims
+    n_states = np.sqrt(n_feats)
+    if bool(n_states - int(n_states)):
+        msg = (f'Weight vector with {n_feats} elements is not '
                'reshapeable to square matrix.')
         raise ValueError(msg)
 
-    n_rows = int(n_rows)
-    n_units = np.prod(shape)
-    alpha = np.random.randint(1, 10, (n_rows, n_rows))
-    st_matrix = np.hstack([_stats.dirichlet.rvs(alpha=a, size=n_units)
+    n_states = int(n_states)
+    n_units = n_rows * n_cols
+    alpha = np.random.randint(1, 10, (n_states, n_states))
+    st_matrix = np.hstack([_stats.dirichlet(a).rvs(size=n_units)
                            for a in alpha])
     return st_matrix
+
+
+def sample_hist(dims: SomDims, data: Optional[Array] = None, **kwargs) -> Array:
+    """Sample sum-normalized histograms.
+
+    Args:
+        dims:  Dimensions of SOM.
+        data:  Input data set.
+
+    Returns:
+        Two-dimensional array in which each row is a historgram.
+    """
+    n_rows, n_cols, n_feats = dims
+    return _stats.dirichlet(np.ones(n_feats)).rvs(n_rows*n_cols)
 
 
 def distribute(bmu_idx: Iterable[int], n_units: int
@@ -223,4 +247,5 @@ def distribute(bmu_idx: Iterable[int], n_units: int
 weight_initializer = {
     'rnd': sample_rnd,
     'stm': sample_stm,
-    'pca': sample_pca,}
+    'pca': sample_pca,
+    'hist': sample_hist}
