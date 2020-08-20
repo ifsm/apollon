@@ -15,26 +15,30 @@ from apollon import aplot
 from apollon.types import Array, Axis, Shape
 
 
-def umatrix(ax: Axis, umx: Array, outline: bool = False, **kwargs) -> None:
+def umatrix(ax: Axis, umx: Array, outline: bool = False,
+            pad_mode: str = 'constant', **kwargs) -> None:
     """Plot the U-matrix.
 
     Args:
         ax:   Axis subplot.
         umx:  U-matrix data.
 
-    Returns:
-        Image.
+    Note:
+        Figure aspect is set to 'eqaul'.
     """
     defaults = {
             'cmap': 'terrain',
             'levels': 20}
+    defaults.update(kwargs)
+    sdx, sdy = umx.shape
+    umx_padded = np.pad(umx, 1, mode=pad_mode)
 
-    for k, v in kwargs.items():
-        _ = kwargs.setdefault(k, v)
-    ax.contourf(umx, **kwargs)
+    _ = ax.contourf(umx, **defaults, extent=(-0.5, sdy-0.5, -0.5, sdx-0.5))
+    _ = ax.set_xticks(range(sdy))
+    _ = ax.set_yticks(range(sdx))
     if outline:
         ax.contour(umx, cmap='Greys_r', alpha=.7)
-    return ax
+    ax.set_aspect('equal')
 
 
 def plot_calibration(self, lables=None, ax=None, cmap='plasma', **kwargs):
@@ -94,7 +98,7 @@ def plot_datamap(self, data, targets, interp='None', marker=False,
     return (ax, udm, (x, y))
 
 
-def plot_qerror(self, ax=None, **kwargs):
+def plot_qerror(ax=None, **kwargs):
     """Plot quantization error."""
     if ax is None:
         fig, ax = _new_axis(**kwargs)
@@ -109,7 +113,7 @@ def plot_qerror(self, ax=None, **kwargs):
 
 
 
-def plot_umatrix3d(self, w=1, cmap='viridis', **kwargs):
+def plot_umatrix3d(w=1, cmap='viridis', **kwargs):
     """Plot the umatrix in 3d. The color on each unit (x, y) represents its
        mean distance to all direct neighbours.
 
