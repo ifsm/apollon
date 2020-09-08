@@ -10,6 +10,7 @@ Functions:
     fti16        Cast float to int16.
     load_audio   Load .wav file.
 """
+import hashlib
 import pathlib
 
 import matplotlib.pyplot as plt
@@ -39,6 +40,12 @@ class AudioFile:
     def file_name(self) -> str:
         """Return source file name."""
         return self._path.name
+
+    @property
+    def hash(self) -> str:
+        """Compute sha256 hash."""
+        obj = hashlib.sha256(self.data.tobytes())
+        return obj.hexdigest()
 
     @property
     def n_channels(self) -> int:

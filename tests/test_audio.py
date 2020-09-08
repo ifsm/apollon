@@ -10,6 +10,11 @@ class TestAudioFile(unittest.TestCase):
     def test_path_is_sting(self):
         self.assertIsInstance(self.snd.file_name, str)
 
+    def test_hash(self):
+        snd2 = AudioFile('audio/beat.wav')
+        self.assertEqual(self.snd.hash, snd2.hash)
+
+
 class TestAudioFileReadMono(unittest.TestCase):
     def setUp(self):
         self.snd = AudioFile('audio/beat.wav')
