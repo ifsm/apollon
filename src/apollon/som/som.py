@@ -215,8 +215,10 @@ class SomBase:
         return bmu
 
     def match(self, data: Array) -> Array:
-        """Return the multi_index of the best matching unit for each vector in
+        """Return the multi index of the best matching unit for each vector in
         ``data``.
+
+        Caution: This function returns the multi index into the array.
 
         Args:
             data:  Input data set.
@@ -225,8 +227,7 @@ class SomBase:
             Array of SOM unit indices.
         """
         bmu = self.match_flat(data)
-        pos_y, pos_x = np.unravel_index(bmu, self.shape)
-        return np.column_stack((pos_x, pos_y))
+        return np.column_stack(np.unravel_index(bmu, self.shape))
 
     def predict(self, data: Array) -> Array:
         """Predict the SOM index of the best matching unit

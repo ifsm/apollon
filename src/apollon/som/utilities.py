@@ -138,9 +138,11 @@ def sample_pca(dims: SomDims, data: Optional[Array] = None, **kwargs) -> Array:
     data_limits = np.column_stack((trans_data.min(axis=0),
                                    trans_data.max(axis=0)))
     if 'adapt' in kwargs and kwargs['adapt'] is True:
-        shape = sorted(shape, reverse=True)
-    dim_x = np.linspace(*data_limits[0], n_rows)
-    dim_y = np.linspace(*data_limits[1], n_cols)
+        shape = sorted((n_rows, n_cols), reverse=True)
+    else:
+        shape = (n_rows, n_cols)
+    dim_x = np.linspace(*data_limits[0], shape[0])
+    dim_y = np.linspace(*data_limits[1], shape[1])
     grid_x, grid_y = np.meshgrid(dim_x, dim_y)
     points = np.vstack((grid_x.ravel(), grid_y.ravel()))
     weights = points.T @ vects + data.mean(axis=0)
