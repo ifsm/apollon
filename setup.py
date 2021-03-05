@@ -17,4 +17,3 @@ ext_som_dist = Extension('_distance',
         include_dirs = ['include', np.get_include()])
 
 setup(ext_modules = [ext_features, ext_som_dist])
-
