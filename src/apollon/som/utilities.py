@@ -190,7 +190,7 @@ def sample_stm(dims: SomDims, data: Optional[Array] = None, **kwargs) -> Array:
     Notes:
         Each row of the output array is to be considered a flattened
         stochastic matrix, such that each ``N = sqrt(data.shape[1])`` values
-        are a discrete probability distribution forming the ``N``th row of
+        are a discrete probability distribution forming the ``N`` th row of
         the matrix.
     """
     n_rows, n_cols, n_feats = dims

@@ -25,6 +25,7 @@ class AudioFile:
     """Representation of an audio file."""
     def __init__(self, path: PathType) -> None:
         """Load an audio file.
+
         Args:
             path:   Path to file.
         """
@@ -140,7 +141,7 @@ class AudioFile:
 def fti16(inp: Array) -> Array:
     """Cast audio loaded as float to int16.
 
-    Params:
+    Args:
         inp:    Input array of dtype float64.
 
     Returns:

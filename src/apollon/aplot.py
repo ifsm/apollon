@@ -124,7 +124,7 @@ def _new_axis_3d(fig: MplFig = None, **kwargs) -> tuple:
 def signal(values: _Array, fps: int = None, **kwargs) -> tuple:
     """Plot time series with constant sampling interval.
 
-    Params:
+    Args:
         values:        Values of the time series.
         fps:           Sampling frequency in samples.
         time_scale:    Seconds or samples.
@@ -235,7 +235,7 @@ def marginal_distr(train_data: _Array, state_means: _Array, stat_dist: _Array, b
 def onsets(sig, ons, **kwargs) -> tuple:
     """Indicate onsets on a time series.
 
-    Parmas:
+    Args:
         sig:    Input to onset detection.
         ons:    Onset detector instance.
 

@@ -1,26 +1,12 @@
-"""apollon/tools.py -- Common tool library.
+"""
+Common tool library.
 Licensed under the terms of the BSD-3-Clause license.
-Copyright (C) 2019 Michael Blaß
-mblass@posteo.net
 
-Functions:
-    assert_array        Raise if array does not match given params.
-    L1_Norm             Compute L1_Norm.
-    normalize           Return _normalized version of input.
-    in2out              Create a save from an input path.
-    offdiag             Access to off-diagonal elements of square array.
-    rowdiag             kth array diagonal sorted by array's rows.
-    scale               Scale array between bounds.
-    smooth_stat         Return smoothed input.
-    standardize         Scale to zero mean and unit standard deviation.
-    time_stamp          Return time stamp.
-    within              Test wether val is in window.
-    within_any          Test wether val is in any of windows.
-    array2d_fsum        Sum array entry with machine precision.
+Copyright (C) 2019 Michael Blaß
 """
 from datetime import datetime, timezone
 import math as _math
-from typing import Any, Tuple
+from typing import Any, Tuple, Callable
 
 import numpy as np
 
@@ -58,11 +44,11 @@ def assert_array(arr: Array, ndim: int, size: int,     # pylint: disable=R0913
     """Raise an error if shape of `arr` does not match given arguments.
 
     Args:
-        arr    (np.ndarray)    Array to test.
-        ndim   (int)           Expected number of dimensions.
-        size   (int)           Expected total number of elements.
-        lower_bound (float)    Lower bound for array elements.
-        upper_bound (float)    Upper bound for array elements.
+        arr:    Array to test.
+        ndim:   Expected number of dimensions.
+        size:   Expected total number of elements.
+        lower_bound:    Lower bound for array elements.
+        upper_bound:    Upper bound for array elements.
 
     Raises:
         ValueError
@@ -123,17 +109,17 @@ def L1_Norm(arr: Array) -> float:
     return np.abs(arr).sum(axis=0)
 
 
-def normalize(arr, mode='array'):
+def normalize(arr: Array, mode: str = 'array'):
     """Normalize an arbitrary array_like.
 
-    Params:
-        arr   (numerical array-like) Input signal.
-        axis  (str) Normalization mode:
+    Args:
+        arr:    Input signal.
+        mode:   Normalization mode:
                     'array' -> (default) Normalize whole array.
                     'rows'  -> Normalize each row separately.
                     'cols'  -> Normalize each col separately.
     Return:
-        (array) Normalized input.
+        Normalized input.
     """
 
     arr = np.atleast_1d(arr)
@@ -151,70 +137,80 @@ def normalize(arr, mode='array'):
 
 
 # TODO: This normalizes in [0, 1]; for audio we need [-1, 1]
-def _normalize(arr):
+def _normalize(arr: Array) -> Array:
     """Normalize array."""
     arr_min = arr.min()
     arr_max = arr.max()
     return (arr - arr_min) / (arr_max - arr_min)
 
 
-def assert_and_pass(assert_func, arg):
-    """Call `assert_func` with `arg` and return `arg`. Additionally allow arg to be None."""
+def assert_and_pass(func: Callable, arg: Any):
+    """Call ``func``` with ``arg`` and return ``arg``. Additionally allow arg
+    to be ``None``.
+
+    Args:
+        func:   Test function.
+        arg:    Function argument.
+
+    Returns:
+        Result of ``func(arg)``.
+    """
     if arg is not None:
-        assert_func(arg)
+        func(arg)
     return arg
 
 
-def rowdiag(v, k=0):
-    """Get or set k'th diagonal of square matrix.
+def rowdiag(arr: Array, k: int = 0) -> Array:
+    """Get or set ``k`` th diagonal of square matrix.
 
-    Get the k'th diagonal of a square matrix sorted by rows
-    or construct a sqare matrix with the elements of v as the
-    main diagonal of the second and third dimension.
+    Get the ``k`` th diagonal of a square matrix sorted by rows or construct a
+    sqare matrix with the elements of v as the main diagonal of the second and
+    third dimension.
 
-    Params:
-        v    (array) Square matrix.
-        k    (int) Number diagonal.
+    Args:
+        arr:    Square array.
+        k:      Number of diagonal.
+
+    Returns:
+        Flattened diagonal.
+    """
+    return np.diag(arr, k)[:, None]
+
+
+def scale(arr: Array, new_min: int = 0, new_max: int = 1, axis: int = -1
+          ) -> Array:
+    """Scale ``arr`` between ``new_min`` and ``new_max``.
+
+    Args:
+        arr:        Array to be scaled.
+        new_min:    Lower bound.
+        new_max:    Upper bound.
 
     Return:
-        (1d-array) Values of diagonal.
+        One-dimensional array of transformed values.
     """
-    return np.diag(v, k)[:, None]
+    xmax = arr.max(axis=axis, keepdims=True)
+    xmin = arr.min(axis=axis, keepdims=True)
+
+    fact = (arr-xmin) / (xmax - xmin)
+    out = fact * (new_max - new_min) + new_min
+
+    return out
 
 
-def scale(x, new_min=0, new_max=1, axis=-1):
-    """Scale `x` between `new_min` and `new_max`.
-
-    Parmas:
-        x         (np.array)          Array to be scaled.
-        new_min   (real numerical)    Lower bound.
-        new_max   (real numerical)    Upper bound.
-
-    Return:
-        (np.ndarray)    One-dimensional array of transformed values.
-    """
-    xmax = x.max(axis=axis, keepdims=True)
-    xmin = x.min(axis=axis, keepdims=True)
-
-    a = (x-xmin) / (xmax - xmin)
-    y = a * (new_max - new_min) + new_min
-
-    return y
-
-
-def smooth_stat(sig):
+def smooth_stat(arr: Array) -> Array:
     """Smooth the signal based on its mean and standard deviation.
 
-    Params:
-        sig    (array-like) Input signal.
+    Args:
+        arr:    Input signal.
 
-    Return:
-        (ndarray) smoothed input signal.
+    Returns:
+        smoothed input signal.
     """
     out = []
-    sig_mean = sig.mean()
-    sig_std = sig.std()
-    for i in sig:
+    sig_mean = arr.mean()
+    sig_std = arr.std()
+    for i in arr:
         if i < sig_mean - sig_std or i > sig_mean + sig_std:
             out.append(i)
         else:
@@ -223,16 +219,17 @@ def smooth_stat(sig):
     return np.array(out)
 
 
-def standardize(x: np.ndarray) -> np.ndarray:
-    """Retrun z-transformed values of x.
+def standardize(arr: Array) -> Array:
+    """Retrun z-transformed values of ``arr``.
 
-    Params:
-        x    (array) Input values
+    Args:
+        arr:    Input array.
 
-    Return:
-        (array) z-transformed values
+    Returns:
+        z-transformed values
     """
-    return (x - x.mean(axis=0)) / x.std(axis=0)
+    return (arr - arr.mean(axis=0)) / arr.std(axis=0)
+
 
 def time_stamp(fmt: str = None) -> str:
     """Report call time as UTC time stamp.
@@ -251,24 +248,31 @@ def time_stamp(fmt: str = None) -> str:
         return tsp.isoformat()
     return tsp.strftime(fmt)
 
+
 def within(val: float, bounds: Tuple[float, float]) -> bool:
     """Return True if x is in window.
 
     Args:
-        val (float)    Value to test.
+        val:    Value to test.
 
-    Retrns:
-        (bool)    True if ``val`` is within ``bounds``.
+    Returns:
+       ``True``, if ``val`` is within ``bounds``.
     """
     return bounds[0] <= val <= bounds[1]
 
 
 def within_any(val: float, windows: Array) -> bool:
-    """Return True if x is in any of the given windows"""
+    """Return True if x is in any of the given windows.
+
+    Args:
+        val:    Value to test.
+        windows: Array of bounds.
+
+    Returns:
+    """
     a = windows[:, 0] <= val
     b = val <= windows[:, 1]
     c = np.logical_and(a, b)
-
     return np.any(c)
 
 
@@ -302,4 +306,3 @@ def fsum(arr: Array, axis: int = None, keepdims: bool = False,
     else:
         raise ValueError(f'``Axis is {axis} but must be 0, 1, or ``None``.')
     return out
-

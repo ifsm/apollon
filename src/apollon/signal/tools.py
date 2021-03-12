@@ -215,9 +215,9 @@ def sinusoid(frqs: Union[Sequence, Array, int, float],
 
     Args:
         frqs:    Component frequencies.
-        amps:    Amplitude of each component in ``frqs``.  If ``amps`` is an
+        amps:    Amplitude of each component in ``frqs``. If ``amps`` is an
                  integer, each component of ``frqs`` is scaled according to
-                 ``amps``. If ``amps` iis an iterable each frequency is scaled
+                 ``amps``. If ``amps`` iis an iterable each frequency is scaled
                  by the respective amplitude.
         fps:     Sample rate.
         length:  Length of signal in seconds.

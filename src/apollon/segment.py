@@ -197,7 +197,7 @@ class Segmentation:
             data:  Input array.
 
         Returns:
-            ``Segments` object.
+            ``Segments`` object.
         """
         self._validate_data_shape(data)
         self._validate_nps(data.shape[0])
