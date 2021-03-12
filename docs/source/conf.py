@@ -1,5 +1,4 @@
-#import sphinx_rtd_theme
-
+import sphinx_rtd_theme
 
 # Configuration file for the Sphinx documentation builder.
 #
@@ -35,9 +34,9 @@ version = '0.1.3'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-            #'sphinxcontrib.apidoc',
-              'sphinx.ext.napoleon',
-              'sphinx_rtd_theme']
+    'sphinxcontrib.apidoc',
+    'sphinx.ext.napoleon',
+    'sphinx_rtd_theme']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
