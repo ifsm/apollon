@@ -1,6 +1,3 @@
-numpy
-scipy
-matplotlib
-soundfile
-sphinxcontrib_apidoc
-https://gitlab.rrz.uni-hamburg.de/bal7668/hmm/-/archive/master/hmm-master.zip
+Sphinx==3.5.1
+sphinx-rtd-theme==0.5.1
+sphinxcontrib-apidoc==0.3.0

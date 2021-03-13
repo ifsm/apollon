@@ -20,7 +20,7 @@ Contents
    download
    install
    framework
-   reference/modules
+   api/modules
 
 * :ref:`genindex`
 * :ref:`modindex`

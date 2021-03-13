@@ -63,7 +63,7 @@ html_static_path = ['_static']
 # -- Options for apidoc -----------------------------------------------------
 #
 apidoc_module_dir = '../../src/apollon'
-apidoc_output_dir = 'reference'
+apidoc_output_dir = 'api'
 apidoc_separate_modules = True
 apidoc_module_first = True
 apidoc_full = True

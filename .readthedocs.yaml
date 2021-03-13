@@ -2,10 +2,8 @@
 # Read the Docs configuration file
 # See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
 
-# Required
 version: 2
 
-# Build documentation in the docs/ directory with Sphinx
 sphinx:
   builder: html
   configuration: docs/source/conf.py
@@ -16,9 +14,8 @@ formats: all
 
 # Optionally set the version of Python and requirements required to build your docs
 python:
-  version: 3.7
+  version: 3.9
   install:
     - requirements: docs/requirements.txt
-    - method: pip
+    - method: setuptools
       path: .
-  system_packages: true
