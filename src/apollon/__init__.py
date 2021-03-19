@@ -3,7 +3,7 @@
 # mblass@posteo.net
 
 """
-apollon/__init__.py -- Main package initialization.
+Apollon feature extraction framework.
 """
 
 import os as _os
