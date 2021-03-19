@@ -2,8 +2,8 @@ Installation
 ***************************************
 apollon can be installed on GNU/Linux, macOS, and Windows. Installation process
 is similar on each of these plaforms. Note, however, that apollon contains
-Python C extension modules, which have to be compile locally for GNU/Linux and
-Windows users. If work on any of those platforms, please make shure that there
+CPython extension modules, which have to be compiled locally for GNU/Linux and
+Windows users. If you work on those platforms, please make shure that there
 is a C compiler set up on your machine; otherwise the installation will fail.
 In the case of macOS, a precompiled wheel is provided for the latest version
 only.
@@ -11,8 +11,8 @@ only.
 
 Install using pip
 =======================================
-The Python packager manager can automatically install download and install
-apollon from pip. Simply run the following command from your terminal:
+The Python packager manager can automatically download and install
+apollon from Pypi. Simply run the following command from your terminal:
 
 .. code-block:: Bash
 

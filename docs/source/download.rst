@@ -1,6 +1,6 @@
+****************************************
 Download
-***************************************
-
+****************************************
 You can either download the source code from the `apollon GitHub repository`_
 or clone it directly with
 
