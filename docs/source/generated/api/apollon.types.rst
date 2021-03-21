@@ -1,5 +1,5 @@
-apollon.types module
-====================
+apollon.types
+=============
 
 .. automodule:: apollon.types
    :members:

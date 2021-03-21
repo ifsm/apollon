@@ -1,5 +1,5 @@
-apollon.som.plot module
-=======================
+apollon.som.plot
+================
 
 .. automodule:: apollon.som.plot
    :members:

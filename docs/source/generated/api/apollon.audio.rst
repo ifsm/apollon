@@ -1,5 +1,5 @@
-apollon.audio module
-====================
+apollon.audio
+=============
 
 .. automodule:: apollon.audio
    :members:

@@ -43,7 +43,8 @@ pygments_style = 'sphinx'
 extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
-    'sphinxcontrib.apidoc',
+    'sphinx.ext.autodoc',
+#    'sphinxcontrib.apidoc',
     'sphinx_rtd_theme']
 
 
@@ -69,6 +70,16 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 
+autodoc_default_options = {
+    'inherited-members': None,
+}
+
+
+# -- Options for autodoc  ---------------------------------------------------
+#
+autodoc_member_order = 'bysource'
+
+
 # -- Options for autosummary ------------------------------------------------
 #
 
@@ -76,11 +87,13 @@ html_static_path = ['_static']
 
 # -- Options for apidoc -----------------------------------------------------
 #
-apidoc_module_dir = '../../src/apollon'
-apidoc_output_dir = 'generated/api'
-apidoc_separate_modules = True
-apidoc_module_first = True
-apidoc_full = True
+#apidoc_module_dir = '../../src/apollon'
+#apidoc_output_dir = 'generated/api'
+#apidoc_excluded_paths = ['schema']
+#apidoc_separate_modules = True
+#apidoc_toc_file = False
+#apidoc_module_first = True
+#apidoc_extra_args = ['--no-headings']
 
 
 # -- Options for Napoleon ---------------------------------------------------

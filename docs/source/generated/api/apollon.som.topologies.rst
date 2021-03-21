@@ -1,5 +1,5 @@
-apollon.som.topologies module
-=============================
+apollon.som.topologies
+======================
 
 .. automodule:: apollon.som.topologies
    :members:

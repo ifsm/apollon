@@ -1,5 +1,5 @@
-apollon.io.json module
-======================
+apollon.io.json
+===============
 
 .. automodule:: apollon.io.json
    :members:

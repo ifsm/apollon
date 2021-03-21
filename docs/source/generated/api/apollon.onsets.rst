@@ -1,5 +1,5 @@
-apollon.onsets module
-=====================
+apollon.onsets
+==============
 
 .. automodule:: apollon.onsets
    :members:

@@ -1,5 +1,5 @@
-apollon.som package
-===================
+apollon.som
+===========
 
 .. automodule:: apollon.som
    :members:

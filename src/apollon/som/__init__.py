@@ -2,5 +2,10 @@
 # Copyright (C) 2019 Michael Blaß
 # mblass@posteo.net
 
-"""apollon/som/__init__.py
+"""
+====================================
+Self-organizing map tools and stuff
+====================================
+
+The Self-organizing map [Kohonen1993] is a ... bla bla bla
 """

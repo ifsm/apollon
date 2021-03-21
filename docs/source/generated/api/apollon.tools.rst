@@ -1,5 +1,5 @@
-apollon.tools module
-====================
+apollon.tools
+=============
 
 .. automodule:: apollon.tools
    :members:

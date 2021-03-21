@@ -1,5 +1,5 @@
-apollon.som.datasets module
-===========================
+apollon.som.datasets
+====================
 
 .. automodule:: apollon.som.datasets
    :members:

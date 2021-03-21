@@ -1,5 +1,5 @@
-apollon.segment module
-======================
+apollon.segment
+===============
 
 .. automodule:: apollon.segment
    :members:

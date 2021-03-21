@@ -1,5 +1,5 @@
-apollon.signal.container module
-===============================
+apollon.signal.container
+========================
 
 .. automodule:: apollon.signal.container
    :members:

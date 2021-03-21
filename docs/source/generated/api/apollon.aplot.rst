@@ -1,5 +1,5 @@
-apollon.aplot module
-====================
+apollon.aplot
+=============
 
 .. automodule:: apollon.aplot
    :members:

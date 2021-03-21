@@ -1,5 +1,5 @@
-apollon.hmm package
-===================
+apollon.hmm
+===========
 
 .. automodule:: apollon.hmm
    :members:

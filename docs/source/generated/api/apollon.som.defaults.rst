@@ -1,5 +1,5 @@
-apollon.som.defaults module
-===========================
+apollon.som.defaults
+====================
 
 .. automodule:: apollon.som.defaults
    :members:

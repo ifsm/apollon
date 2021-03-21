@@ -1,4 +1,10 @@
-"""apollon/som/plot.py
+"""
+Plots for SOM
+--------------
+
+
+
+
 
 Plotting functions for SOMs.
 

@@ -1,5 +1,5 @@
-apollon package
-===============
+apollon
+=======
 
 .. automodule:: apollon
    :members:
