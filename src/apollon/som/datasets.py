@@ -1,22 +1,21 @@
-"""apollon/som/datasets.py
+"""
+Functions for generating test and illustration data sets.
 
-Licensed under the terms of the BSD-3-Clause license.
-Copyright (C) 2019 Michael Blaß
-mblass@posteo.net
-
-Function for generating test and illustration data sets.
+:copyright: 2019, Michael Blaß
+:license: BSD 3 Clause
 """
 from typing import Optional, Tuple
 
 import numpy as np
 from scipy import stats
 
+
 def norm_circle(n_classes: int, n_per_class: int, class_std: int,
                 center: Tuple[int, int] = (0, 0), radius: int = 5,
                 seed: Optional[int] = None):
     """Generate ``n_per_class`` samples from ``n_classes`` bivariate normal
-    distributions, each with standard deviation ``class_std``. The means
-    are equidistantly placed on a circle with radius ``radius``.
+    distributions, each with standard deviation ``class_std``. The means are
+    equidistantly placed on a circle with radius ``radius``.
 
     Args:
         n_classes:    Number of classes.
