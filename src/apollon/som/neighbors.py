@@ -88,7 +88,7 @@ def neighborhood(grid: Array, metric: str = 'sqeuclidean') -> Array:
     return distance.squareform(distance.pdist(grid, metric))
 
 
-def rect(grid: Array, center: Coords, radius: float) -> Array:
+def rect(grid: Array, center: Coord, radius: float) -> Array:
     """Compute n-dimensional Chebychev neighborhood.
 
     The Chebychev neighborhood is a square-shaped area
