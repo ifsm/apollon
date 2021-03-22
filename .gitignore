@@ -31,6 +31,8 @@ wheels/
 *.ipynb
 .ipynb_checkpoints
 .mypy_cache
+.apollon-devel/
+notebooks/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -69,7 +71,11 @@ instance/
 .scrapy
 
 # Sphinx documentation
+<<<<<<< HEAD
 docs/_build/
+=======
+>>>>>>> docs
+docs/source/_build/
 
 # PyBuilder
 target/
@@ -90,7 +96,7 @@ celerybeat-schedule
 .env
 
 # virtualenv
-.venv
+.venv*
 venv/
 ENV/
 

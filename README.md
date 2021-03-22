@@ -1,15 +1,19 @@
 # Apollon
+Apollon is a Python framework for audio feature extraction and music similarity
+estimation. It includes subpackages for
 
-Apollon is a tool for music modelling. It comprises
-* low-level audio feature extraction
-* Hidden-Markov Models
+* Audio feature extraction
+* Hidden Markov Models
 * Self-Organizing Map
 
 ## 1. Installation
-This repository. Navigate the packages root directory
-and install apollon using pip.
+### 1.1 Install from PyPi
+The latest version of apollon is available on PyPi. Just open a terminal an run
+the following command to download and install apollon:
+
 ```
-cd path/to/apollon
-pip install .
+pip install apollon 
 ```
-Note that the period on the end of the last line is necessary.
+
+## 2. Documentation
+Full [documentation](https://apollon.readthedocs.io) is available on readthedocs.

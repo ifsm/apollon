@@ -1,14 +1,19 @@
-#!/usr/bin/env  python3
-
 from setuptools import setup, Extension
 from setuptools.config import read_configuration
-from numpy.distutils.misc_util import get_numpy_include_dirs
+import numpy as np
 
 
 config = read_configuration('./setup.cfg')
 
-# Extension modules
-psycho_features = Extension('apollon.signal.roughness', sources=['apollon/signal/roughness.c'])
+ext_features = Extension('_features',
+    sources = ['src/apollon/signal/cdim.c',
+               'src/apollon/signal/correlogram.c',
+               'src/apollon/signal/_features_module.c'],
+    include_dirs = ['include', np.get_include()])
 
-setup(include_dirs =  get_numpy_include_dirs(),
-      ext_modules  = [psycho_features])
+ext_som_dist = Extension('_distance',
+        sources = ['src/apollon/som/distance.c',
+                   'src/apollon/som/_distance_module.c'],
+        include_dirs = ['include', np.get_include()])
+
+setup(ext_modules = [ext_features, ext_som_dist])

@@ -5,10 +5,10 @@
 
 Welcome to the documentation of the apollon feature extraction framework!
 =========================================================================
-*apollon* is a feature extraction and modelling frame work for music data
+*apollon* is a feature extraction and modeling framework for music data
 analysis. It handles low-level audio feature extraction, their aggreagation
-using Hidden Markov models, and comparison by means of the Self-Organizing Map.
-See the :doc:`starters` chapter for gentle introduction to the mentioned
+using Hidden Markov models, and comparison by means of the self-organizing map.
+See the :doc:`framework` chapter for gentle introduction to the mentioned
 concepts.
 
 Contents
@@ -17,8 +17,10 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   installation
-   starters
-   clt 
+   download
+   install
+   framework
+   generated/api/modules
+
 * :ref:`genindex`
 * :ref:`modindex`

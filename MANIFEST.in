@@ -1,0 +1,4 @@
+graft json
+include *.md
+include LICENSE.txt
+recursive-include include *.h

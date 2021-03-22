@@ -14,7 +14,7 @@ import apollon
 from apollon import commands
 
 
-_valid_subcommand = ('features', 'onsets', 'hmm', 'som', 'export')
+_valid_subcommand = ('features', 'onsets', 'hmm', 'som', 'export', 'position')
 
 
 def _parse_cml(argv):
@@ -26,6 +26,7 @@ def _parse_cml(argv):
     subparsers = parser.add_subparsers()
     sp_features = _create_subparser_features(subparsers)
     sp_hmm = _create_subparser_hmm(subparsers)
+    sp_position = _create_subparser_position(subparsers)
 
     return parser.parse_args(argv[1:])
 
@@ -50,7 +51,10 @@ def _create_subparser_features(subparsers):
     sp_features.add_argument(
         '-o', '--outpath', action='store', help='Output file path.')
 
-    sp_features.add_argument('file', type=str, nargs=1)
+    sp_features.add_argument(
+        'files', type=str, nargs='+',
+        help='Auio files.')
+
     sp_features.set_defaults(func=commands.apollon_features.main)
 
     return sp_features
@@ -77,6 +81,30 @@ def _create_subparser_hmm(subparsers):
 
     sp_hmm.set_defaults(func=commands.apollon_hmm.main)
     return sp_hmm
+
+
+def _create_subparser_position(subparsers):
+    sp_position = subparsers.add_parser('position',
+                        help='Map coordinate of input.')
+
+    sp_position.add_argument(
+        'som_file', type=str, action='store',
+        help='Path to SOM file.')
+
+    sp_position.add_argument(
+        'objective_files', type=str, action='store', nargs='+',
+        help='Path to objective files.')
+
+    sp_position.add_argument(
+        '--rt', action='store_true', default=False,
+        help='Compute SOM position for rhythm track.')
+
+    sp_position.add_argument(
+        '--tt', action='store_true', default=False,
+        help='Compute SOM position for timbr track.')
+
+    sp_position.set_defaults(func=commands.apollon_position.main)
+    return sp_position
 
 
 def main(argv=None):
