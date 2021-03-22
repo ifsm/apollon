@@ -3,13 +3,12 @@
 Licensed under the terms of the BSD-3-Clause license.
 Copyright (C) 2019 Michael Blaß, mblass@posteo.net
 """
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from typing import ClassVar, Optional
 
 from .. import io
 from .. container import Params
-from .. segment import SegmentationParams
-from .. types import PathType, Schema
+from .. types import Schema
 
 
 @dataclass
@@ -36,6 +35,7 @@ class StftParams(Params):
 
 @dataclass
 class CorrDimParams(Params):
+    """Parameter set for fractal correlation dimension."""
     _schema: ClassVar[Schema] = io.json.load_schema('corrdim')
     delay: int
     m_dim: int
@@ -45,6 +45,7 @@ class CorrDimParams(Params):
 
 @dataclass
 class CorrGramParams(Params):
+    """Parameter set for correlogram."""
     _schema: ClassVar[Schema] = io.json.load_schema('corrgram')
     wlen: int
     n_delay: int
