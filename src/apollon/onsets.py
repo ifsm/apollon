@@ -1,17 +1,6 @@
 """
-apollon/onsets.py -- Onset detection routines.
-Licensed under the terms of the BSD-3-Clause license.
-Copyright (C) 2019 Michael Blaß
-mblass@posteo.net
-
-Classes:
-    OnsetDetector           Base class for onset detection.
-    EntropyOnsetDetector    Onset detection based on phase pace entropy estimation.
-    FluxOnsetDetector       Onset detection based on spectral flux.
-
-Functions:
-    peak_picking            Identify local peaks in time series.
-    evaluate_onsets         Evaluation of onset detection results given ground truth.
+:license: BSD 3 Clause
+:copright: Michael Blaß
 """
 from dataclasses import dataclass
 from typing import Dict, Optional, Tuple, Type, TypeVar
@@ -47,13 +36,11 @@ class FluxOnsetDetectorParams(Params):
     pp_params: PeakPickingParams
 
 
+pp_params = {'n_before': 10, 'n_after': 10, 'alpha': .1, 'delta': .1}
 
-pp_params = {'n_before': 10, 'n_after': 10, 'alpha': .1,
-                  'delta': .1}
 
 class OnsetDetector:
-    """Onset detection base class.
-    """
+    """Onset detection base class."""
     def __init__(self) -> None:
         self._odf: Optional[pd.DataFrame] = None
 
@@ -66,10 +53,10 @@ class OnsetDetector:
         """Returns the index of each detected onset.
 
         The resulting data frame has two columns:
-        `frame` is number of the center frame of the segment in which
+        * ``frame`` is number of the center frame of the segment in which
         the onset was detected.
 
-        `time` is the time difference between the center frame of the segment
+        * `time` is the time difference between the center frame of the segment
         in which the onset was detected and the start of the audio signal.
 
         The data frame index represents the segments.
@@ -80,12 +67,20 @@ class OnsetDetector:
         return self._odf.iloc[self._peaks][['frame', 'time']]
 
     @property
-    def params(self):
-        """Return initial parameters."""
+    def params(self) -> Array:
+        """Return initial parameters.
+
+        Returns:
+            Initial parameters.
+         """
         return self._params
 
     def detect(self, inp: Array) -> None:
-        """Detect onsets."""
+        """Detect onsets.
+
+        Args:
+            inp:    Input signal.
+        """
         self._odf = self._compute_odf(inp)
         self._peaks = self._ppkr.detect(self._odf['value'].to_numpy().squeeze())
 
@@ -113,11 +108,11 @@ class OnsetDetector:
         """
         io.save_to_pickle(self, path)
 
-    def plot(self, mode: str ='time') -> None:
+    def plot(self, mode: str = 'time') -> None:
         """Plot odf against time or index.
 
         Args:
-            mode:  Either `time`, or `index`.
+            mode:  Either 'time', or `index`.
         """
         raise NotImplementedError
 
@@ -134,7 +129,7 @@ class EntropyOnsetDetector(OnsetDetector):
         Be sure to set ``n_perseg`` and ``hop_size`` according to the
         sampling rate of the input signal.
 
-        Params:
+        Args:
             fps:         Audio signal.
             m_dim:       Embedding dimension.
             bins:        Boxes per axis.
@@ -168,7 +163,8 @@ class EntropyOnsetDetector(OnsetDetector):
         segs = self.cutter.transform(inp)
         odf = np.empty((segs.n_segs, 3))
         for i, seg in enumerate(segs):
-            emb = _fractal.delay_embedding(seg.squeeze(), self.delay, self.m_dims)
+            emb = _fractal.delay_embedding(seg.squeeze(), self.delay,
+                                           self.m_dims)
             odf[i, 0] = segs.center(i)
             odf[i, 0] = odf[i, 0] / self.fps
             odf[i, 2] = _fractal.embedding_entropy(emb, self.bins)
@@ -180,7 +176,8 @@ class FluxOnsetDetector(OnsetDetector):
     """Onset detection based on spectral flux.
     """
     def __init__(self, fps: int, window: str = 'hamming', n_perseg: int = 1024,
-                 n_overlap: int = 512, pp_params: Optional[dict] = None) -> None:
+                 n_overlap: int = 512,
+                 pp_params: Optional[dict] = None) -> None:
         """Detect onsets as local maxima in the energy difference of
         consecutive stft time steps.
 
@@ -218,36 +215,36 @@ class FluxOnsetDetector(OnsetDetector):
 
 class FilterPeakPicker:
     def __init__(self, n_after: int = 10, n_before: int = 10,
-                 alpha: float = .1, delta: float=.1) -> None:
+                 alpha: float = .1, delta: float = .1) -> None:
         self.n_after = n_after
         self.n_before = n_before
         self.alpha = alpha
         self.delta = delta
 
-    def detect(self, inp: Array) -> Array:
+    def detect(self, odf: Array) -> Array:
         """Pick local maxima from a numerical time series.
 
-        Pick local maxima from the onset detection function `odf`, which is assumed
-        to be an one-dimensional array. Typically, `odf` is the Spectral Flux per
-        time step.
+        Pick local maxima from the onset detection function ``odf``, which is
+        assumed to be an one-dimensional array. Typically, ``odf`` is the
+        Spectral Flux per time step.
 
         Args:
-            odf:         Onset detection function, e.g., Spectral Flux.
-            n_after: Window lenght to consider after now.
-            n_before:  Window lenght to consider before now.
-            alpha:       Smoothing factor. Must be in ]0, 1[.
-            delta:       Difference to the mean.
+            odf:        Onset detection function, e.g., Spectral Flux.
+            n_after:    Window lenght to consider after now.
+            n_before:   Window lenght to consider before now.
+            alpha:      Smoothing factor. Must be in ]0, 1[.
+            delta:      Difference to the mean.
 
-        Return:
+        Returns:
             Peak indices.
         """
         g = [0]
         out = []
 
-        for n, val in enumerate(inp):
+        for n, val in enumerate(odf):
             # set local window
             idx = np.arange(n-self.n_before, n+self.n_after+1, 1)
-            window = np.take(inp, idx, mode='clip')
+            window = np.take(odf, idx, mode='clip')
 
             cond1 = np.all(val >= window)
             cond2 = val >= (np.mean(window) + self.delta)
@@ -269,7 +266,7 @@ def evaluate_onsets(targets: Dict[str, np.ndarray],
 
     This function uses the mir_eval package for evaluation.
 
-    Params:
+    Args:
         targets:    Ground truth onset times, with dict keys being file names,
                     and values being target onset time codes in ms.
 
