@@ -1,5 +1,5 @@
-apollon.som.som module
-======================
+apollon.som.som
+===============
 
 .. automodule:: apollon.som.som
    :members:

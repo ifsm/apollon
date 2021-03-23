@@ -1,5 +1,5 @@
-apollon.signal package
-======================
+apollon.signal
+==============
 
 .. automodule:: apollon.signal
    :members:

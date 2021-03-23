@@ -1,8 +1,6 @@
 """
-Common tool library.
-Licensed under the terms of the BSD-3-Clause license.
-
-Copyright (C) 2019 Michael Blaß
+:license: BSD 3 Clause
+:copyright: Michael Blaß
 """
 from datetime import datetime, timezone
 import math as _math
@@ -20,8 +18,8 @@ def pca(data: Array, n_comps: int = 2) -> Tuple[Array, Array, Array]:
     Interanlly, ``data`` will be centered but not scaled.
 
     Args:
-        data:     Data set.
-        n_comps:  Number of principal components.
+        data:       Data set.
+        n_comps:    Number of principal components.
 
     Returns:
         ``n_comps`` largest singular values,
@@ -75,15 +73,15 @@ def jsonify(inp: Any):
 
     This method passes through Python objects of type dict, list, str, int
     float, True, False, and None. Tuples will be converted to list by the JSON
-    encoder. Numpy arrays will be converted to list using thier .to_list() method.
-    On all other types, the method will try to call str() and raises
+    encoder. Numpy arrays will be converted to list using thier .to_list()
+    method.  On all other types, the method will try to call str() and raises
     on error.
 
     Args:
         inp:    Input to be jsonified.
 
     Returns:
-        Jsonified  input.
+        JSONified  input.
     """
     valid_types = (dict, list, tuple, str, int, float)
     valid_vals = (True, False, None)
@@ -102,7 +100,7 @@ def jsonify(inp: Any):
 
 #TODO Move to better place
 def L1_Norm(arr: Array) -> float:
-    """Compute the L_1 norm of input vector `x`.
+    """Compute the L_1 norm of input vector ``x``.
 
     This implementation is generally faster than np.norm(arr, ord=1).
     """
@@ -186,7 +184,7 @@ def scale(arr: Array, new_min: int = 0, new_max: int = 1, axis: int = -1
         new_min:    Lower bound.
         new_max:    Upper bound.
 
-    Return:
+    Returns:
         One-dimensional array of transformed values.
     """
     xmax = arr.max(axis=axis, keepdims=True)
@@ -205,7 +203,7 @@ def smooth_stat(arr: Array) -> Array:
         arr:    Input signal.
 
     Returns:
-        smoothed input signal.
+        Smoothed input signal.
     """
     out = []
     sig_mean = arr.mean()
@@ -283,11 +281,11 @@ def fsum(arr: Array, axis: int = None, keepdims: bool = False,
     This function supports at most two-dimensional arrays.
 
     Args:
-        arr:      Input array.
-        axis:     Reduction axis.
-        keepdims: If ``True``, the output will have the same dimensionality
-                  as the input.
-        dtype:    Numpy data type.
+        arr:        Input array.
+        axis:       Reduction axis.
+        keepdims:   If ``True``, the output will have the same dimensionality
+                    as the input.
+        dtype:      Numpy data type.
     Returns:
         Sums along axis.
     """
@@ -304,5 +302,5 @@ def fsum(arr: Array, axis: int = None, keepdims: bool = False,
         if keepdims:
             out = np.expand_dims(out, 1)
     else:
-        raise ValueError(f'``Axis is {axis} but must be 0, 1, or ``None``.')
+        raise ValueError(f'"axis" is {axis} but must be 0, 1, or ``None``.')
     return out

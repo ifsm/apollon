@@ -1,5 +1,5 @@
-apollon.datasets module
-=======================
+apollon.datasets
+================
 
 .. automodule:: apollon.datasets
    :members:

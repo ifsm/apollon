@@ -1,17 +1,8 @@
-"""apollon/signal/spectral.py
-
-Licensed under the terms of the BSD-3-Clause license.
-Copyright (C) 2019 Michael Blaß, mblass@posteo.net
-
+"""
 Provide easy access to frequency spectra obtained by the DFT.
 
-Classes:
-    Spectrum
-    Spectrogram
-    stft
-
-Functions:
-    fft:  One-sided Fast fourier transform for real input.
+:license: BSD 3 Clause
+:copyright: Michael Blaß
 """
 from typing import Any, Union
 
@@ -45,8 +36,8 @@ def fft(sig, window: str = None, n_fft: int = None,
         AttributeError
     """
     if sig.ndim != 2:
-        raise ValueError(f'Input array has {sig.ndim} dimensions. However,'
-                         ' ``fft`` expects two-dimensional array.')
+        raise ValueError(f'Input array has {sig.ndim} dimensions. However, '
+                         '``fft`` expects two-dimensional array.')
     n_sig = sig.shape[0]
     if n_fft is None:
         n_fft = n_sig
@@ -96,19 +87,19 @@ class TransformResult:
         return self._params
 
     @property
-    def phase(self):
+    def phase(self) -> Array:
         """Compute phase spectrum."""
         if self._bins is None:
             return None
         return np.angle(self._bins)
 
     @property
-    def power(self):
+    def power(self) -> Array:
         """Compute power spectrum."""
         return np.square(self.__abs__())
 
     @property
-    def centroid(self):
+    def centroid(self) -> Array:
         """Compute spectral centroid."""
         return np.multiply(self.abs, self.frqs).sum() / self.abs.sum()
 
@@ -150,7 +141,11 @@ class Spectrum(TransformResult):
         self._inp_size = inp_size
 
     def plot(self, fmt='-') -> None:
-        """Plot the spectrum."""
+        """Plot the spectrum.
+
+        Args:
+            fmt:    Line format string.
+        """
         _plt.plot(self.frqs, self.abs, fmt)
 
     def __repr__(self) -> str:
@@ -234,7 +229,7 @@ class Dft(SpectralTransform):
 
 
 class Stft(SpectralTransform):
-    """Short Time Fourier Transform of AudioFile."""
+    """Short Time Fourier Transform."""
     def __init__(self, fps: int, window: str,
                  n_perseg: int, n_overlap: int,
                  n_fft: Optional[int] = None, extend: bool = True,
@@ -242,7 +237,13 @@ class Stft(SpectralTransform):
         """Create a new spectrogram.
 
         Args:
-            params:  Initial parameters
+            fps:        Sample rate.
+            window:     Name of window function.
+            n_perseg:   Number of samples per segment.
+            n_overlap:  Number of overlaping samples per segment.
+            n_fft:      FFT length.
+            extend:     If ``True`` extend the input at both ends.
+            pad:        If ``True`` pad the end of the input with zeros.
         """
         super().__init__(StftParams(fps, window, n_fft, n_perseg,
                                     n_overlap, extend, pad))
@@ -250,7 +251,14 @@ class Stft(SpectralTransform):
                                     self.params.extend, self.params.pad)
 
     def transform(self, data: np.ndarray) -> Spectrogram:
-        """Transform ``data`` to spectral domain."""
+        """Transform ``data`` to spectral domain.
+
+        Args:
+            data:   Input data.
+
+        Returns:
+            Spectrogram of input data.
+        """
         segs = self._cutter.transform(data)
         bins = fft(segs.data, self.params.window, self.params.n_fft)
         return Spectrogram(self._params, bins, segs.params.n_perseg)
@@ -270,7 +278,11 @@ class StftSegments(SpectralTransform):
         super().__init__(StftParams(fps, window, n_fft))
 
     def transform(self, segments: Segments) -> Spectrogram:
-        """Transform ``data`` to spectral domain."""
+        """Transform ``data`` to spectral domain.
+
+        Args:
+            segments:   Segmented audio.
+        """
         for key, val in segments.params.to_dict().items():
             setattr(self.params, key, val)
         bins = fft(segments.data, self.params.window, self.params.n_fft)

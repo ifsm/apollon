@@ -1,6 +1,6 @@
 """
-Licensed under the terms of the BSD-3-Clause license.
-Copyright (C) 2019 Michael Blaß, mblass@posteo.net
+:license: BSD 3 Clause
+:copyright: Michael Blaß
 """
 from dataclasses import dataclass
 from typing import ClassVar, Generator, Tuple, Union
@@ -13,6 +13,8 @@ from . container import Params
 from . signal.tools import zero_padding as _zero_padding
 from . types import Array, Schema
 
+
+Bounds = Tuple[int, int]
 
 @dataclass
 class LazySegmentParams:
@@ -74,31 +76,50 @@ class Segments:
 
     @property
     def n_segs(self) -> int:
-       return self._segs.shape[1]
+        """Returns:
+            Number of segments.
+        """
+        return self._segs.shape[1]
 
     @property
     def n_perseg(self) -> int:
+        """
+        Returns:
+            Number of segments per segment.
+        """
         return self._params.n_perseg
 
     @property
     def n_overlap(self) -> int:
+        """
+        Returns:
+            Number of overlapping samples per segment.
+        """
         return self._params.n_overlap
 
     @property
     def step(self) -> int:
+        """
+        Returns:
+            Distance between start indices of consecutive segments in samples.
+        """
         return self._params.n_perseg - self._params.n_overlap
 
     @property
     def params(self) -> SegmentationParams:
-        """Parameter set used to compute this instance."""
+        """Parameter set used to compute this instance.
+
+        Returns:
+            Initial segmentation parameters.
+        """
         return self._params
 
-    def center(self, seg_idx) -> int:
-        """Return the center of segment ``seg_idx`` as frame number
-        of the original signal.
+    def center(self, seg_idx: int) -> int:
+        """Return the center of segment ``seg_idx`` as frame number of the
+        original signal.
 
         Args:
-            seg_indx:  Segment index.
+            seg_indx:   Segment index.
 
         Returns:
             Center frame index.
@@ -108,12 +129,12 @@ class Segments:
         return seg_idx * self.step + self._offset
 
     def bounds(self, seg_idx) -> Tuple[int, int]:
-        """Return the frame numbers of the lower and upper bound
-        of segment ``seg_idx``. Lower bound index is inclusive,
-        upper bound index is exclusive.
+        """Return the frame numbers of the lower and upper bound of segment
+        ``seg_idx``. Lower bound index is inclusive, upper bound index is
+        exclusive.
 
         Args:
-            seg_idx:  Segment index.
+            seg_idx:    Segment index.
 
         Returns:
             Lower and upper bound frame index.
@@ -128,10 +149,10 @@ class Segments:
         """Retrun segment ``seg_idx`` wrapped in an ``Segment`` object.
 
         Args:
-            seg_idx:  Segment index.
+            seg_idx:    Segment index.
 
         Returns:
-            Segment ``seg_idx``.
+            Segment with index ``seg_idx``.
         """
         return Segment(seg_idx, *self.bounds(seg_idx), self.center(seg_idx),
                        self._params.n_perseg, self[seg_idx])
@@ -156,14 +177,14 @@ class Segments:
 class Segmentation:
     """Segementation"""
     def __init__(self, n_perseg: int, n_overlap: int, extend: bool = True,
-                pad: bool = True) -> None:
+                 pad: bool = True) -> None:
         """Subdivide input array.
 
         Args:
-            n_perseg:  Samples per segment.
-            n_overlap: Overlap in samples.
-            extend:    Extend a half window at start and end.
-            pad:       Pad extension.
+            n_perseg:   Number of samples per segment.
+            n_overlap:  Number of overlapping samples per segment.
+            extend:     Extend the input by half a segments at each end.
+            pad:        Pad input with zeros.
         """
         if n_perseg > 0:
             self.n_perseg = n_perseg
@@ -194,7 +215,7 @@ class Segmentation:
         (n_elements, 1).
 
         Args:
-            data:  Input array.
+            data:   Input array.
 
         Returns:
             ``Segments`` object.
@@ -221,8 +242,8 @@ class Segmentation:
     def _validate_nps(self, n_frames: int) -> None:
         if self.n_perseg > n_frames:
             msg = (f'Input data length ({n_frames}) incompatible with '
-                    'parameter ``n_perseg`` = {self.n_perseg}. ``n_perseg`` '
-                    'must be less then or equal to input data length.')
+                   'parameter ``n_perseg`` = {self.n_perseg}. ``n_perseg`` '
+                   'must be less then or equal to input data length.')
             raise ValueError(msg)
 
     def _validate_data_shape(self, data: _np.ndarray) -> None:
@@ -250,7 +271,7 @@ class LazySegments:
             n_overlap:  Size of segment overlap in samples.
             norm:       Normalize each segment separately.
             mono:       If ``True`` mixdown all channels.
-            expand:     Start segmentation at -n_perseg//2.
+            expand:     Start segmentation at -``n_perseg``//2.
             dtype:      Dtype of output array.
         """
         self._snd = snd
@@ -269,7 +290,15 @@ class LazySegments:
         self.mono = mono
         self.dtype = dtype
 
-    def compute_bounds(self, seg_idx):
+    def compute_bounds(self, seg_idx: int) -> Bounds:
+        """Compute the boundary samples of a segment.
+
+        Args:
+            seg_idx:    Index of segment.
+
+        Returns:
+            Segment boundaries.
+        """
         if seg_idx < 0:
             raise IndexError('Expected positive integer for ``seg_idx``. '
                              f'Got {seg_idx}.')
@@ -280,7 +309,18 @@ class LazySegments:
         return start, start + self.n_perseg
 
     def read_segment(self, seg_idx: int, norm: bool = None,
-                     mono: bool = None, dtype: str = None):
+                     mono: bool = None, dtype: str = None) -> Array:
+        """Read a single segment from the audio file.
+
+        Args:
+            seg_idx:    Index of segment to be read.
+            norm:       If ``True``, normalize the segment.
+            mono:       If ``True``, mixdown all channels.
+            dtype:      Dtype of result array.
+
+        Returns:
+            Requested segment.
+        """
         norm = norm or self.norm
         mono = mono or self.mono
         dtype = dtype or self.dtype
@@ -292,12 +332,12 @@ class LazySegments:
         """Locate segment by index.
 
         Args:
-            seg_idx:  Segment index.
-            norm:     If ``True``, normalize each segment separately.
-                      Falls back to ``self.norm``.
-            mono:     If ``True`` mixdown all channels.
-                      Falls back to ``self.mono``.
-            dtype:    Output dtype. Falls back to ``self.dtype``.
+            seg_idx:    Segment index.
+            norm:       If ``True``, normalize each segment separately.  Falls
+                        back to ``self.norm``.
+            mono:       If ``True`` mixdown all channels.  Falls back to
+                        ``self.mono``.
+            dtype:      Output dtype. Falls back to ``self.dtype``.
 
         Returns:
             Segment number ``seg_idx``.
@@ -315,11 +355,20 @@ class LazySegments:
             yield self.__getitem__(i)
 
     def iter_data(self):
+        """Iterate over the segments.
 
+        Returns:
+            Array of segment data.
+        """
         for i in range(self.n_segs):
             yield self._snd.read(self.n_perseg)
 
     def iter_bounds(self):
+        """Iterate over the segment bounds.
+
+        Returns:
+            Segment bounds.
+        """
         for i in range(self.n_segs):
             yield self.compute_bounds(i)
 
@@ -331,8 +380,8 @@ def _by_samples(x: Array, n_perseg: int) -> Array:
     split evenly.
 
     Args:
-        x:         One-dimensional input array.
-        n_perseg:  Length of segments in samples.
+        x:          One-dimensional input array.
+        n_perseg:   Length of segments in samples.
 
     Returns:
         Two-dimensional array of segments.
@@ -399,7 +448,7 @@ def by_samples(x: Array, n_perseg: int, hop_size: int = 0) -> Array:
     This function automatically applies zero padding for inputs that cannot be
     split evenly.
 
-    If `hop_size` is less than one, it is reset to `n_perseg`.
+    If ``hop_size`` is less than one, it is reset to ``n_perseg``.
 
     Overlap in percent is calculated as ov = hop_size / n_perseg * 100.
 
@@ -449,10 +498,10 @@ def by_onsets(x: Array, n_perseg: int, ons_idx: Array, off: int = 0
     Extraction windos start at `ons_idx[i]` + `off`.
 
     Args:
-        x           One-dimensional input array.
-        n_perseg    Length of segments in samples.
-        ons_idx     One-dimensional array of onset positions.
-        off         Length of offset.
+        x:          One-dimensional input array.
+        n_perseg:   Length of segments in samples.
+        ons_idx:    One-dimensional array of onset positions.
+        off:        Length of offset.
 
     Returns:
         Two-dimensional array of shape (len(ons_idx), n_perseg).

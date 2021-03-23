@@ -1,5 +1,5 @@
-apollon.hmm.poisson module
-==========================
+apollon.hmm.poisson
+===================
 
 .. automodule:: apollon.hmm.poisson
    :members:

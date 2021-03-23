@@ -1,5 +1,5 @@
-apollon.signal.filter module
-============================
+apollon.signal.filter
+=====================
 
 .. automodule:: apollon.signal.filter
    :members:

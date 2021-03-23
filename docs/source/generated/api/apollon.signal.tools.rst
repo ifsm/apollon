@@ -1,5 +1,5 @@
-apollon.signal.tools module
-===========================
+apollon.signal.tools
+====================
 
 .. automodule:: apollon.signal.tools
    :members:

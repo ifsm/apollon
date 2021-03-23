@@ -53,7 +53,7 @@ def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
     .. [Grassberger1983] P. Grassberger, and I. Procaccia, "Measuring the strangeness of strange attractors,"  *Physica 9d*, pp. 189-208.
     """
     if inp.ndim != 2:
-        raise ValueError(f'Input array must be two-dimensional.')
+        raise ValueError('Input array must be two-dimensional.')
 
     if mode == 'bader':
         cdim_func = _features.cdim_bader
@@ -193,7 +193,7 @@ def spectral_centroid(frqs: _Array, amps: _Array) -> _Array:
 
 def spectral_spread(frqs: _Array, bins: _Array,
                     centroids: Optional[_Array] = None) -> _Array:
-    """Estimate spectral spread.
+    r"""Estimate spectral spread.
 
     Spectral Spread is always computed along the second axis of ``bins``.
     This function computes the square roote of spectral spread.
@@ -294,8 +294,8 @@ def spectral_flux(inp: _Array, delta: float = 1.0,
         .. math::
             SF(i) = \sum_{j=0}^k H(|X_{i,j}| - |X_{i-1,j}|) \,,
 
-        where :math:`X_{i,j}` is the :math:`j` th frequency bin of the :math:`i`
-        th spectrum :math:`X` of a spectrogram :math:`\boldsymbol X`.
+        where :math:`X_{i,j}` is the :math:`j` th frequency bin of the
+        :math:`i` th spectrum :math:`X` of a spectrogram :math:`\boldsymbol X`.
     """
     inp = _np.atleast_2d(inp).astype('float64')
     out = _np.maximum(_np.gradient(inp, delta, axis=-1), 0)
@@ -331,7 +331,7 @@ def fspl(amps: _Array, total: bool = False, ref: float = None) -> _Array:
 
 
 def fsplc(frqs: _Array, amps: _Array, total: bool = False,
-         ref: float = None) -> _Array:
+          ref: float = None) -> _Array:
     """Apply C-weighted to SPL.
 
     Args:
@@ -342,7 +342,8 @@ def fsplc(frqs: _Array, amps: _Array, total: bool = False,
     Returns:
         C-weighted sound pressure level.
     """
-    return spl(_sigtools.c_weighting(frqs)*amps, total, ref)
+    return spl(_sigtools.c_weighting(frqs)*amps, ref)
+
 
 def spl(inp: _Array, ref=_defaults.SPL_REF):
     """Computes the average sound pressure level of time domain signal.
@@ -355,7 +356,8 @@ def spl(inp: _Array, ref=_defaults.SPL_REF):
         Average sound pressure level.
     """
     level = rms(inp)/ref
-    return 20 * _np.log10(level, where=level>0)
+    return 20 * _np.log10(level, where=level > 0)
+
 
 def log_attack_time(inp: _Array, fps: int, ons_idx: _Array,
                     wlen: float = 0.05) -> _Array:
@@ -397,6 +399,14 @@ def loudness(frqs: _Array, bins: _Array) -> _Array:
 
 def roughness_helmholtz(d_frq: float, bins: _Array, frq_max: float,
                         total: bool = True) -> _Array:
+    """Compute roughness
+
+    Args:
+        d_frq:      Frequency distance.
+        bins:       Magnitude of DFT bins.
+        frq_max:    Maximal frequency.
+        total:      If ``True``, return sum along the first axis.
+    """
     kernel = _roughnes_kernel(d_frq, frq_max)
     out = _np.empty((kernel.size, bins.shape[1]))
     for i, bin_slice in enumerate(bins.T):

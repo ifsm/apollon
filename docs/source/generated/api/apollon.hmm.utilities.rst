@@ -1,5 +1,5 @@
-apollon.hmm.utilities module
-============================
+apollon.hmm.utilities
+=====================
 
 .. automodule:: apollon.hmm.utilities
    :members:

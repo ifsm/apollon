@@ -1,5 +1,5 @@
-apollon.som.neighbors module
-============================
+apollon.som.neighbors
+=====================
 
 .. automodule:: apollon.som.neighbors
    :members:

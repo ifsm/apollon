@@ -1,5 +1,5 @@
-apollon.container module
-========================
+apollon.container
+=================
 
 .. automodule:: apollon.container
    :members:

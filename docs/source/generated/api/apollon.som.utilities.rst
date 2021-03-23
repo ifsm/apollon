@@ -1,5 +1,5 @@
-apollon.som.utilities module
-============================
+apollon.som.utilities
+=====================
 
 .. automodule:: apollon.som.utilities
    :members:

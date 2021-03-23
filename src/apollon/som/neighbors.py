@@ -1,81 +1,84 @@
-# Licensed under the terms of the BSD-3-Clause license.
-# Copyright (C) 2019 Michael Blaß
-# mblass@posteo.net
+"""
+SOM neighborhood computations.
 
-"""apollon/som/neighbors.py
-
-Neighborhood computations
-
-Functions:
-    gaussian    N-Dimensional Gausian neighborhood.
+:copyright: 2019, Michael Blaß
+:license: BSD 3 Clause
 """
 from typing import List, Tuple
 
 import numpy as np
 from scipy.spatial import distance
 
-from .. types import Array
+from apollon.types import Array
+
 
 Shape = Tuple[int, int]
 Coord = Tuple[int, int]
 AdIndex = Tuple[List[int], List[int]]
 
 
-def gaussian(grid, center, radius):
+def gaussian(grid: Array, center: Coord, radius: float) -> Array:
     """Compute n-dimensional Gaussian neighbourhood.
 
     Gaussian neighborhood smoothes the array.
 
-    Params:
-        grid      Array of n-dimensional indices.
-        center    Index of the neighborhood center.
-        radius    Size of neighborhood.
+    Args:
+        grid:   Array of n-dimensional indices.
+        center: Two-dimensional array index of the neighborhood center.
+        radius: Size of neighborhood.
+
+    Returns:
+        Neighborhood degrees on ``grid``.
     """
     center = np.atleast_2d(center)
     dists = distance.cdist(center, grid, metric='sqeuclidean')
     return np.exp(-dists/(2*radius**2)).T
 
 
-def mexican(grid, center, radius):
+def mexican(grid: Array, center: Coord, radius: float) -> Array:
     """Compute n-dimensional Mexcican hat neighbourhood.
 
     Mexican hat neighborhood smoothes the array.
 
-    Params:
-        grid      Array of n-dimensional indices.
-        center    Index of the neighborhood center.
-        radius    Size of neighborhood.
+    Args:
+        grid:   Array of n-dimensional indices.
+        center: Two-dimensional array index of the neighborhood center.
+        radius: Size of neighborhood.
+
+    Returns:
+        Neighborhood degrees on ``grid``.
     """
     center = np.atleast_2d(center)
     dists = distance.cdist(center, grid, metric='sqeuclidean')
     return ((1-(dists/radius**2)) * np.exp(-dists/(2*radius**2))).T
 
 
-def star(grid, center, radius):
+def star(grid: Array, center: Coord, radius: float) -> Array:
     """Compute n-dimensional cityblock neighborhood.
 
     The cityblock neighborhood is a star-shaped area
     around ``center``.
 
-    Params:
-        grid      Array of n-dimensional indices.
-        center    Index of the neighborhood center.
-        radius    Size of neighborhood.
+    Args:
+        grid:   Array of n-dimensional indices.
+        center: Index of the neighborhood center.
+        radius: Size of neighborhood.
 
     Returns:
+        Neighborhood degrees on ``grid``.
     """
     center = np.atleast_2d(center)
     dists = distance.cdist(center, grid, 'cityblock')
     return (dists <= radius).astype(int).T
 
 
-def neighborhood(grid, metric='sqeuclidean'):
+def neighborhood(grid: Array, metric: str = 'sqeuclidean') -> Array:
     """Compute n-dimensional cityblock neighborhood.
 
     The cityblock neighborhood is a star-shaped area
     around ``center``.
 
-    Params:
+    Args:
         grid:      Array of n-dimensional indices.
         metric:    Distance metric.
 
@@ -85,26 +88,35 @@ def neighborhood(grid, metric='sqeuclidean'):
     return distance.squareform(distance.pdist(grid, metric))
 
 
-def rect(grid, center, radius):
+def rect(grid: Array, center: Coord, radius: float) -> Array:
     """Compute n-dimensional Chebychev neighborhood.
 
     The Chebychev neighborhood is a square-shaped area
     around ``center``.
 
-    Params:
-        grid      Array of n-dimensional indices.
-        center    Index of the neighborhood center.
-        radius    Size of neighborhood.
+    Args:
+        grid:   Array of n-dimensional indices.
+        center: Index of the neighborhood center.
+        radius: Size of neighborhood.
 
     Returns:
-        Two-dimensional array of in
+        Neighborhood degrees on ``grid``.
     """
     center = np.atleast_2d(center)
     dists = distance.cdist(center, grid, 'chebychev')
     return (dists <= radius).astype(int).T
 
-""" NNNNNNNNNEEEEEEEEEEWWWWWW STUFFFFFFFF """
-def gauss_kern(nhb, r):
+
+def gauss_kern(nhb: Array, radius: float) -> Array:
+    """Gaussian kernel.
+
+    Args:
+        nhb:    Neighborhood.
+        radius: Neighborhood radius.
+
+    Returns:
+        Neighborhood on ``nhb``.
+    """
     return np.exp(-nhb/(r))
 
 
@@ -123,10 +135,11 @@ def is_neighbour(cra: Array, crb: Array, grid: Array, metric: str) -> Array:
         points ``cra[n]`` and ``crb[n]`` are direct neighbours on ``grid``
         regarding ``metric``.
     """
+    pass
 
 
 def check_bounds(shape: Shape, point: Coord) -> bool:
-    """Return ``True`` if ``point`` is valid index in ``shape``.
+    """Return ``True`` if ``point`` is a valid index in ``shape``.
 
     Args:
         shape:  Shape of two-dimensional array.
@@ -155,4 +168,3 @@ def direct_rect_nb(shape: Shape, point: Coord) -> AdIndex:
             if check_bounds(shape, (i, j)):
                 nhb.append((i, j))
     return np.asarray(nhb)
-

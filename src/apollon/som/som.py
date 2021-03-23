@@ -1,6 +1,11 @@
 # Licensed under the terms of the BSD-3-Clause license.
 # Copyright (C) 2019 Michael Blaß
 # mblass@posteo.net
+
+"""
+SOM base classes
+=================
+"""
 from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np

@@ -1,5 +1,5 @@
-apollon.fractal module
-======================
+apollon.fractal
+===============
 
 .. automodule:: apollon.fractal
    :members:

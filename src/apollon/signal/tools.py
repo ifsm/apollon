@@ -1,32 +1,15 @@
-"""apollon/signal/tools.py
+"""
+Basic signal processing tools.
 
-Licensed under the terms of the BSD-3-Clause license.
-Copyright (C) 2019 Michael Blaß
-mblass@posteo.net
-
-Functions:
-    acf                 Normalized autocorrelation.
-    acf_pearson         Normalized Pearson acf.
-    corr_coef_pearson   Correlation coefficient after Pearson.
-    c_weighting         C-weighting for SPL.
-    freq2mel            Transform frequency to mel.
-    limit               Limit dynamic range.
-    mel2freq            Transform mel to frequency.
-    frq2bark            Transform frequency to Bark scale.
-    maxamp              Maximal amplitude of signal.
-    minamp              Minimal amplitude of signal.
-    normalize           Scale data betwee -1.0 and 1.0.
-    noise               Generate white noise.
-    sinusoid            Generate sinusoidal signal.
-    zero_padding        Append array with zeros.
-    trim_spectrogram    Trim spectrogram to a frequency range.
+:license: BSD 3 Clause
+:copyright: Michael Blaß
 """
 
 import numpy as np
 from scipy import stats
 
-from .. import _defaults
-from .. types import Array, Optional, Sequence, Union
+from apollon import _defaults
+from apollon.types import Array, Optional, Sequence, Union
 
 
 def acf(inp: Array) -> Array:
@@ -54,9 +37,9 @@ def acf(inp: Array) -> Array:
     return out
 
 
-def acf_pearson(inp_sig):
-    """Normalized estimate of the autocorrelation function of `inp_sig`
-       by means of pearson correlation coefficient."""
+def acf_pearson(inp_sig: Array) -> Array:
+    """Normalized estimate of the autocorrelation function of ``inp_sig``
+       by means of Pearson’s correlation coefficient."""
 
     N = len(inp_sig)
     out = np.empty(N-1)
@@ -73,7 +56,14 @@ def acf_pearson(inp_sig):
 
 
 def corr_coef_pearson(x_sig: Array, y_sig: Array) -> float:
-    """Fast perason correlation coefficient."""
+    """Fast Perason correlation coefficient.
+    Args:
+        x_sig:  First input signal.
+        y_sig:  Second input signal.
+
+    Returns:
+        Person’s correlation coefficient of ``x_sig`` and ``z_sig``.
+    """
     x_dtr = x_sig - np.mean(x_sig)
     y_dtr = y_sig - np.mean(y_sig)
     r_xy = np.convolve(x_dtr, y_dtr[::-1], mode='valid')
@@ -146,7 +136,7 @@ def limit(inp: Array, ldb: Union[float] = None,
 
 
 def mel2freq(zfrq):
-    """Transforms Mel-Frequencies to Hzfrq.
+    """Transforms Mel-Frequencies to Hertz.
 
     Args:
         zfrq:  Mel-Frequency.
@@ -158,14 +148,14 @@ def mel2freq(zfrq):
     return 700 * (np.exp(zfrq / 1125) - 1)
 
 
-def maxamp(sig):
+def maxamp(sig: Array) -> float:
     """Maximal absolute elongation within the signal.
 
-    Params:
-        sig    (array-like) Input signal.
+    Args:
+        sig:    Input signal.
 
-    Return:
-        (scalar) Maximal amplitude.
+    Returns:
+        Maximal amplitude.
     """
     return np.max(np.absolute(sig))
 
@@ -173,36 +163,36 @@ def maxamp(sig):
 def minamp(sig):
     """Minimal absolute elongation within the signal.
 
-    Params
-        sig    (array-like) Input signal.
+    Args:
+        sig:    Input signal.
 
     Return:
-        (scalar) Maximal amplitude.
+       Magnitude of minimal elongation.
     """
     return np.min(np.absolute(sig))
 
 
-def noise(level, n=9000):
-    """Generate withe noise.
+def noise(level: float, n: int = 9000) -> Array:
+    """Generate white noise.
 
-    Params:
-        level       (float) Noise level as standard deviation of a gaussian.
-        n           (int) Length of noise signal in samples.
+    Args:
+        level:  Noise level as standard deviation of a gaussian.
+        n:      Length of noise signal in samples.
 
-    Return:
-        (ndarray)   White noise signal.
+    Returns:
+        White noise signal.
     """
     return stats.norm.rvs(0, level, size=n)
 
 
-def normalize(sig):
+def normalize(sig: Array) -> Array:
     """Normlize a signal to [-1.0, 1.0].
 
-    Params:
-        sig (np.nadarray)    Signal to normalize.
+    Args:
+        sig:    Signal to normalize.
 
-    Return:
-        (np.ndarray) Normalized signal.
+    Returns:
+        Normalized signal.
     """
     return sig / np.max(np.absolute(sig), axis=0)
 
@@ -226,7 +216,7 @@ def sinusoid(frqs: Union[Sequence, Array, int, float],
         comps:   If True, return the components of the signal,
                  else return the sum.
 
-    Return:
+    Returns:
         Array of signals.
     """
     frqs_: Array = np.atleast_1d(frqs)
@@ -236,8 +226,8 @@ def sinusoid(frqs: Union[Sequence, Array, int, float],
         txs = np.arange(fps*length)[:, None] / fps
         sig = np.sin(2*np.pi*txs*frqs_) * amps_
     else:
-        raise ValueError(f'Shape of ``frqs`` ({frqs_.shape}) differs from shape '
-                         f' of ``amps``({amps_.shape}).')
+        raise ValueError(f'Shape of ``frqs`` ({frqs_.shape}) differs from '
+                         f'shape of ``amps``({amps_.shape}).')
     if noise:
         sig += stats.norm.rvs(0, noise, size=sig.shape)
 
@@ -248,7 +238,7 @@ def sinusoid(frqs: Union[Sequence, Array, int, float],
 
 def amp(spl: Union[Array, int, float],
         ref: float = _defaults.SPL_REF) -> Union[Array, float]:
-    """Computes amplitudes form sound pressure level.
+    """Compute amplitudes form sound pressure level.
 
     The reference pressure defaults to the human hearing
     treshold of 20 μPa.
@@ -257,7 +247,7 @@ def amp(spl: Union[Array, int, float],
         spl:    Sound pressure level.
 
     Returns:
-        DFT magnituds.
+        Amplitude of input.
     """
     return np.power(10.0, 0.05*spl) * ref
 

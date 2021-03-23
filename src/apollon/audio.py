@@ -1,4 +1,6 @@
-"""apollon/audio.py -- Wrapper classes for audio data.
+"""
+Audio file handling
+====================
 
 Licensed under the terms of the BSD-3-Clause license.
 Copyright (C) 2019 Michael Blaß, mblass@posteo.net

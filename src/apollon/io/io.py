@@ -1,18 +1,7 @@
-"""apollon/io.py -- General I/O functionallity.
+"""General I/O functionallity.
 
-Licensed under the terms of the BSD-3-Clause license.
-Copyright (C) 2019 Michael Blaß, mblass@posteo.net
-
-Classes:
-    FileAccessControl       Descriptor for file name attributes.
-
-Functions:
-    array_print_opt         Set format for printing numpy arrays.
-    files_in_folder         Iterate over all files in given folder.
-    generate_outpath        Compute path for feature output.
-    load_from_pickle        Load pickled data.
-    repath                  Change path but keep file name.
-    save_to_pickle          Pickle some data.
+:license: BSD 3 Clause
+:copyright: Michael Blaß
 """
 from contextlib import contextmanager as _contextmanager
 import pathlib
@@ -24,8 +13,8 @@ import numpy as np
 from .. types import Array, PathType
 from . json import ArrayEncoder
 
-def generate_outpath(in_path: PathType,
-                     out_path: Optional[PathType],
+
+def generate_outpath(in_path: PathType, out_path: Optional[PathType],
                      suffix: str = None) -> PathType:
     """Generates file paths for feature und HMM output files.
 
@@ -57,20 +46,21 @@ def generate_outpath(in_path: PathType,
             raise ValueError(msg)
     return out_path
 
+
 class PoissonHmmEncoder(ArrayEncoder):
     """JSON encoder for PoissonHmm.
     """
-    def default(self, o):
+    def default(self, o) -> dict:
         """Custon default JSON encoder. Properly handles <class 'PoissonHMM'>.
 
-        Note: Falls back to ``ArrayEncoder`` for all types that do not implement
-        a ``to_dict()`` method.
+        Note: Falls back to ``ArrayEncoder`` for all types that do not
+        implement a ``to_dict()`` method.
 
-        Params:
-            o (any)  Object to encode.
+        Args:
+            o:  Object to encode.
 
         Returns:
-            (dict)
+            Encoded data.
         """
         if isinstance(o, HMM):
             items = {}
@@ -81,6 +71,7 @@ class PoissonHmmEncoder(ArrayEncoder):
                     items[attr] = getattr(o, attr)
             return items
         return ArrayEncoder.default(self, o)
+
 
 class WavFileAccessControl:
     """Control initialization and access to the ``file`` attribute of class:``AudioData``.
@@ -123,7 +114,7 @@ class WavFileAccessControl:
 def array_print_opt(*args, **kwargs):
     """Set print format for numpy arrays.
 
-    Thanks to unutbu:
+    Thanks to ubuntbu:
     https://stackoverflow.com/questions/2891790/how-to-pretty-print-a-
     numpy-array-without-scientific-notation-and-with-given-pre
     """
@@ -139,7 +130,7 @@ def load_from_pickle(path: PathType) -> Any:
     """Load a pickled file.
 
     Args:
-        path:  Path to file.
+        path:   Path to file.
 
     Returns:
         Unpickled object
@@ -155,9 +146,9 @@ def repath(current_path: PathType, new_path: PathType,
     """Change the path and keep the file name. Optinally change the extension, too.
 
     Args:
-        current_path:  The path to change.
-        new_path:      The new path.
-        ext:           Change file extension if ``ext`` is not None.
+        current_path:   The path to change.
+        new_path:       The new path.
+        ext:            Change file extension if ``ext`` is not None.
 
     Returns:
         New path.
@@ -176,8 +167,8 @@ def save_to_pickle(data: Any, path: PathType) -> None:
     """Pickles data to path.
 
     Args:
-        data:  Pickleable object.
-        path:  Path to save the file.
+        data:   Pickleable object.
+        path:   Path to save the file.
     """
     path = pathlib.Path(path)
     with path.open('wb') as file:
@@ -188,8 +179,8 @@ def save_to_npy(data: Array, path: PathType) -> None:
     """Save an array to numpy binary format without using pickle.
 
     Args:
-        data:  Numpy array.
-        path:  Path to save the file.
+        data:   Numpy array.
+        path:   Path to save the file.
     """
     path = pathlib.Path(path)
     with path.open('wb') as file:
@@ -200,7 +191,7 @@ def load_from_npy(path: PathType) -> Array:
     """Load data from numpy's binary format.
 
     Args:
-        path:  File path.
+        path:   File path.
 
     Returns:
         Data as numpy array.
@@ -209,4 +200,3 @@ def load_from_npy(path: PathType) -> Array:
     with path.open('rb') as file:
         data = np.load(file, allow_pickle=False)
     return data
-

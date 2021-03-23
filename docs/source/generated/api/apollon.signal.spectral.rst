@@ -1,5 +1,5 @@
-apollon.signal.spectral module
-==============================
+apollon.signal.spectral
+=======================
 
 .. automodule:: apollon.signal.spectral
    :members:

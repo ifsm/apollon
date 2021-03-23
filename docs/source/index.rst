@@ -15,12 +15,13 @@ Contents
 ========
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
+   :caption: apollon docs
 
    download
    install
    framework
-   generated/api/modules
+   API Reference <generated/api/apollon>
 
 * :ref:`genindex`
 * :ref:`modindex`
