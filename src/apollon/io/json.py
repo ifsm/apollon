@@ -1,17 +1,7 @@
-"""apollon/io/json.py -- General JSON IO.
+"""JSON IO.
 
-Licensed under the terms of the BSD-3-Clause license.
-Copyright (C) 2020 Michael Blaß, mblass@posteo.net
-
-Classes:
-    ArrayEncoder
-
-Functions:
-    dump
-    decode_ndarray
-    encode_ndarray
-    load
-    validate_ndarray
+:license: BSD 3 Clause
+:copyright: Michael Blaß
 """
 import json
 import pathlib
@@ -55,7 +45,7 @@ def dump(obj: Any, path: PathType) -> None:
 
     This function can handel numpy arrays.
 
-    If ``path`` is None, this fucntion writes to stdout.  Otherwise, encoded
+    If ``path`` is None, this fucntion writes to stdout. Otherwise, encoded
     object is written to ``path``.
 
     Args:
@@ -71,7 +61,7 @@ def load(path: PathType):
     """Load JSON file.
 
     Args:
-        path: Path to file.
+        path:   Path to file.
 
     Returns:
         JSON file as FeatureSpace.
@@ -86,10 +76,10 @@ def validate_ndarray(encoded_arr: dict) -> bool:
     ``ndarray.schema.json``.
 
     Args:
-        encoded_arr:  Instance to validate.
+        encoded_arr:    Instance to validate.
 
     Returns:
-        ``True``, if instance is valid.
+        ``True`` if instance is valid.
     """
     return _NDARRAY_VALIDATOR.is_valid(encoded_arr)
 
@@ -98,7 +88,7 @@ def decode_ndarray(instance: dict) -> Array:
     """Decode numerical numpy arrays from a JSON data stream.
 
     Args:
-        instance:  Instance of ``ndarray.schema.json``.
+        instance:   Instance of ``ndarray.schema.json``.
 
     Returns:
         Numpy array.
@@ -114,7 +104,7 @@ def encode_ndarray(arr: Array) -> dict:
     not supported.
 
     Args:
-        arr:  Numpy ndarray.
+        arr:    Numpy ndarray.
 
     Returns:
         JSON-serializable dict adhering ``ndarray.schema.json``.
@@ -143,7 +133,7 @@ class ArrayEncoder(json.JSONEncoder):
         on to ``JSONEncoder.default``.
 
         Args:
-            inp:  Object to encode.
+            inp:    Object to encode.
 
         Returns:
             JSON-serializable dictionary.
