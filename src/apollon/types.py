@@ -1,7 +1,7 @@
-"""apollon/types.py -- Collection of static type hints.
-Licensed under the terms of the BSD-3-Clause license.
-Copyright (C) 2019 Michael Blaß
-mblass@posteo.net
+"""Collection of static type hints.
+
+:license: BSD 3 Clause
+:copyright: Michael Blaß
 """
 import pathlib
 from typing import (Any, Collection, Dict, Generator, Iterable, List, Optional,
