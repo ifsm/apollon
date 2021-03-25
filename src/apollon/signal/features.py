@@ -10,7 +10,7 @@ import numpy as _np
 from scipy.signal import hilbert as _hilbert
 from typing import Optional
 
-import _features
+from . import _features
 from . import tools as _sigtools
 from .. import segment as _segment
 from .. import tools
