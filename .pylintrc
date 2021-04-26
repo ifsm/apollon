@@ -163,7 +163,7 @@ evaluation=10.0 - ((float(5 * error + warning + refactor + convention) / stateme
 # Set the output format. Available formats are text, parseable, colorized, json
 # and msvs (visual studio). You can also give a reporter class, e.g.
 # mypackage.mymodule.MyReporterClass.
-output-format=text
+output-format=colorized
 
 # Tells whether to display a full report or only the messages.
 reports=no
@@ -188,7 +188,7 @@ never-returning-functions=sys.exit
 
 # Format style used to check logging format string. `old` means using %
 # formatting, while `new` is for `{}` formatting.
-logging-format-style=old
+logging-format-style=new
 
 # Logging modules to check that the string format arguments are in logging
 # function parameter format.
@@ -219,7 +219,6 @@ spelling-store-unknown-words=no
 
 # List of note tags to take in consideration, separated by a comma.
 notes=FIXME,
-      XXX,
       TODO
 
 
@@ -321,7 +320,7 @@ indent-after-paren=4
 indent-string='    '
 
 # Maximum number of characters on a single line.
-max-line-length=100
+max-line-length=79
 
 # Maximum number of lines in a module.
 max-module-lines=1000
@@ -331,7 +330,6 @@ max-module-lines=1000
 # `trailing-comma` allows a space between comma and closing bracket: (a, ).
 # `empty-line` allows space-only lines.
 no-space-check=trailing-comma,
-               dict-separator
 
 # Allow the body of a class to be on the same line as the declaration if body
 # contains single statement.
@@ -379,7 +377,11 @@ bad-names=foo,
           baz,
           toto,
           tutu,
-          tata
+          tata,
+          xxx,
+          XXX,
+          ii,
+          jj
 
 # Naming style matching correct class attribute names.
 class-attribute-naming-style=any
