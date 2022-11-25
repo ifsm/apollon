@@ -1,6 +1,26 @@
+[tool.poetry]
+name = "apollon"
+version = "0.2.0"
+description = "Feature extraction frame work for content-based music analysis"
+authors = ["Michael Blaß <mblass@posteo.net>"]
+license = "BSD-3"
+readme = "README.md"
+keywords = ["music", "analysis", "feature extraction"]
+
+[tool.poetry.urls]
+repository = "http://github.com/ifsm/apollo"
+documentation = "https://apollon.readthedocs.io"
+
+[tool.poetry.dependencies]
+python = "^3.10.8"
+numpy = "^1.23.5"
+scipy = "^1.9.3"
+pandas = "^1.5.2"
+soundfile = "^0.11.0"
+
+[tool.poetry.group.development.dependencies]
+pylint = "^2.15.6"
+
 [build-system]
-requires = [
-	'setuptools',
-	'wheel',
-	'numpy']
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
