@@ -6,6 +6,7 @@ authors = ["Michael Blaß <mblass@posteo.net>"]
 license = "BSD-3"
 readme = "README.md"
 keywords = ["music", "analysis", "feature extraction"]
+build = "build.py"
 
 [tool.poetry.urls]
 repository = "http://github.com/ifsm/apollo"
@@ -17,10 +18,14 @@ numpy = "^1.23.5"
 scipy = "^1.9.3"
 pandas = "^1.5.2"
 soundfile = "^0.11.0"
+matplotlib = "^3.6.2"
+jsonschema = "^4.17.1"
 
 [tool.poetry.group.development.dependencies]
 pylint = "^2.15.6"
+mypy = "^0.991"
+hypothesis = "^6.61.0"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core", "setuptools", "numpy"]
 build-backend = "poetry.core.masonry.api"
