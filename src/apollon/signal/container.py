@@ -1,51 +1,27 @@
-"""apollon/spectral/container.py
-
-Licensed under the terms of the BSD-3-Clause license.
-Copyright (C) 2019 Michael Blaß, mblass@posteo.net
-"""
-from dataclasses import dataclass, asdict
-from typing import ClassVar, Optional
-
-from .. import io
-from .. container import Params
-from .. segment import SegmentationParams
-from .. types import PathType, Schema
+from pydantic import BaseModel
 
 
-@dataclass
-class DftParams(Params):
-    """Parameter set for Discrete Fourier Transform."""
-    _schema: ClassVar[Schema] = io.json.load_schema('dft_params')
+class DftParams(BaseModel):
     fps: int
     window: str = 'hamming'
-    n_fft: Optional[int] = None
+    n_fft: int | None = None
 
 
-@dataclass
-class StftParams(Params):
-    """Parameter set for spectral transforms."""
-    _schema: ClassVar[Schema] = io.json.load_schema('stft_params')
-    fps: int
-    window: str
-    n_fft: Optional[int] = None
-    n_perseg: Optional[int] = None
-    n_overlap: Optional[int] = None
-    extend: Optional[bool] = None
-    pad: Optional[bool] = None
+class StftParams(DftParams):
+    n_perseg: int | None= None
+    n_overlap: int | None = None
+    extend: bool | None = None
+    pad: bool | None = None
 
 
-@dataclass
-class CorrDimParams(Params):
-    _schema: ClassVar[Schema] = io.json.load_schema('corrdim')
+class CorrDimParams(BaseModel):
     delay: int
     m_dim: int
     n_bins: int
     scaling_size: int
 
 
-@dataclass
-class CorrGramParams(Params):
-    _schema: ClassVar[Schema] = io.json.load_schema('corrgram')
+class CorrGramParams(BaseModel):
     wlen: int
     n_delay: int
     total: bool = True
