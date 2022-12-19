@@ -82,42 +82,6 @@ class PoissonHmmEncoder(ArrayEncoder):
             return items
         return ArrayEncoder.default(self, o)
 
-class WavFileAccessControl:
-    """Control initialization and access to the ``file`` attribute of class:``AudioData``.
-
-    This assures that the path indeed points to a file, which has to be a .wav file. Otherwise
-    an error is raised. The path to the file is saved as absolute path and the attribute is
-    read-only.
-    """
-
-    def __init__(self):
-        """Hi there!"""
-        self.__attribute = {}
-
-    def __get__(self, obj, objtype):
-        return self.__attribute[obj]
-
-    def __set__(self, obj, file_name):
-        if obj not in self.__attribute.keys():
-            _path = pathlib.Path(file_name).resolve()
-            if _path.exists():
-                if _path.is_file():
-                    if _path.suffix == '.wav':
-                        self.__attribute[obj] = _path
-                    else:
-                        raise IOError('`{}` is not a .wav file.'
-                                      .format(file_name))
-                else:
-                    raise IOError('`{}` is not a file.'.format(file_name))
-            else:
-                raise FileNotFoundError('`{}` does not exists.'
-                                        .format(file_name))
-        else:
-            raise AttributeError('File name cannot be changed.')
-
-    def __delete__(self, obj):
-        del self.__attribute[obj]
-
 
 @_contextmanager
 def array_print_opt(*args, **kwargs):

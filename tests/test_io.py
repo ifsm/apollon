@@ -13,31 +13,6 @@ import hypothesis.extra.numpy as htn
 import apollon.io as aio
 
 
-class MockFileLoader:
-    file = aio.WavFileAccessControl()
-    def __init__(self, fname):
-        self.file = fname
-
-
-class TestWavFileAccessControl(unittest.TestCase):
-    def setUp(self):
-        self.invalid_fname = 34
-        self.not_existing_file = './xxx.py'
-        self.not_a_file = '.'
-        self.not_a_wav_file = '../../README.md'
-
-    def test_invalid_file_names(self):
-        with self.assertRaises(TypeError):
-            MockFileLoader(self.invalid_fname)
-
-        with self.assertRaises(FileNotFoundError):
-            MockFileLoader(self.not_existing_file)
-
-        with self.assertRaises(IOError):
-            MockFileLoader(self.not_a_file)
-            MockFileLoader(self.not_a_wav_file)
-
-
 class TestEncodeNdarray(unittest.TestCase):
     @given(htn.arrays(htn.floating_dtypes(), htn.array_shapes()))
     def test_encode(self, arr):
