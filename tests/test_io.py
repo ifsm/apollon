@@ -10,13 +10,13 @@ import numpy as np
 from hypothesis import given
 import hypothesis.extra.numpy as htn
 
-import apollon.io as aio
+import apollon.io.json as jsonio
 
 
 class TestEncodeNdarray(unittest.TestCase):
     @given(htn.arrays(htn.floating_dtypes(), htn.array_shapes()))
     def test_encode(self, arr):
-        encoded = aio.encode_ndarray(arr)
+        encoded = jsonio.encode_ndarray(arr)
         self.assertTrue('__ndarray__' in encoded)
         self.assertTrue(encoded['__ndarray__'])
         self.assertTrue('__dtype__' in encoded)
@@ -28,7 +28,7 @@ class TestEncodeNdarray(unittest.TestCase):
 class TestDecodeNdarray(unittest.TestCase):
     @given(htn.arrays(htn.floating_dtypes(), htn.array_shapes()))
     def test_arrays(self, arr):
-        restored = aio.decode_ndarray(aio.encode_ndarray(arr))
+        restored = jsonio.decode_ndarray(jsonio.encode_ndarray(arr))
         self.assertTrue(arr.dtype.type is restored.dtype.type)
         self.assertTrue(arr.shape == restored.shape)
         self.assertTrue(np.allclose(arr, restored,
