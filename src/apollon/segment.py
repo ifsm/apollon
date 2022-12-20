@@ -170,8 +170,8 @@ class Segmentation:
         new_shape = data.shape[:-1] + ((data.shape[-1] - self.n_overlap) // step, self.n_perseg)
         new_strides = data.strides[:-1] + (step * data.strides[-1], data.strides[-1])
         segs = as_strided(data, new_shape, new_strides, writeable=False).T
-        params = SegmentationParams(self.n_perseg, self.n_overlap,
-                                    self._extend, self._pad)
+        params = SegmentationParams(n_perseg=self.n_perseg, n_overlap=self.n_overlap,
+                                    extend=self._extend, pad=self._pad)
         return Segments(params, segs)
 
     def _validate_nps(self, n_frames: int) -> None:
