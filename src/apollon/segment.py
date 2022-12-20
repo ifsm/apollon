@@ -2,59 +2,15 @@
 Licensed under the terms of the BSD-3-Clause license.
 Copyright (C) 2019 Michael Blaß, mblass@posteo.net
 """
-from dataclasses import dataclass
-from typing import ClassVar, Generator, Tuple, Union
+from typing import Generator, Tuple
 
 import numpy as _np
 from numpy.lib.stride_tricks import as_strided
 
 from . audio import AudioFile
-from . container import Params
+from . models import SegmentationParams, Segment
 from . signal.tools import zero_padding as _zero_padding
 from . types import Array, Schema
-
-
-@dataclass
-class LazySegmentParams:
-    """Encapsulates segmentation parameters."""
-    n_perseg: int
-    n_overlap: int
-    norm: bool = False
-    mono: bool = True
-    expand: bool = True
-    dtype: str = 'float64'
-
-
-SEGMENTATION_PARAMS = {
-    "type": "object",
-    "properties": {
-        "n_perseg": {"type": "integer"},
-        "n_overlap": {"type": "integer"},
-        "extend": {"anyOf": [{"type": "boolean"}, {"type": "integer"}]},
-        "pad": {"anyOf": [{"type": "boolean"}, {"type": "integer"}]}
-    }
-}
-
-
-@dataclass
-class SegmentationParams(Params):
-    """Parameters for Segmentation."""
-    _schema: ClassVar[Schema] = SEGMENTATION_PARAMS
-    n_perseg: int = 512
-    n_overlap: int = 256
-    extend: Union[bool, int] = True
-    pad: Union[bool, int] = True
-
-
-@dataclass
-class Segment:
-    """Encapsulates audio segment data and meta data."""
-    idx: int
-    start: int
-    stop: int
-    center: int
-    n_frames: int
-    data: _np.ndarray
 
 
 class Segments:
