@@ -17,11 +17,12 @@ from typing import Any, Union
 
 import matplotlib.pyplot as _plt
 import numpy as np
+from pydantic import BaseModel
 import scipy.signal as _sps
 
 from .. segment import Segmentation, Segments
 from .. types import Array, Optional
-from . container import Params, DftParams, StftParams
+from . container import DftParams, StftParams
 
 
 def fft(sig, window: str = None, n_fft: int = None,
@@ -142,8 +143,8 @@ class Spectrum(TransformResult):
             params:    DFT parameters.
             inp_size:  Length of original signal.
         """
-        if not isinstance(params, Params):
-            raise TypeError('Expected type ``Params``')
+        if not isinstance(params, DftParams):
+            raise TypeError('Expected type ``DftParams``')
         if not isinstance(bins, np.ndarray):
             raise TypeError('Expected numpy array.')
         super().__init__(params, bins)
@@ -197,7 +198,7 @@ class Spectrogram(TransformResult):
 
 class SpectralTransform:
     """Base class for spectral transforms."""
-    def __init__(self, params: Params):
+    def __init__(self, params: BaseModel):
         """SpectralTransform base class.
 
         Args:
@@ -209,7 +210,7 @@ class SpectralTransform:
         """Transform ``data`` to spectral domain."""
 
     @property
-    def params(self) -> Params:
+    def params(self) -> BaseModel:
         """Return parameters."""
         return self._params
 
@@ -225,12 +226,12 @@ class Dft(SpectralTransform):
             window:  Name of window function.
             n_fft:   FFT length.
         """
-        super().__init__(DftParams(fps, window, n_fft))
+        super().__init__(DftParams(fps=fps, window=window, n_fft=n_fft))
 
     def transform(self, data: np.ndarray) -> Spectrum:
         """Transform ``data`` to spectral domain."""
         bins = fft(data, self.params.window, self.params.n_fft)
-        return Spectrum(self._params, bins, data.shape[0])
+        return Spectrum(self.params, bins, data.shape[0])
 
 
 class Stft(SpectralTransform):
@@ -244,8 +245,9 @@ class Stft(SpectralTransform):
         Args:
             params:  Initial parameters
         """
-        super().__init__(StftParams(fps, window, n_fft, n_perseg,
-                                    n_overlap, extend, pad))
+        super().__init__(StftParams(fps=fps, window=window, n_fft=n_fft,
+                                    n_perseg=n_perseg, n_overlap=n_overlap,
+                                    extend=extend, pad=pad))
         self._cutter = Segmentation(self.params.n_perseg, self.params.n_overlap,
                                     self.params.extend, self.params.pad)
 

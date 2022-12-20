@@ -7,7 +7,6 @@ from hypothesis.strategies import integers, floats
 from hypothesis.extra.numpy import arrays, array_shapes
 
 from apollon.signal.spectral import fft, Dft, Stft, StftSegments
-from apollon.signal.container import StftParams
 from apollon.signal.tools import sinusoid
 
 
