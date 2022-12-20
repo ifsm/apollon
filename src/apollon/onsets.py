@@ -20,11 +20,10 @@ import numpy as np
 import pandas as pd
 import scipy.signal as _sps
 
-from . container import Params
 from . io import io
 from . signal import features
 from . signal import tools as _ast
-from . signal.spectral import Stft, StftParams
+from . signal.spectral import Stft
 from . import fractal as _fractal
 from . import segment as aseg
 from . types import Array, PathType
@@ -33,18 +32,6 @@ from . types import Array, PathType
 T = TypeVar('T')
 
 
-@dataclass
-class PeakPickingParams(Params):
-    n_before: int
-    n_after: int
-    alpha: float
-    delta: float
-
-
-@dataclass
-class FluxOnsetDetectorParams(Params):
-    stft_params: StftParams
-    pp_params: PeakPickingParams
 
 
 

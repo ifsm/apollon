@@ -1,6 +1,8 @@
 import numpy as np
 from pydantic import BaseModel
 
+from . signal.container import StftParams
+
 
 class LazySegmentParams(BaseModel):
     n_perseg: int
@@ -25,3 +27,15 @@ class Segment:
     center: int
     n_frames: int
     data: np.ndarray
+
+
+class PeakPickingParams(BaseModel):
+    n_before: int
+    n_after: int
+    alpha: float
+    delta: float
+
+
+class FluxOnsetDetectorParams(BaseModel):
+    stft_params: StftParams
+    pp_params: PeakPickingParams
