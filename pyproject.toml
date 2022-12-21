@@ -19,7 +19,6 @@ scipy = "^1.9.3"
 pandas = "^1.5.2"
 soundfile = "^0.11.0"
 matplotlib = "^3.6.2"
-jsonschema = "^4.17.1"
 pydantic = "^1.10.2"
 
 [tool.poetry.group.development.dependencies]

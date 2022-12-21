@@ -16,38 +16,13 @@ Functions:
 import json
 import pathlib
 import pkg_resources
-from typing import Any, Union
+from typing import Any, Union, Mapping
 
-import jsonschema
 import numpy as np
 
 from .. import APOLLON_PATH
 from .. _defaults import SCHEMA_DIR_PATH, SCHEMA_EXT
 from .. types import Array, PathType
-
-
-def load_schema(schema_name: str) -> dict:
-    """Load a JSON schema.
-
-    This function searches within apollon's own schema repository.
-    If a schema is found it is additionally validated agains Draft 7.
-
-    Args:
-        schema_name:  Name of schema. Must be file name without extension.
-
-    Returns:
-        Schema instance.
-
-    Raises:
-        IOError
-    """
-    schema_path = 'schema/' + schema_name + SCHEMA_EXT
-    if pkg_resources.resource_exists('apollon', schema_path):
-        schema = pkg_resources.resource_string('apollon', schema_path)
-        schema = json.loads(schema)
-        jsonschema.Draft7Validator.check_schema(schema)
-        return schema
-    raise IOError(f'Schema ``{schema_path.name}`` not found.')
 
 
 def dump(obj: Any, path: PathType) -> None:
@@ -81,20 +56,25 @@ def load(path: PathType):
         return json.load(fobj, object_hook=_ndarray_hook)
 
 
-def validate_ndarray(encoded_arr: dict) -> bool:
+def validate_ndarray(obj: Mapping) -> bool:
     """Check whether ``encoded_arr`` is a valid instance of
     ``ndarray.schema.json``.
 
     Args:
-        encoded_arr:  Instance to validate.
+        obj:  Instance to validate.
 
     Returns:
         ``True``, if instance is valid.
     """
-    return _NDARRAY_VALIDATOR.is_valid(encoded_arr)
+    return (
+        "__ndarray__" in obj
+        and obj['__ndarray__']
+        and "__dtype__" in obj
+        and "data" in obj
+    )
 
 
-def decode_ndarray(instance: dict) -> Array:
+def decode_ndarray(instance: Mapping) -> Array:
     """Decode numerical numpy arrays from a JSON data stream.
 
     Args:
@@ -103,8 +83,9 @@ def decode_ndarray(instance: dict) -> Array:
     Returns:
         Numpy array.
     """
-    _NDARRAY_VALIDATOR.validate(instance)
-    return np.array(instance['data'], dtype=instance['__dtype__'])
+    if validate_ndarray(instance):
+        return np.array(instance['data'], dtype=instance['__dtype__'])
+    raise TypeError("xx")
 
 
 def encode_ndarray(arr: Array) -> dict:
@@ -126,7 +107,7 @@ def encode_ndarray(arr: Array) -> dict:
 def _ndarray_hook(inp: dict) -> Union[Array, dict]:
     try:
         return decode_ndarray(inp)
-    except jsonschema.ValidationError:
+    except TypeError:
         return inp
 
 
@@ -151,6 +132,3 @@ class ArrayEncoder(json.JSONEncoder):
         if isinstance(inp, Array):
             return encode_ndarray(inp)
         return json.JSONEncoder.default(self, inp)
-
-
-_NDARRAY_VALIDATOR = jsonschema.Draft7Validator(load_schema('ndarray'))
