@@ -8,7 +8,8 @@ from hypothesis.extra.numpy import array_shapes
 import numpy as np
 
 from apollon.audio import AudioFile
-from apollon.segment import Segments, Segmentation, SegmentationParams
+from apollon.models import SegmentationParams
+from apollon.segment import Segments, Segmentation
 
 
 MAX_NSEGS = 345    # cannot pass instance attribute to method decorator
@@ -36,13 +37,13 @@ def valid_nfr_nps_nol(draw) -> tuple:
 
 class TestSegments(unittest.TestCase):
     def setUp(self) -> None:
-        seg_params = SegmentationParams(1024, 512, extend=True, pad=True)
+        seg_params = SegmentationParams(n_perseg=1024, n_overlap=512, extend=True, pad=True)
         self.segs = Segments(seg_params, np.empty((1024, 30)))
 
     @given(valid_nfr_nps_nol())
     def test_bounds_idx0_negative(self, shape) -> None:
         nfr, nps, nol = shape
-        params = SegmentationParams(nps, nol, extend=True, pad=True)
+        params = SegmentationParams(n_perseg=nps, n_overlap=nol, extend=True, pad=True)
         segs = Segments(params, np.empty((nps, nfr)))
         start, stop = segs.bounds(0)
         self.assertLess(start, 0)
@@ -81,8 +82,8 @@ class TestSegments(unittest.TestCase):
         n_perseg = 1024
         n_overlap = 512
         n_segs = 30
-        seg_params = SegmentationParams(n_perseg, n_overlap, extend=False,
-                                        pad=True)
+        seg_params = SegmentationParams(n_perseg=n_perseg, n_overlap=n_overlap,
+                                        extend=False, pad=True)
         segs = Segments(seg_params, np.empty((n_perseg, n_segs)))
         self.assertEqual(segs._offset, n_perseg//2)
 
