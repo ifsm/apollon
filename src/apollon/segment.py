@@ -30,18 +30,22 @@ class Segments:
 
     @property
     def n_segs(self) -> int:
+        """Return number of segments"""
         return self._segs.shape[1]
 
     @property
     def n_perseg(self) -> int:
+        """Number of samples per segment (window size)"""
         return self._params.n_perseg
 
     @property
     def n_overlap(self) -> int:
+        """Number of overlapping samples in consecutive windows"""
         return self._params.n_overlap
 
     @property
     def step(self) -> int:
+        """Distance between consecutive windows (hop size) in samples"""
         return self._params.n_perseg - self._params.n_overlap
 
     @property
@@ -226,6 +230,17 @@ class LazySegments:
         self.dtype = dtype
 
     def compute_bounds(self, seg_idx: int) -> tuple[int, int]:
+        """Compute egment boundaries
+
+        Compute segment boundaries in samples relative to zero from segment
+        index ``seg_idx``.
+
+        Args:
+            seg_idx:    Index of requested segment
+
+        Returns:
+            Index of first and last sample in segment
+        """
         if seg_idx < 0:
             raise IndexError('Expected positive integer for ``seg_idx``. '
                              f'Got {seg_idx}.')
@@ -272,11 +287,12 @@ class LazySegments:
             yield self.__getitem__(i)
 
     def iter_data(self):
-
+        """Iterate over segment data"""
         for i in range(self.n_segs):
             yield self._snd.read(self.n_perseg)
 
     def iter_bounds(self):
+        """Iterate over segment boundaries"""
         for i in range(self.n_segs):
             yield self.compute_bounds(i)
 
