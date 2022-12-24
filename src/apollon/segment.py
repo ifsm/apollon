@@ -10,12 +10,12 @@ from numpy.lib.stride_tricks import as_strided
 from . audio import AudioFile
 from . models import SegmentationParams, Segment
 from . signal.tools import zero_padding as _zero_padding
-from . types import Array, Schema
+from . types import Array
 
 
 class Segments:
     """Segement"""
-    def __init__(self, params: SegmentationParams, segs: _np.ndarray) -> None:
+    def __init__(self, params: SegmentationParams, segs: Array) -> None:
         self._segs = segs
         self._params = params
         if self._params.extend:
@@ -92,11 +92,11 @@ class Segments:
         return Segment(seg_idx, *self.bounds(seg_idx), self.center(seg_idx),
                        self._params.n_perseg, self[seg_idx])
 
-    def __iter__(self) -> Generator[_np.ndarray, None, None]:
+    def __iter__(self) -> Generator[Array, None, None]:
         for seg in self._segs.T:
             yield _np.expand_dims(seg, 1)
 
-    def __getitem__(self, key) -> _np.ndarray:
+    def __getitem__(self, key) -> Array:
         out = self._segs[:, key]
         if out.ndim < 2:
             return _np.expand_dims(out, 1)
@@ -142,7 +142,7 @@ class Segmentation:
         self._ext_len = 0
         self._pad_len = 0
 
-    def transform(self, data: _np.ndarray) -> Segments:
+    def transform(self, data: Array) -> Segments:
         """Apply segmentation.
 
         Input array must be either one-, or two-dimensional.
@@ -181,7 +181,7 @@ class Segmentation:
                     'must be less then or equal to input data length.')
             raise ValueError(msg)
 
-    def _validate_data_shape(self, data: _np.ndarray) -> None:
+    def _validate_data_shape(self, data: Array) -> None:
         if not (0 < data.ndim < 3):
             msg = (f'Input array must have one or two dimensions.\n'
                    f'Found ``data.shape`` = {data.shape}.')
@@ -225,7 +225,7 @@ class LazySegments:
         self.mono = mono
         self.dtype = dtype
 
-    def compute_bounds(self, seg_idx):
+    def compute_bounds(self, seg_idx: int) -> tuple[int, int]:
         if seg_idx < 0:
             raise IndexError('Expected positive integer for ``seg_idx``. '
                              f'Got {seg_idx}.')
@@ -235,16 +235,17 @@ class LazySegments:
         start = seg_idx * self.n_overlap + self.offset
         return start, start + self.n_perseg
 
-    def read_segment(self, seg_idx: int, norm: bool = None,
-                     mono: bool = None, dtype: str = None):
+    def read_segment(self, seg_idx: int, norm: bool | None = None,
+                     mono: bool | None = None, dtype: str | None = None
+                     ) -> Array:
         norm = norm or self.norm
         mono = mono or self.mono
         dtype = dtype or self.dtype
         offset = seg_idx * self.n_overlap + self.offset
         return self._snd.read(self.n_perseg, offset, norm, mono, dtype)
 
-    def loc(self, seg_idx: int, norm: bool = None,
-            mono: bool = None, dtype: str = None) -> Segment:
+    def loc(self, seg_idx: int, norm: bool | None = None,
+            mono: bool | None = None, dtype: str | None = None) -> Segment:
         """Locate segment by index.
 
         Args:
@@ -263,7 +264,7 @@ class LazySegments:
         return Segment(seg_idx, start, stop, self.n_perseg,
                        self._snd.fps, data)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: int):
         return self.loc(key)
 
     def __iter__(self):
