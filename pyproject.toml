@@ -29,3 +29,15 @@ hypothesis = "^6.61.0"
 [build-system]
 requires = ["poetry-core", "setuptools", "numpy"]
 build-backend = "poetry.core.masonry.api"
+
+[[tool.mypy.overrides]]
+module = "scipy.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "matplotlib.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "soundfile"
+ignore_missing_imports = true
