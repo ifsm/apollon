@@ -173,6 +173,8 @@ class Segmentation:
 
         data = _np.pad(data.squeeze(), (self._ext_len, self._ext_len+self._pad_len))
         new_shape = data.shape[:-1] + ((data.shape[-1] - self.n_overlap) // step, self.n_perseg)
+        # see https://github.com/PyCQA/pylint/issues/7981
+        # pylint: disable = E1136
         new_strides = data.strides[:-1] + (step * data.strides[-1], data.strides[-1])
         segs = as_strided(data, new_shape, new_strides, writeable=False).T
         params = SegmentationParams(n_perseg=self.n_perseg, n_overlap=self.n_overlap,
