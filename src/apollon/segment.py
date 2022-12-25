@@ -386,8 +386,7 @@ def by_samples(arr: Array, n_perseg: int, hop_size: int = 0) -> Array:
     """
     if hop_size < 1:
         return _by_samples(arr, n_perseg)
-    else:
-        return _by_samples_with_hop(arr, n_perseg, hop_size)
+    return _by_samples_with_hop(arr, n_perseg, hop_size)
 
 
 def by_ms(arr: Array, fps: int, ms_perseg: int, hop_size: int = 0) -> Array:
