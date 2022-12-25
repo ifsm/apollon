@@ -26,7 +26,7 @@ from . json import ArrayEncoder
 
 def generate_outpath(in_path: PathType,
                      out_path: Optional[PathType],
-                     suffix: str = None) -> PathType:
+                     suffix: str | None = None) -> PathType:
     """Generates file paths for feature und HMM output files.
 
     If ``out_path`` is ``None``, the basename of ``in_path`` is taken

@@ -231,7 +231,7 @@ def standardize(arr: Array) -> Array:
     return (arr - arr.mean(axis=0)) / arr.std(axis=0)
 
 
-def time_stamp(fmt: str = None) -> str:
+def time_stamp(fmt: str | None = None) -> str:
     """Report call time as UTC time stamp.
 
     If ``fmt`` is not given, this function returns time stampes
@@ -276,7 +276,7 @@ def within_any(val: float, windows: Array) -> bool:
     return np.any(c)
 
 
-def fsum(arr: Array, axis: int = None, keepdims: bool = False,
+def fsum(arr: Array, axis: int | None = None, keepdims: bool = False,
          dtype: 'str' = 'float64') -> Array:
     """Return math.fsum along the specifyed axis.
 

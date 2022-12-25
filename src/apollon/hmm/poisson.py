@@ -128,7 +128,7 @@ class _HyperParams:
                  init_delta: _at.ArrayOrStr,
                  gamma_dp: _at.IterOrNone = None,
                  delta_dp: _at.IterOrNone = None,
-                 fill_diag: float = None):
+                 fill_diag: float | None = None):
         """Check and save model hyper parameters.
 
         Args:

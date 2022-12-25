@@ -109,8 +109,8 @@ def freq2mel(frqs):
     return 1125 * np.log(1 + frqs / 700)
 
 
-def limit(inp: Array, ldb: Union[float] = None,
-          udb: Union[float] = None) -> Array:
+def limit(inp: Array, ldb: Union[float] | None = None,
+          udb: Union[float] | None = None) -> Array:
     """Limit the dynamic range of ``inp`` to  [``ldb``, ``udb``].
 
     Boundaries are given in dB SPL.
@@ -210,7 +210,7 @@ def normalize(sig):
 def sinusoid(frqs: Union[Sequence, Array, int, float],
              amps: Union[Sequence, Array, int, float] = 1,
              fps: int = 9000, length: float = 1.0,
-             noise: float = None, comps: bool = False) -> Array:
+             noise: float | None = None, comps: bool = False) -> Array:
     """Generate sinusoidal signal.
 
     Args:

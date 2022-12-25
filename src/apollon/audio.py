@@ -99,8 +99,9 @@ class AudioFile:
     def __len__(self):
         return self.n_frames
 
-    def read(self, n_frames: int = None, offset: int = None, norm: bool = False,
-             mono: bool = True, dtype: str = 'float64') -> Array:
+    def read(self, n_frames: int | None = None, offset: int | None = None,
+             norm: bool = False, mono: bool = True, dtype: str = 'float64'
+        ) -> Array:
         # pylint: disable=too-many-arguments
         """Read from audio file.
 

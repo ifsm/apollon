@@ -121,7 +121,7 @@ def _new_axis_3d(fig: MplFig = None, **kwargs) -> tuple:
     return fig, ax_3d
 
 
-def signal(values: _Array, fps: int = None, **kwargs) -> tuple:
+def signal(values: _Array, fps: int | None = None, **kwargs) -> tuple:
     """Plot time series with constant sampling interval.
 
     Args:

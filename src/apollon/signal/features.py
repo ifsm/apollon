@@ -132,7 +132,7 @@ def energy(sig: _Array) -> _Array:
     return _np.sum(_np.square(_np.abs(sig)), axis=0, keepdims=True)
 
 
-def frms(bins: _Array, n_sig: int, window: str = None) -> _Array:
+def frms(bins: _Array, n_sig: int, window: str | None = None) -> _Array:
     """Root meann square of signal energy estimate in the spectral domain.
 
     Args:
@@ -304,7 +304,8 @@ def spectral_flux(inp: _Array, delta: float = 1.0,
     return out
 
 
-def fspl(amps: _Array, total: bool = False, ref: float = None) -> _Array:
+def fspl(amps: _Array, total: bool | None = False, ref: float | None = None
+         ) -> _Array:
     """Computes sound pressure level from spectrum.
 
     The values of ``amp`` are assumed to be magnitudes of DFT bins.
@@ -330,8 +331,8 @@ def fspl(amps: _Array, total: bool = False, ref: float = None) -> _Array:
     return 10.0*_np.log10(vals)
 
 
-def fsplc(frqs: _Array, amps: _Array, total: bool = False,
-         ref: float = None) -> _Array:
+def fsplc(frqs: _Array, amps: _Array, total: bool | None = False,
+         ref: float | None = None) -> _Array:
     """Apply C-weighted to SPL.
 
     Args:

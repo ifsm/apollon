@@ -18,7 +18,7 @@ from scipy.spatial import distance
 from . types import Array
 
 
-def log_histogram_bin_edges(dists, n_bins: int, default: float = None):
+def log_histogram_bin_edges(dists, n_bins: int, default: float | None = None):
     """Compute histogram bin edges that are equidistant in log space.
     """
     lower_bound = dists.min()

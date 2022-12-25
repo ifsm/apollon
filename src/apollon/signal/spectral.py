@@ -25,7 +25,7 @@ from .. types import Array, Optional
 from . container import DftParams, StftParams
 
 
-def fft(sig, window: str = None, n_fft: int = None,
+def fft(sig, window: str | None = None, n_fft: int | None = None,
         norm: bool = True):
     """Compute the Discrete Fouier Transform for real input.
 
