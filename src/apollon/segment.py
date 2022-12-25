@@ -288,7 +288,7 @@ class LazySegments:
 
     def iter_data(self):
         """Iterate over segment data"""
-        for i in range(self.n_segs):
+        for _ in range(self.n_segs):
             yield self._snd.read(self.n_perseg)
 
     def iter_bounds(self):
