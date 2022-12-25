@@ -114,6 +114,7 @@ class Segments:
 
 
 class Segmentation:
+    # pylint: disable = R0903
     """Segementation"""
     def __init__(self, n_perseg: int, n_overlap: int, extend: bool = True,
                 pad: bool = True) -> None:
@@ -198,6 +199,7 @@ class Segmentation:
 
 
 class LazySegments:
+    # pylint: disable = too-many-instance-attributes, too-many-arguments
     """Read segments from audio file."""
     def __init__(self, snd: AudioFile, n_perseg: int, n_overlap: int,
                  norm: bool = False, mono: bool = True,
