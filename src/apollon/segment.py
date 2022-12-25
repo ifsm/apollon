@@ -93,8 +93,10 @@ class Segments:
         Returns:
             Segment ``seg_idx``.
         """
-        return Segment(seg_idx, *self.bounds(seg_idx), self.center(seg_idx),
-                       self._params.n_perseg, self[seg_idx])
+        seg_start, seg_stop = self.bounds(seg_idx)
+        return Segment(idx=seg_idx, start=seg_start, stop=seg_stop,
+                       center=self.center(seg_idx),
+                       n_frames=self._params.n_perseg, data=self[seg_idx])
 
     def __iter__(self) -> Generator[Array, None, None]:
         for seg in self._segs.T:
@@ -289,10 +291,10 @@ class LazySegments:
         Returns:
             Segment number ``seg_idx``.
         """
-        start, stop = self.compute_bounds(seg_idx)
+        seg_start, seg_stop = self.compute_bounds(seg_idx)
         data = self.read_segment(seg_idx, norm, mono, dtype)
-        return Segment(seg_idx, start, stop, self.n_perseg,
-                       self._snd.fps, data)
+        return Segment(idx=seg_idx, start=seg_start, stop=seg_stop,
+                       center=self.n_perseg, n_frames=self._snd.fps, data=data)
 
     def __getitem__(self, key: int):
         return self.loc(key)
