@@ -30,6 +30,12 @@ hypothesis = "^6.61.0"
 requires = ["poetry-core", "setuptools", "numpy"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.mypy]
+plugins = [
+    "numpy.typing.mypy_plugin",
+    "pydantic.mypy"
+]
+
 [[tool.mypy.overrides]]
 module = "scipy.*"
 ignore_missing_imports = true
