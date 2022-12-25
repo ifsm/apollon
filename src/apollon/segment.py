@@ -63,7 +63,7 @@ class Segments:
         Returns:
             Center frame index.
         """
-        if not (0 <= seg_idx < self.n_segs):
+        if not 0 <= seg_idx < self.n_segs:
             raise IndexError('Requested index out of range.')
         return seg_idx * self.step + self._offset
 
@@ -78,7 +78,7 @@ class Segments:
         Returns:
             Lower and upper bound frame index.
         """
-        if not (0 <= seg_idx < self.n_segs):
+        if not 0 <= seg_idx < self.n_segs:
             raise IndexError('Requested index out of range.')
         lob = self.center(seg_idx) - self._params.n_perseg // 2
         upb = lob + self._params.n_perseg
@@ -186,7 +186,7 @@ class Segmentation:
             raise ValueError(msg)
 
     def _validate_data_shape(self, data: Array) -> None:
-        if not (0 < data.ndim < 3):
+        if not 0 < data.ndim < 3:
             msg = (f'Input array must have one or two dimensions.\n'
                    f'Found ``data.shape`` = {data.shape}.')
         elif data.ndim == 2 and data.shape[1] != 1:
