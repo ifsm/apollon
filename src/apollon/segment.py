@@ -257,6 +257,17 @@ class LazySegments:
     def read_segment(self, seg_idx: int, norm: bool | None = None,
                      mono: bool | None = None, dtype: str | None = None
                      ) -> Array:
+        """Read single segement from file
+
+        Args:
+            seg_idx:    Segment index
+            norm:       If `True`, normalize return array
+            mono:       If `True`, downmix all channels
+            dtype:      Dtype of return array
+
+        Returns:
+            Array segment data
+        """
         norm = norm or self.norm
         mono = mono or self.mono
         dtype = dtype or self.dtype
