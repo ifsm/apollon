@@ -1,4 +1,8 @@
 # pylint: disable = missing-class-docstring,too-few-public-methods
+"""
+common models
+"""
+
 from dataclasses import dataclass
 
 import numpy as np
