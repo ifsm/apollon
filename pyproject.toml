@@ -48,5 +48,8 @@ ignore_missing_imports = true
 module = "soundfile"
 ignore_missing_imports = true
 
+[tool.pylint.basic]
+good-names = ["_", "i", "j", "ax"]
+
 [tool.pylint.'MESSAGES CONTROL']
 extension-pkg-whitelist = "pydantic"
