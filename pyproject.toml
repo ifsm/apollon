@@ -26,6 +26,13 @@ pylint = "^2.15.6"
 mypy = "^0.991"
 hypothesis = "^6.61.0"
 
+
+[tool.poetry.group.notebook]
+optional = true
+
+[tool.poetry.group.notebook.dependencies]
+ipykernel = "^6.23.0"
+
 [build-system]
 requires = ["poetry-core", "setuptools", "numpy"]
 build-backend = "poetry.core.masonry.api"
