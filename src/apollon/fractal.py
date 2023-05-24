@@ -102,11 +102,17 @@ def lorenz_attractor(n_samples: int, sigma: float = 10.0, rho: float = 28.0,
         rho:         System parameter
         beta:        System parameter
         init_state:  Initial System state
-        dt:          Step size
+        dt:          Positive step size
 
     Return:
         xyz: System state
     """
+    if n_samples < 0:
+        raise ValueError("``n_samples`` must be positive integer")
+
+    if dt < 0:
+        raise ValueError("``dt`` must be positive float")
+
     xyz = np.empty((n_samples, 3))
     xyz[0] = init_state
 
