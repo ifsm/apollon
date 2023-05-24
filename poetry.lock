@@ -70,6 +70,23 @@ tests = ["attrs[tests-no-zope]", "zope-interface"]
 tests-no-zope = ["cloudpickle", "hypothesis", "mypy (>=1.1.1)", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins", "pytest-xdist[psutil]"]
 
 [[package]]
+name = "awesom"
+version = "0.1.4"
+description = "Self-organizing map framework for Python"
+category = "main"
+optional = false
+python-versions = ">=3.10,<4.0"
+files = [
+    {file = "awesom-0.1.4-py3-none-any.whl", hash = "sha256:4df2059ba8fefacf26d037c62266d5b3e0fff2b504aeef603600a256220294e9"},
+    {file = "awesom-0.1.4.tar.gz", hash = "sha256:fbb1c79e3bc90e54c9c6f679408c05173818b09bdecd90af6212ede5d49a80ac"},
+]
+
+[package.dependencies]
+matplotlib = ">=3.6.1,<4.0.0"
+numpy = ">=1.23.4,<2.0.0"
+scipy = ">=1.9.3,<2.0.0"
+
+[[package]]
 name = "backcall"
 version = "0.2.0"
 description = "Specifications for callback functions passed in to an API"
@@ -1713,4 +1730,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10.8"
-content-hash = "b891c72cba2531981d73a19c191100a9469e4389ba79b4b0506d569689a2f779"
+content-hash = "fb8c39546195dbd03221ba103e277baff1292778e5e22f2ee851ecaf0125bb64"

@@ -20,6 +20,7 @@ pandas = "^1.5.2"
 soundfile = "^0.11.0"
 matplotlib = "^3.6.2"
 pydantic = "^1.10.2"
+awesom = "^0.1.4"
 
 [tool.poetry.group.development.dependencies]
 pylint = "^2.15.6"
