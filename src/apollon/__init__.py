@@ -7,9 +7,8 @@ Apollon feature extraction framework.
 """
 
 import os as _os
-import pkg_resources as _pkg
+from importlib import metadata as _meta
 
-
-__version__ = _pkg.get_distribution('apollon').version
+__version__ = _meta.version("apollon")
 
 APOLLON_PATH = _os.path.dirname(_os.path.realpath(__file__))
