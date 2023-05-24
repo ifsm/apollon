@@ -12,26 +12,6 @@ from scipy.spatial import distance
 from . types import Array
 
 
-def log_histogram_bin_edges(dists, n_bins: int, default: float | None = None):
-    """Compute histogram bin edges that are equidistant in log space
-    """
-    lower_bound = dists.min()
-    upper_bound = dists.max()
-
-    if lower_bound == 0:
-        lower_bound = np.absolute(np.diff(dists)).min()
-
-    if lower_bound == 0:
-        sd_it = iter(np.sort(dists))
-        while not lower_bound:
-            lower_bound = next(sd_it)
-
-    if lower_bound == 0:
-        lower_bound = np.finfo('float64').eps
-
-    return np.geomspace(lower_bound, dists.max(), n_bins+1)
-
-
 def delay_embedding(inp: Array, delay: int, m_dim: int) -> Array:
     """Compute a delay embedding of the `inp`
 
@@ -89,43 +69,49 @@ def embedding_entropy(emb: Array, n_bins: int) -> Array:
     return stats.entropy(counts.flatten())
 
 
-def __lorenz_system(x, y, z, s, r, b):
+def lorenz_system(state: tuple[float, float, float],
+                  sigma: float, rho: float, beta: float) -> Array:
     """Compute the derivatives of the Lorenz system of coupled
        differential equations
 
     Args:
-        x, y, z    Current system state
-        s, r, b    System parameters
+        state:  Current system state
+        sigma:  System parameter
+        rho:    System parameter
+        beta:   System parameter
 
     Return:
         xyz_dot    Derivatives of current system state
     """
-    xyz_dot = np.array([s * (y - x),
-                        x * (r - z) - y,
-                        x * y - b * z])
+    x, y, z = state
+    xyz_dot = np.array([sigma * (y - x),
+                        x * (rho - z) - y,
+                        x * y - beta * z])
     return xyz_dot
 
 
-def lorenz_attractor(n, sigma=10, rho=28, beta=8/3,
-                     init_xyz=(0., 1., 1.05), dt=0.01):
-    """Simulate a Lorenz system with given parameters
+def lorenz_attractor(n_samples: int, sigma: float = 10.0, rho: float = 28.0,
+                     beta: float = 8/3,
+                     init_state: tuple[float, float, float] = (0., 1., 1.05),
+                     dt: float = 0.01) -> Array:
+    """Simulate the Lorenz system
 
     Args:
-        n:        Number of data points to generate
-        sigma:    System parameter
-        rho:      System parameter
-        beta:     System parameter
-        init_xyz: Initial System state
-        dt:       Step size
+        n_samples:   Number of data points to generate
+        sigma:       System parameter
+        rho:         System parameter
+        beta:        System parameter
+        init_state:  Initial System state
+        dt:          Step size
 
     Return:
         xyz: System state
     """
-    xyz = np.empty((n, 3))
-    xyz[0] = init_xyz
+    xyz = np.empty((n_samples, 3))
+    xyz[0] = init_state
 
-    for i in range(n-1):
-        xyz_prime = __lorenz_system(*xyz[i], sigma, rho, beta)
+    for i in range(n_samples-1):
+        xyz_prime = lorenz_system(xyz[i], sigma, rho, beta)
         xyz[i+1] = xyz[i] + xyz_prime * dt
 
     return xyz
