@@ -15,13 +15,11 @@ Functions:
 """
 import json
 import pathlib
-import pkg_resources
 from typing import Any, Union, Mapping
 
 import numpy as np
 
-from .. import APOLLON_PATH
-from .. _defaults import SCHEMA_DIR_PATH, SCHEMA_EXT
+from .. _defaults import SCHEMA_DIR_PATH
 from .. types import Array, PathType
 
 
