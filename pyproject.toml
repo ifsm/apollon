@@ -34,6 +34,11 @@ optional = true
 [tool.poetry.group.notebook.dependencies]
 ipykernel = "^6.23.0"
 
+
+[tool.poetry.group.docs.dependencies]
+sphinxcontrib-apidoc = "^0.3.0"
+sphinx-rtd-theme = "^1.2.1"
+
 [build-system]
 requires = ["poetry-core", "setuptools", "numpy"]
 build-backend = "poetry.core.masonry.api"
