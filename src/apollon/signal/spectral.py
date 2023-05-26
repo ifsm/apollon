@@ -23,6 +23,7 @@ import scipy.signal as _sps
 from .. segment import Segmentation, Segments
 from .. types import Array, Optional
 from . container import DftParams, StftParams
+from apollon.signal import features
 
 
 def fft(sig, window: str | None = None, n_fft: int | None = None,
@@ -110,8 +111,8 @@ class TransformResult:
 
     @property
     def centroid(self):
-        """Compute spectral centroid."""
-        return np.multiply(self.abs, self.frqs).sum() / self.abs.sum()
+        """Compute spectral centroid"""
+        return features.spectral_centroid(self.frqs, self.abs)
 
     @property
     def _n_fft(self) -> int:
