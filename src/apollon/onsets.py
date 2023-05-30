@@ -39,19 +39,19 @@ class OnsetDetector:
 
     @property
     def onsets(self) -> pd.DataFrame:
-        """Returns the index of each detected onset.
+        """Return index of each detected onset
 
-        The resulting data frame has two columns:
-        `frame` is number of the center frame of the segment in which
+        The resulting DataFrame has two columns:
+        `frame' is number of the center frame of the segment in which
         the onset was detected.
 
-        `time` is the time difference between the center frame of the segment
+        'time' is the time difference between the center frame of the segment
         in which the onset was detected and the start of the audio signal.
 
         The data frame index represents the segments.
 
         Returns:
-            Index of each onset as data frame.
+            Onset frame index and time
         """
         return self._odf.iloc[self._peaks][['frame', 'time']]
 
