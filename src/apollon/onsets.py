@@ -1,17 +1,12 @@
 """
-apollon/onsets.py -- Onset detection routines.
-Licensed under the terms of the BSD-3-Clause license.
-Copyright (C) 2019 Michael Blaß
-mblass@posteo.net
-
 Classes:
-    OnsetDetector           Base class for onset detection.
-    EntropyOnsetDetector    Onset detection based on phase pace entropy estimation.
-    FluxOnsetDetector       Onset detection based on spectral flux.
+    OnsetDetector           Base class for onset detection
+    EntropyOnsetDetector    Onset detection based on phase pace entropy estimation
+    FluxOnsetDetector       Onset detection based on spectral flux
+    FilterPeakPicker        Peak picking in one-dimensional time series
 
 Functions:
-    peak_picking            Identify local peaks in time series.
-    evaluate_onsets         Evaluation of onset detection results given ground truth.
+    evaluate_onsets         Evaluation of onset detection results given ground truth
 """
 from dataclasses import dataclass
 from typing import Dict, Optional, Tuple, Type, TypeVar
