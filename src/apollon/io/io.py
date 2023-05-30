@@ -1,18 +1,11 @@
-"""apollon/io.py -- General I/O functionallity.
-
-Licensed under the terms of the BSD-3-Clause license.
-Copyright (C) 2019 Michael Blaß, mblass@posteo.net
-
-Classes:
-    FileAccessControl       Descriptor for file name attributes.
+"""General I/O functionallity
 
 Functions:
-    array_print_opt         Set format for printing numpy arrays.
-    files_in_folder         Iterate over all files in given folder.
-    generate_outpath        Compute path for feature output.
-    load_from_pickle        Load pickled data.
-    repath                  Change path but keep file name.
-    save_to_pickle          Pickle some data.
+    array_print_opt         Set format for printing numpy arrays
+    generate_outpath        Compute path for feature output
+    load_from_pickle        Load pickled data
+    repath                  Change path but keep file name
+    save_to_pickle          Pickle some data
 """
 from contextlib import contextmanager as _contextmanager
 import pathlib
@@ -27,18 +20,18 @@ from . json import ArrayEncoder
 def generate_outpath(in_path: PathType,
                      out_path: Optional[PathType],
                      suffix: str | None = None) -> PathType:
-    """Generates file paths for feature und HMM output files.
+    """Generate file paths for feature output
 
     If ``out_path`` is ``None``, the basename of ``in_path`` is taken
     with the extension replaced by ``suffix``.
 
     Args:
-        in_path:   Path to file under analysis.
-        out_path:  Commandline argument.
-        suffix:    File extension.
+        in_path:   Path to file under analysis
+        out_path:  Commandline argument
+        suffix:    File extension
 
     Returns:
-        Valid output path.
+        Valid output path
     """
     in_path = pathlib.Path(in_path)
     if suffix is None:
@@ -85,7 +78,7 @@ class PoissonHmmEncoder(ArrayEncoder):
 
 @_contextmanager
 def array_print_opt(*args, **kwargs):
-    """Set print format for numpy arrays.
+    """Set print format for numpy arrays
 
     Thanks to unutbu:
     https://stackoverflow.com/questions/2891790/how-to-pretty-print-a-
@@ -100,7 +93,7 @@ def array_print_opt(*args, **kwargs):
 
 
 def load_from_pickle(path: PathType) -> Any:
-    """Load a pickled file.
+    """Load a pickled file
 
     Args:
         path:  Path to file.
@@ -116,7 +109,9 @@ def load_from_pickle(path: PathType) -> Any:
 
 def repath(current_path: PathType, new_path: PathType,
            ext: Optional[str] = None) -> PathType:
-    """Change the path and keep the file name. Optinally change the extension, too.
+    """Change the path and keep the file name
+
+    Optinally change the extension, too.
 
     Args:
         current_path:  The path to change.
