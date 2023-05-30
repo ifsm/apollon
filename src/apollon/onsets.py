@@ -34,6 +34,7 @@ class OnsetDetector:
 
     @property
     def odf(self) -> pd.DataFrame:
+        """Return onset detection function"""
         return self._odf
 
     @property
