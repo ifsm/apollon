@@ -30,7 +30,7 @@ class OnsetDetector:
     """Onset detection base class.
     """
     def __init__(self) -> None:
-        self._odf: Optional[pd.DataFrame] = None
+        self._odf: pd.DataFrame
 
     @property
     def odf(self) -> pd.DataFrame:
