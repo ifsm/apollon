@@ -8,8 +8,7 @@ Classes:
 Functions:
     evaluate_onsets         Evaluation of onset detection results given ground truth
 """
-from dataclasses import dataclass
-from typing import Dict, Optional, Tuple, Type
+from typing import Dict, Optional, Tuple
 
 import numpy as np
 import pandas as pd
