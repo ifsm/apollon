@@ -26,6 +26,7 @@ awesom = "^0.1.4"
 pylint = "^2.15.6"
 mypy = "^0.991"
 hypothesis = "^6.61.0"
+pandas-stubs = "^2.0.1.230501"
 
 
 [tool.poetry.group.notebook]
