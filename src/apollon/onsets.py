@@ -9,7 +9,7 @@ Functions:
     evaluate_onsets         Evaluation of onset detection results given ground truth
 """
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple, Type, TypeVar
+from typing import Dict, Optional, Tuple, Type
 
 import numpy as np
 import pandas as pd
@@ -22,12 +22,6 @@ from . signal.spectral import Stft
 from . import fractal as _fractal
 from . import segment as aseg
 from . types import Array, PathType
-
-
-T = TypeVar('T')
-
-
-
 
 
 pp_params = {'n_before': 10, 'n_after': 10, 'alpha': .1,
