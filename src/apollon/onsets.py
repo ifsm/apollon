@@ -33,6 +33,7 @@ class OnsetDetector(ABC):
     def __init__(self) -> None:
         self._odf: pd.DataFrame
         self._peaks: IntArray
+        self._ppkr: FilterPeakPicker
 
     @property
     def odf(self) -> pd.DataFrame:
