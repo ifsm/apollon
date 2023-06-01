@@ -1,31 +1,6 @@
 """
-Functions:
-    assert_poisson_input    Raise if array does not conform restrictions.
-    assert_st_matrix        Raise if array is not a stochastic matrix.
-    assert_st_vector        Raise if array is not a stochastic vector.
-
-    init_lambda_linear      Init linearly between min and max.
-    init_lambda_quantile    Init regarding data quantiles.
-    init_lambda_random      Init with random samples from data range.
-
-    init_gamma_dirichlet    Init using Dirichlet distribution.
-    init_gamma_softmax      Init with softmax of random floats.
-    init_gamma_uniform      Init with uniform distr over the main diagonal.
-
-    init_delta_dirichlet    Init using Dirichlet distribution.
-    init_delta_softmax      Init with softmax of random floats.
-    init_delta_stationary   Init with stationary distribution.
-    init_delta_uniform      Init with uniform distribution.
-
-    stationary_distr        Compute stationary distribution of tpm.
-
-    get_off_diag            Return off-diagonal elements of square array.
-    set_off_diag            Set off-diagonal elements of square array.
-    logit_gamma             Transform tpm to logit space.
-    expit_gamma             Transform tpm back from logit space.
-    sort_param              Sort messed up gamma.
+HMM utility functions
 """
-
 
 import numpy as _np
 from numpy import linalg as _linalg

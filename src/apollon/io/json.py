@@ -1,18 +1,7 @@
-"""apollon/io/json.py -- General JSON IO.
-
-Licensed under the terms of the BSD-3-Clause license.
-Copyright (C) 2020 Michael Blaß, mblass@posteo.net
-
-Classes:
-    ArrayEncoder
-
-Functions:
-    dump
-    decode_ndarray
-    encode_ndarray
-    load
-    validate_ndarray
 """
+General JSON IO
+"""
+
 import json
 import pathlib
 from typing import Any, Union, Mapping

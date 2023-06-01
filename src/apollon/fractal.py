@@ -1,10 +1,7 @@
-"""apollon/fractal.py
-
-Tools for estimating fractal dimensions
-
-Function:
-    lorenz_attractor   Simulate Lorenz system
 """
+Tools for estimating fractal dimensions
+"""
+
 import numpy as np
 from scipy import stats
 from scipy.spatial import distance

@@ -1,16 +1,5 @@
 """
-poisson_hmm.py -- HMM with Poisson-distributed state dependent process.
-Copyright (C) 2018  Michael Blaß <mblass@posteo.net>
-
-Functions:
-    to_txt                  Serializes model to text file.
-    to_json                 JSON serialization.
-
-    is_tpm                 Check weter array is stochastic matrix.
-    _check_poisson_intput   Check wheter input is suitable for PoissonHMM.
-
-Classes:
-    PoissonHMM              HMM with univariat Poisson-distributed states.
+HMM with Poisson-distributed state dependent process
 """
 
 import typing as _typing

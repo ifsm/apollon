@@ -1,4 +1,5 @@
 """
+Simple filter
 """
 
 import scipy.signal as _scs

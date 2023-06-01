@@ -1,14 +1,5 @@
-"""apollon/audio.py -- Wrapper classes for audio data.
-
-Licensed under the terms of the BSD-3-Clause license.
-Copyright (C) 2019 Michael Blaß, mblass@posteo.net
-
-Classes:
-    AudioFile   Representation of an audio file.
-
-Functions:
-    fti16        Cast float to int16.
-    load_audio   Load .wav file.
+"""
+Audio file representation
 """
 import hashlib
 import pathlib

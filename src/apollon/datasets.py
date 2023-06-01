@@ -1,5 +1,5 @@
 """
-datasets.py -- Load test data sets.
+Load test data sets
 """
 
 import collections as _collections

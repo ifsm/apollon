@@ -1,12 +1,7 @@
-"""General I/O functionallity
-
-Functions:
-    array_print_opt         Set format for printing numpy arrays
-    generate_outpath        Compute path for feature output
-    load_from_pickle        Load pickled data
-    repath                  Change path but keep file name
-    save_to_pickle          Pickle some data
 """
+General I/O functionallity
+"""
+
 from contextlib import contextmanager as _contextmanager
 import pathlib
 import pickle

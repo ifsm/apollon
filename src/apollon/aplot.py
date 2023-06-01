@@ -1,17 +1,5 @@
-"""apollon/aplot.py
-
-General plotting routines.
-
-Licensed under the terms of the BSD-3-Clause license.
-Copyright (C) 2019 Michael Blaß
-mblass@posteo.net
-
-Functions:
-    fourplot            Create a four plot of time a signal.
-    marginal_distr      Plot the marginal distribution of a PoissonHMM.
-    onsets              Plot onsets over a signal.
-    onest_decoding      Plot decoded onsets over a signal.
-    signal              Plot a time domain signal.
+"""
+General plotting routines
 """
 from typing import Iterable, Optional, Tuple, Union
 

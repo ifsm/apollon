@@ -1,15 +1,7 @@
 """
 Generic Discrete Fourier Transforms for real input
-
-Classes:
-    Spectrum:       Encapsulate results of DFT
-    Spectrogram:    Encapsulate results of STFT
-    Dft:            Generic Dicrete Fourier Transform
-    Stft:           Generic Short-time Fourier Transform
-
-Functions:
-    fft:    One-sided Fast fourier transform for real input
 """
+
 from typing import Any, Union
 
 import matplotlib.pyplot as _plt

@@ -1,25 +1,5 @@
-"""apollon/signal/tools.py
-
-Licensed under the terms of the BSD-3-Clause license.
-Copyright (C) 2019 Michael Blaß
-mblass@posteo.net
-
-Functions:
-    acf                 Normalized autocorrelation.
-    acf_pearson         Normalized Pearson acf.
-    corr_coef_pearson   Correlation coefficient after Pearson.
-    c_weighting         C-weighting for SPL.
-    freq2mel            Transform frequency to mel.
-    limit               Limit dynamic range.
-    mel2freq            Transform mel to frequency.
-    frq2bark            Transform frequency to Bark scale.
-    maxamp              Maximal amplitude of signal.
-    minamp              Minimal amplitude of signal.
-    normalize           Scale data betwee -1.0 and 1.0.
-    noise               Generate white noise.
-    sinusoid            Generate sinusoidal signal.
-    zero_padding        Append array with zeros.
-    trim_spectrogram    Trim spectrogram to a frequency range.
+"""
+Signal processing tools
 """
 
 import numpy as np
