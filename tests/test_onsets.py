@@ -12,7 +12,7 @@ from apollon.onsets.models import FluxODParams, EntropyODParams
 class TestOnsetDetector(unittest.TestCase):
     def test_onset_detector(self) -> None:
         with self.assertRaises(TypeError):
-            OnsetDetector()
+            OnsetDetector()    # type: ignore
 
 
 class TestEntropyOnsetDetector(unittest.TestCase):
