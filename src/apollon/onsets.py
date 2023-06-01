@@ -8,7 +8,6 @@ Classes:
 Functions:
     evaluate_onsets         Evaluation of onset detection results given ground truth
 """
-from typing import Dict, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -103,7 +102,7 @@ class EntropyOnsetDetector(OnsetDetector):
     """
     def __init__(self, fps: int, m_dims: int = 3, delay: int = 10,
                  bins: int = 10, n_perseg: int = 1024, n_overlap: int = 512,
-                 pp_params: Optional[dict] = None) -> None:
+                 pp_params: dict | None = None) -> None:
         """Detect onsets as local maxima of information entropy of consecutive
         windows.
 
@@ -156,7 +155,7 @@ class FluxOnsetDetector(OnsetDetector):
     """Onset detection based on spectral flux.
     """
     def __init__(self, fps: int, window: str = 'hamming', n_perseg: int = 1024,
-                 n_overlap: int = 512, pp_params: Optional[dict] = None) -> None:
+                 n_overlap: int = 512, pp_params: dict | None = None) -> None:
         """Detect onsets as local maxima in the energy difference of
         consecutive stft time steps.
 
@@ -238,9 +237,9 @@ class FilterPeakPicker:
         return np.array(out)
 
 
-def evaluate_onsets(targets: Dict[str, np.ndarray],
-                    estimates: Dict[str, np.ndarray]
-                    ) -> Tuple[float, float, float]:
+def evaluate_onsets(targets: dict[str, np.ndarray],
+                    estimates: dict[str, np.ndarray]
+                    ) -> tuple[float, float, float]:
     """Evaluate onset detection performance.
 
     This function uses the mir_eval package for evaluation.
