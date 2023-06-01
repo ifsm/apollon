@@ -8,7 +8,7 @@ SOURCEDIR     = source
 BUILDDIR      = build
 
 clean:
-	rm -rf build/* source/api/*
+	rm -rf build/*
 
 # Put it first so that "make" without argument is like "make help".
 help:
