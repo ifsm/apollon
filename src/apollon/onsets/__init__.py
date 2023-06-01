@@ -3,4 +3,4 @@ Onset detection algorithms
 ***************************************
 """
 
-from .onsets import FluxOnsetDetector, EntropyOnsetDetector
+from .detectors import FluxOnsetDetector, EntropyOnsetDetector
