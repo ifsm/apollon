@@ -4,58 +4,42 @@ import numpy as np
 import pandas as pd
 
 from apollon.audio import AudioFile
-from apollon.onsets import (OnsetDetector, EntropyOnsetDetector,
-        FluxOnsetDetector, FilterPeakPicker)
+from apollon.onsets.detectors import (OnsetDetector, EntropyOnsetDetector,
+        FluxOnsetDetector)
+from apollon.onsets.models import FluxODParams, EntropyODParams
 
 
 class TestOnsetDetector(unittest.TestCase):
-    def setUp(self):
-        self.osd = OnsetDetector()
-
-    def test_init(self):
-        pass
-
-    def test_to_csv(self):
-        pass
-
-    def test_to_json(self):
-        pass
-
-    def test_to_pickle(self):
-        pass
+    def test_onset_detector(self) -> None:
+        with self.assertRaises(TypeError):
+            OnsetDetector()
 
 
 class TestEntropyOnsetDetector(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.snd = AudioFile('audio/beat.wav')
         self.osd = EntropyOnsetDetector(self.snd.fps)
 
-    def test_detect(self):
+    def test_detect(self) -> None:
         self.osd.detect(self.snd.data)
 
-    def test_odf(self):
+    def test_properties(self) -> None:
         self.osd.detect(self.snd.data)
         self.assertIsInstance(self.osd.odf, pd.DataFrame)
+        self.assertIsInstance(self.osd.onsets, pd.DataFrame)
+        self.assertIsInstance(self.osd.params, EntropyODParams)
 
 
 class TestFluxOnsetDetector(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.snd = AudioFile('audio/beat.wav')
         self.osd = FluxOnsetDetector(self.snd.fps)
 
-    def test_detect(self):
+    def test_detect(self) -> None:
         self.osd.detect(self.snd.data)
 
-    def test_odf(self):
+    def test_properties(self) -> None:
         self.osd.detect(self.snd.data)
         self.assertIsInstance(self.osd.odf, pd.DataFrame)
-
-
-class TestPeakPicking(unittest.TestCase):
-    def setUp(self):
-        self.picker = FilterPeakPicker()
-        self.data = np.random.randint(0, 100, 100) + np.random.rand(100)
-
-    def test_peaks(self):
-        peaks = self.picker.detect(self.data)
-        self.assertIsInstance(peaks, np.ndarray)
+        self.assertIsInstance(self.osd.onsets, pd.DataFrame)
+        self.assertIsInstance(self.osd.params, FluxODParams)

@@ -7,10 +7,14 @@ import pathlib
 from typing import (Any, Collection, Dict, Generator, Iterable, List, Optional,
                     Sequence, Tuple, Union)
 import numpy as np
+import numpy.typing as npt
 from matplotlib import axes
 
 
 Array = np.ndarray
+IntArray = np.ndarray[Any, np.dtype[np.int_]]
+FloatArray = np.ndarray[Any, np.dtype[np.float64]]
+
 ArrayOrStr = Union[Array, str]
 IterOrNone = Union[Iterable, None]
 
