@@ -1,12 +1,5 @@
 """
-Classes:
-    OnsetDetector           Base class for onset detection
-    EntropyOnsetDetector    Onset detection based on phase pace entropy estimation
-    FluxOnsetDetector       Onset detection based on spectral flux
-    FilterPeakPicker        Peak picking in one-dimensional time series
-
-Functions:
-    evaluate_onsets         Evaluation of onset detection results given ground truth
+Onset detection algorithms
 """
 
 from abc import ABC, abstractmethod
@@ -29,8 +22,8 @@ pp_params = {'n_before': 10, 'n_after': 10, 'alpha': .1,
                   'delta': .1}
 
 class OnsetDetector(ABC):
-    """Onset detection base class.
-    """
+    """Base class for onset detectors"""
+
     def __init__(self) -> None:
         self._odf: pd.DataFrame
         self._peaks: IntArray
@@ -61,7 +54,7 @@ class OnsetDetector(ABC):
 
     @property
     def params(self):
-        """Return initial parameters."""
+        """Return initial parameters"""
         return self._params
 
     @abstractmethod
@@ -77,31 +70,31 @@ class OnsetDetector(ABC):
         """Serialize odf in csv format.
 
         Args:
-            path: Path to save location.
+            path: Path to save location
         """
         self.odf.to_csv(path)
 
     def to_json(self, path: PathType) -> None:
-        """Serialize odf in JSON format.
+        """Serialize odf in JSON format
 
         Args:
-            path: Path to save location.
+            path: Path to save location
         """
         self.odf.to_json(path)
 
     def to_pickle(self, path: PathType) -> None:
-        """Serialize object to pickle file.
+        """Serialize object to pickle file
 
         Args:
-            path: Path to save location.
+            path: Path to save location
         """
         io.save_to_pickle(self, path)
 
     def plot(self, mode: str ='time') -> None:
-        """Plot odf against time or index.
+        """Plot ODF against time or index
 
         Args:
-            mode:  Either `time`, or `index`.
+            mode:  Either `time`, or `index`
         """
         raise NotImplementedError
 
@@ -119,13 +112,13 @@ class EntropyOnsetDetector(OnsetDetector):
         sampling rate of the input signal.
 
         Params:
-            fps:         Audio signal.
-            m_dim:       Embedding dimension.
-            bins:        Boxes per axis.
-            delay:       Embedding delay.
-            n_perseg:    Length of segments in samples.
-            hop_size:    Displacement in samples.
-            smooth:      Smoothing filter length.
+            fps:         Sample rate
+            m_dim:       Embedding dimension
+            bins:        Boxes per axis
+            delay:       Embedding delay
+            n_perseg:    Length of segments in samples
+            hop_size:    Displacement in samples
+            smooth:      Smoothing filter length
         """
         super().__init__()
         self.fps = fps
@@ -144,10 +137,10 @@ class EntropyOnsetDetector(OnsetDetector):
         ``m_dims``-dimensional delay embedding per segment.
 
         Args:
-            inp:  Audio data.
+            inp:  Audio data
 
         Returns:
-            Onset detection function.
+            Onset detection function
         """
         segs = self.cutter.transform(inp)
         odf = np.empty((segs.n_segs, 3))
@@ -161,19 +154,19 @@ class EntropyOnsetDetector(OnsetDetector):
 
 
 class FluxOnsetDetector(OnsetDetector):
-    """Onset detection based on spectral flux.
-    """
+    """Onset detection based on spectral flux """
+
     def __init__(self, fps: int, window: str = 'hamming', n_perseg: int = 1024,
                  n_overlap: int = 512, pp_params: dict | None = None) -> None:
         """Detect onsets as local maxima in the energy difference of
         consecutive stft time steps.
 
         Args:
-            fps:        Sample rate.
-            window:     Name of window function.
-            n_perseg:   Samples per segment.
-            n_overlap:  Numnber of overlapping samples per segment.
-            pp_params:  Keyword args for peak picking.
+            fps:        Sample rate
+            window:     Name of window function
+            n_perseg:   Samples per segment
+            n_overlap:  Numnber of overlapping samples per segment
+            pp_params:  Keyword args for peak picking
         """
         super().__init__()
         self._stft = Stft(fps, window, n_perseg, n_overlap)
@@ -183,13 +176,13 @@ class FluxOnsetDetector(OnsetDetector):
             self._ppkr = FilterPeakPicker()
 
     def _compute_odf(self, inp: Array) -> pd.DataFrame:
-        """Onset detection function based on spectral flux.
+        """Onset detection function based on spectral flux
 
         Args:
-            inp:  Audio data.
+            inp:  Audio data
 
         Returns:
-            Onset detection function.
+            Onset detection function
         """
         sxx = self._stft.transform(inp)
         flux = features.spectral_flux(sxx.abs, total=True)
