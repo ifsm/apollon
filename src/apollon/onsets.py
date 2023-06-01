@@ -9,6 +9,8 @@ Functions:
     evaluate_onsets         Evaluation of onset detection results given ground truth
 """
 
+from abc import ABC, abstractmethod
+
 import numpy as np
 import pandas as pd
 import scipy.signal as _sps
@@ -19,17 +21,18 @@ from . signal import tools as _ast
 from . signal.spectral import Stft
 from . import fractal as _fractal
 from . import segment as aseg
-from . types import Array, PathType
+from . types import Array, IntArray, FloatArray, PathType
 
 
 pp_params = {'n_before': 10, 'n_after': 10, 'alpha': .1,
                   'delta': .1}
 
-class OnsetDetector:
+class OnsetDetector(ABC):
     """Onset detection base class.
     """
     def __init__(self) -> None:
         self._odf: pd.DataFrame
+        self._peaks: IntArray
 
     @property
     def odf(self) -> pd.DataFrame:
@@ -58,6 +61,10 @@ class OnsetDetector:
     def params(self):
         """Return initial parameters."""
         return self._params
+
+    @abstractmethod
+    def _compute_odf(self, inp: FloatArray) -> pd.DataFrame:
+        return NotImplemented
 
     def detect(self, inp: Array) -> None:
         """Detect onsets."""
