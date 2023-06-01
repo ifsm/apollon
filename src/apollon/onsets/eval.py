@@ -3,10 +3,11 @@ Evaluation helpers
 """
 
 import numpy as np
+from apollon.types import FloatArray
 
 
-def evaluate_onsets(targets: dict[str, np.ndarray],
-                    estimates: dict[str, np.ndarray]
+def evaluate_onsets(targets: dict[str, FloatArray],
+                    estimates: dict[str, FloatArray]
                     ) -> tuple[float, float, float]:
     """Evaluate onset detection performance.
 
