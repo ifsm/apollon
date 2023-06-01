@@ -40,7 +40,7 @@ class OnsetDetector(ABC):
         """Return index of each detected onset
 
         The resulting DataFrame has two columns:
-        `frame' is number of the center frame of the segment in which
+        'frame' is number of the center frame of the segment in which
         the onset was detected.
 
         'time' is the time difference between the center frame of the segment
