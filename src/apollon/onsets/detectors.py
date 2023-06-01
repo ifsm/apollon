@@ -18,8 +18,6 @@ from .. import segment as aseg
 from .. types import Array, IntArray, FloatArray, PathType
 
 
-pp_params = {'n_before': 10, 'n_after': 10, 'alpha': .1,
-                  'delta': .1}
 
 class OnsetDetector(ABC):
     """Base class for onset detectors"""
