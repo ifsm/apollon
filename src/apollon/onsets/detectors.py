@@ -145,9 +145,9 @@ class EntropyOnsetDetector(OnsetDetector):
         for i, seg in enumerate(segs):
             emb = _fractal.delay_embedding(seg.squeeze(), self.delay, self.m_dims)
             odf[i, 0] = segs.center(i)
-            odf[i, 0] = odf[i, 0] / self.fps
+            odf[i, 1] = odf[i, 0] / self.fps
             odf[i, 2] = _fractal.embedding_entropy(emb, self.bins)
-        odf[i, 2] = np.maximum(odf[i, 2], odf[i, 2].mean())
+            odf[i, 2] = np.maximum(odf[i, 2], odf[i, 2].mean())
         return pd.DataFrame(data=odf, columns=['frame', 'time', 'value'])
 
 
