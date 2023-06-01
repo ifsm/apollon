@@ -130,7 +130,7 @@ class EntropyOnsetDetector(OnsetDetector):
         else:
             self._ppkr = FilterPeakPicker()
 
-    def _compute_odf(self, inp: Array) -> Array:
+    def _compute_odf(self, inp: Array) -> pd.DataFrame:
         """Compute onset detection function as the information entropy of
         ``m_dims``-dimensional delay embedding per segment.
 
@@ -173,7 +173,7 @@ class FluxOnsetDetector(OnsetDetector):
         else:
             self._ppkr = FilterPeakPicker()
 
-    def _compute_odf(self, inp: Array) -> Array:
+    def _compute_odf(self, inp: Array) -> pd.DataFrame:
         """Onset detection function based on spectral flux.
 
         Args:
