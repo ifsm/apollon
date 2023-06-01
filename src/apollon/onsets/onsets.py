@@ -15,14 +15,14 @@ import numpy as np
 import pandas as pd
 import scipy.signal as _sps
 
-from . io import io
-from . peak_picking import FilterPeakPicker
-from . signal import features
-from . signal import tools as _ast
-from . signal.spectral import Stft
-from . import fractal as _fractal
-from . import segment as aseg
-from . types import Array, IntArray, FloatArray, PathType
+from .. io import io
+from .. peak_picking import FilterPeakPicker
+from .. signal import features
+from .. signal import tools as _ast
+from .. signal.spectral import Stft
+from .. import fractal as _fractal
+from .. import segment as aseg
+from .. types import Array, IntArray, FloatArray, PathType
 
 
 pp_params = {'n_before': 10, 'n_after': 10, 'alpha': .1,
@@ -198,30 +198,3 @@ class FluxOnsetDetector(OnsetDetector):
                'time': times,
                'value': np.maximum(flux.squeeze(), flux.mean())}
         return pd.DataFrame(odf)
-
-
-
-
-def evaluate_onsets(targets: dict[str, np.ndarray],
-                    estimates: dict[str, np.ndarray]
-                    ) -> tuple[float, float, float]:
-    """Evaluate onset detection performance.
-
-    This function uses the mir_eval package for evaluation.
-
-    Params:
-        targets:    Ground truth onset times, with dict keys being file names,
-                    and values being target onset time codes in ms.
-
-        estimates:  Estimated onsets times, with dictkeys being file names,
-                    and values being the estimated onset time codes in ms.
-
-    Returns:
-        Precison, recall, f-measure.
-    """
-    out = []
-    for name, tvals in targets.items():
-        od_eval = _me.onset.evaluate(tvals, estimates[name])
-        out.append([i for i in od_eval.values()])
-
-    return np.array(out)
