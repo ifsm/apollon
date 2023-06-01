@@ -26,6 +26,6 @@ def evaluate_onsets(targets: dict[str, FloatArray],
     out = []
     for name, tvals in targets.items():
         od_eval = _me.onset.evaluate(tvals, estimates[name])
-        out.append([i for i in od_eval.values()])
+        out.append(list(od_eval.values()))
 
     return np.array(out)
