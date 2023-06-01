@@ -4,6 +4,7 @@ Onset detection algorithms
 
 from abc import ABC, abstractmethod
 
+from pydantic import BaseModel
 import numpy as np
 import pandas as pd
 import scipy.signal as _sps
@@ -16,6 +17,7 @@ from .. signal.spectral import Stft
 from .. import fractal as _fractal
 from .. import segment as aseg
 from .. types import Array, IntArray, FloatArray, PathType
+from . import models
 
 
 
@@ -26,6 +28,7 @@ class OnsetDetector(ABC):
         self._odf: pd.DataFrame
         self._peaks: IntArray
         self._ppkr: FilterPeakPicker
+        self._params: BaseModel
 
     @property
     def odf(self) -> pd.DataFrame:
@@ -125,6 +128,10 @@ class EntropyOnsetDetector(OnsetDetector):
         self.delay = delay
         self.cutter = aseg.Segmentation(n_perseg, n_overlap)
 
+        self._params = models.EntropyODParams(fps=fps, m_dim=m_dims,
+                                       delay=delay, bins=bins,
+                                       n_perseg=n_perseg, n_overlap=n_overlap)
+
         if pp_params:
             self._ppkr = FilterPeakPicker(**pp_params)
         else:
@@ -168,6 +175,9 @@ class FluxOnsetDetector(OnsetDetector):
         """
         super().__init__()
         self._stft = Stft(fps, window, n_perseg, n_overlap)
+        self._params = models.FluxODParams(fps=fps, window=window,
+                                           n_perseg=n_perseg,
+                                           n_overlap=n_overlap)
         if pp_params:
             self._ppkr = FilterPeakPicker(**pp_params)
         else:
