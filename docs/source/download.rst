@@ -6,6 +6,6 @@ or clone it directly with
 
 .. code-block:: Bash
 
-   git clone https://github.com/teagum/apollon.git 
+   git clone https://github.com/ifsm/apollon.git 
 
-.. _apollon GitHub repository: https://github.com/teagum/apollon.git
+.. _apollon GitHub repository: https://github.com/ifsm/apollon.git

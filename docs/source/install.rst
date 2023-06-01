@@ -11,7 +11,7 @@ only.
 
 Install using pip
 =======================================
-The Python packager manager can automatically download and install
+The Python package manager can automatically download and install
 apollon from Pypi. Simply run the following command from your terminal:
 
 .. code-block:: Bash
@@ -19,8 +19,12 @@ apollon from Pypi. Simply run the following command from your terminal:
    python3 -m pip install apollon
 
 
-Install from source
+Build from source
 =======================================
+
+.. note::
+   The build process requires `poetry`_.
+
 You can also install and compile apollon directly from its sources in three
 steps:
 
@@ -30,4 +34,6 @@ steps:
 
 .. code-block:: Bash
 
-   python3 -m pip install .
+   poetry install
+
+.. _poetry: https://python-poetry.org/

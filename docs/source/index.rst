@@ -20,7 +20,7 @@ Contents
    download
    install
    framework
-   generated/api/modules
+   api/apollon.rst
 
 * :ref:`genindex`
 * :ref:`modindex`

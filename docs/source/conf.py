@@ -1,3 +1,7 @@
+from importlib.metadata import metadata
+import os
+import sys
+
 import sphinx_rtd_theme
 
 # Configuration file for the Sphinx documentation builder.
@@ -12,20 +16,19 @@ import sphinx_rtd_theme
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
-import sys
 sys.path.insert(0, os.path.abspath('./src/apollon/'))
 
 
 # -- Project information -----------------------------------------------------
 
 project = 'apollon'
-author = 'Michael Blaß'
-copyright = '2019, Michael Blaß'
+distr = metadata(project)
+author = distr.get("author")
+copyright = f'2023, {author}'
 
 # The full version, including alpha/beta/rc tags
-version = '0.1'
-release = '0.1.3'
+version = distr.get("version")
+release = '123'
 
 master_doc = 'index'
 
@@ -43,6 +46,7 @@ pygments_style = 'sphinx'
 extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
+    'sphinx.ext.mathjax',
     'sphinxcontrib.apidoc',
     'sphinx_rtd_theme']
 
@@ -77,10 +81,10 @@ html_static_path = ['_static']
 # -- Options for apidoc -----------------------------------------------------
 #
 apidoc_module_dir = '../../src/apollon'
-apidoc_output_dir = 'generated/api'
+apidoc_output_dir = 'api'
 apidoc_separate_modules = True
 apidoc_module_first = True
-apidoc_full = True
+apidoc_full = False
 
 
 # -- Options for Napoleon ---------------------------------------------------
