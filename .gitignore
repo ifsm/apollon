@@ -38,7 +38,6 @@ coverage.xml
 
 docs/build/
 docs/source/build/
-docs/source/api/
 
 .ipynb_checkpoints
 .python-version
