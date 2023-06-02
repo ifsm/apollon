@@ -16,7 +16,7 @@ formats: all
 python:
   install:
     - requirements: docs/requirements.txt
-    - method: setuptools
+    - method: pip
       path: .
 
 build:
