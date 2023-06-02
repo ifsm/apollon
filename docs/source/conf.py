@@ -36,7 +36,7 @@ master_doc = 'index'
 # -- General configuration ---------------------------------------------------
 source_suffix = {'.rst': 'restructuredtext'}
 language = 'en'
-#nitpicky = True
+nitpicky = True
 numfig = True
 pygments_style = 'sphinx'
 
@@ -44,10 +44,10 @@ pygments_style = 'sphinx'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
     'sphinx.ext.autodoc',
+    'sphinx.ext.intersphinx',
     'sphinx_rtd_theme']
 
 
@@ -57,7 +57,7 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', '.DS_Store']
+exclude_patterns = ['.DS_Store']
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -72,6 +72,10 @@ html_theme = 'sphinx_rtd_theme'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
+intersphinx_mapping = {
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "pandas": ("https://pandas.pydata.org/docs/", None),
+}
 
 # -- Options for Napoleon ---------------------------------------------------
 #
