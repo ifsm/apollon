@@ -23,12 +23,11 @@ sys.path.insert(0, os.path.abspath('./src/apollon/'))
 
 project = 'apollon'
 distr = metadata(project)
-author = distr.get("author")
-copyright = f'2023, {author}'
+copyright = f'2023, {distr["author"]}'
 
 # The full version, including alpha/beta/rc tags
-version = distr.get("version")
-release = '123'
+version = distr["version"]
+release = version
 
 master_doc = 'index'
 
@@ -77,6 +76,7 @@ intersphinx_mapping = {
     "pandas": ("https://pandas.pydata.org/docs/", None),
 }
 
+autodoc_typehints = "signature"
 # -- Options for Napoleon ---------------------------------------------------
 #
 napoleon_google_docstring = True

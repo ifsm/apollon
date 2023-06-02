@@ -25,7 +25,7 @@ class Segments:
 
     @property
     def data(self) -> Array:
-        """Return the raw segment data array."""
+        """Return the raw segment data array"""
         return self._segs
 
     @property
@@ -50,7 +50,7 @@ class Segments:
 
     @property
     def params(self) -> SegmentationParams:
-        """Parameter set used to compute this instance."""
+        """Return initialized parameters"""
         return self._params
 
     def center(self, seg_idx) -> int:
@@ -58,10 +58,10 @@ class Segments:
         of the original signal.
 
         Args:
-            seg_indx:  Segment index.
+            seg_indx:  Segment index
 
         Returns:
-            Center frame index.
+            Center frame index
         """
         if not 0 <= seg_idx < self.n_segs:
             raise IndexError('Requested index out of range.')
@@ -73,10 +73,10 @@ class Segments:
         upper bound index is exclusive.
 
         Args:
-            seg_idx:  Segment index.
+            seg_idx:  Segment index
 
         Returns:
-            Lower and upper bound frame index.
+            Lower and upper bound frame index
         """
         if not 0 <= seg_idx < self.n_segs:
             raise IndexError('Requested index out of range.')
@@ -88,10 +88,10 @@ class Segments:
         """Retrun segment ``seg_idx`` wrapped in an ``Segment`` object.
 
         Args:
-            seg_idx:  Segment index.
+            seg_idx:  Segment index
 
         Returns:
-            Segment ``seg_idx``.
+            Segment ``seg_idx``
         """
         seg_start, seg_stop = self.bounds(seg_idx)
         return Segment(idx=seg_idx, start=seg_start, stop=seg_stop,
@@ -123,10 +123,10 @@ class Segmentation:
         """Subdivide input array.
 
         Args:
-            n_perseg:  Samples per segment.
-            n_overlap: Overlap in samples.
-            extend:    Extend a half window at start and end.
-            pad:       Pad extension.
+            n_perseg:  Samples per segment
+            n_overlap: Overlap in samples
+            extend:    Extend a half window at start and end
+            pad:       Pad extension
         """
         if n_perseg > 0:
             self.n_perseg = n_perseg
@@ -154,13 +154,13 @@ class Segmentation:
 
         Input array must be either one-, or two-dimensional.
         If ``data`` is two-dimensional, it must be of shape
-        (n_elements, 1).
+        ``(n_elements, 1)``.
 
         Args:
-            data:  Input array.
+            data:  Input array
 
         Returns:
-            ``Segments`` object.
+            ``Segments`` object
         """
         self._validate_data_shape(data)
         self._validate_nps(data.shape[0])
@@ -212,12 +212,12 @@ class LazySegments:
 
         Args:
             snd:
-            n_perseg:   Number of samples per segment.
-            n_overlap:  Size of segment overlap in samples.
-            norm:       Normalize each segment separately.
-            mono:       If ``True`` mixdown all channels.
-            expand:     Start segmentation at -n_perseg//2.
-            dtype:      Dtype of output array.
+            n_perseg:   Number of samples per segment
+            n_overlap:  Size of segment overlap in samples
+            norm:       Normalize each segment separately
+            mono:       If ``True`` mixdown all channels
+            expand:     Start segmentation at :math:`-n_perseg//2`
+            dtype:      Dtype of output array
         """
         self._snd = snd
         self.n_perseg = n_perseg
@@ -281,15 +281,15 @@ class LazySegments:
         """Locate segment by index.
 
         Args:
-            seg_idx:  Segment index.
-            norm:     If ``True``, normalize each segment separately.
-                      Falls back to ``self.norm``.
-            mono:     If ``True`` mixdown all channels.
-                      Falls back to ``self.mono``.
-            dtype:    Output dtype. Falls back to ``self.dtype``.
+            seg_idx:  Segment index
+            norm:     If ``True``, normalize each segment separately
+                      Falls back to ``self.norm``
+            mono:     If ``True`` mixdown all channels
+                      Falls back to ``self.mono``
+            dtype:    Output dtype. Falls back to ``self.dtype``
 
         Returns:
-            Segment number ``seg_idx``.
+            Segment number ``seg_idx``
         """
         seg_start, seg_stop = self.compute_bounds(seg_idx)
         data = self.read_segment(seg_idx, norm, mono, dtype)
@@ -321,11 +321,11 @@ def _by_samples(arr: Array, n_perseg: int) -> Array:
     split evenly.
 
     Args:
-        arr:       One-dimensional input array.
-        n_perseg:  Length of segments in samples.
+        arr:       One-dimensional input array
+        n_perseg:  Length of segments in samples
 
     Returns:
-        Two-dimensional array of segments.
+        Two-dimensional array of segments
     """
     if not isinstance(n_perseg, int):
         raise TypeError('Param ``n_perchunk`` must be of type int.')
@@ -348,12 +348,12 @@ def _by_samples_with_hop(arr: Array, n_perseg: int, hop_size: int) -> Array:
     split evenly.
 
     Args:
-        arr:       One-dimensional input array.
-        n_perseg:  Length of segments in samples.
+        arr:       One-dimensional input array
+        n_perseg:  Length of segments in samples
         hop_size:  Hop size in samples
 
     Returns:
-        Two-dimensional array of segments.
+        Two-dimensional array of segments
     """
     if not (isinstance(n_perseg, int) and isinstance(hop_size, int)):
         raise TypeError('Params must be of type int.')
@@ -383,20 +383,20 @@ def _by_samples_with_hop(arr: Array, n_perseg: int, hop_size: int) -> Array:
 
 
 def by_samples(arr: Array, n_perseg: int, hop_size: int = 0) -> Array:
-    """Segment the input into n segments of length n_perseg and move the
-    window `hop_size` samples.
+    """Segment the input into n segments of length ``n_perseg`` and move the
+    window ``hop_size`` samples.
 
     This function automatically applies zero padding for inputs that cannot be
     split evenly.
 
-    If `hop_size` is less than one, it is reset to `n_perseg`.
+    If ``hop_size`` is less than one, it is reset to ``n_perseg``.
 
-    Overlap in percent is calculated as ov = hop_size / n_perseg * 100.
+    Overlap in percent is calculated as ``hop_size / n_perseg * 100``.
 
     Args:
-        arr         One-dimensional input array.
-        n_perseg    Length of segments in samples.
-        hop_size    Hop size in samples. If < 1, hop_size = n_perseg.
+        arr:        One-dimensional input array
+        n_perseg:   Length of segments in samples
+        hop_size:   Hop size in samples. If < 1, ``hop_size`` = ``n_perseg``.
 
     Returns:
         Two-dimensional array of segments.
@@ -407,24 +407,24 @@ def by_samples(arr: Array, n_perseg: int, hop_size: int = 0) -> Array:
 
 
 def by_ms(arr: Array, fps: int, ms_perseg: int, hop_size: int = 0) -> Array:
-    """Segment the input into n segments of length ms_perseg and move the
-    window `hop_size` milliseconds.
+    """Segment the input into n segments of length ``ms_perseg`` and move the
+    window ``hop_size`` milliseconds.
 
     This function automatically applies zero padding for inputs that cannot be
     split evenly.
 
-    If `hop_size` is less than one, it is reset to `n_perseg`.
+    If ``hop_size`` is less than one, it is reset to ``n_perseg``.
 
-    Overlap in percent is calculated as ov = hop_size / n_perseg * 100.
+    Overlap in percent is calculated as ``hop_size`` / ``n_perseg`` * 100.
 
     Args:
-        arr         One-dimensional input array.
-        fs          Sampling frequency.
-        n_perseg    Length of segments in milliseconds.
-        hop_size    Hop size in milliseconds. If < 1, hop_size = n_perseg.
+        arr:        One-dimensional input array
+        fps:        Sample rate in frames per second
+        n_perseg:   Length of segments in milliseconds
+        hop_size:   Hop size in milliseconds. If < 1, ``hop_size`` = ``n_perseg``.
 
     Returns:
-        Two-dimensional array of segments.
+        Two-dimensional array of segments
         """
     n_perseg = fps * ms_perseg // 1000
     hop_size = fps * hop_size // 1000
@@ -433,18 +433,18 @@ def by_ms(arr: Array, fps: int, ms_perseg: int, hop_size: int = 0) -> Array:
 
 def by_onsets(arr: Array, n_perseg: int, ons_idx: Array, off: int = 0
               ) -> Array:
-    """Split input `arr` into len(ons_idx) segments of length `n_perseg`.
+    """Split input ``arr`` into ``len(ons_idx)`` segments of length ``n_perseg``.
 
-    Extraction windos start at `ons_idx[i]` + `off`.
+    Extraction windos start at ``ons_idx[i]`` + ``off``.
 
     Args:
-        arr         One-dimensional input array.
-        n_perseg    Length of segments in samples.
-        ons_idx     One-dimensional array of onset positions.
-        off         Length of offset.
+        arr:        One-dimensional input array
+        n_perseg:   Length of segments in samples
+        ons_idx:    One-dimensional array of onset positions
+        off:        Length of offset
 
     Returns:
-        Two-dimensional array of shape (len(ons_idx), n_perseg).
+        Two-dimensional array of shape ``(len(ons_idx), n_perseg)``.
     """
     n_ons = ons_idx.size
     out = _np.empty((n_ons, n_perseg), dtype=arr.dtype)
