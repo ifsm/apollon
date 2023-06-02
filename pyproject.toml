@@ -6,7 +6,10 @@ authors = ["Michael Blaß <mblass@posteo.net>"]
 license = "BSD-3"
 readme = "README.md"
 keywords = ["music", "analysis", "feature extraction"]
-build = "build.py"
+
+[tool.poetry.build]
+script = "build.py"
+generate-setup-file = true
 
 [tool.poetry.urls]
 repository = "http://github.com/ifsm/apollo"
