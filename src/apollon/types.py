@@ -28,3 +28,6 @@ Coord = Tuple[int, int]
 AdIndex = Tuple[List[int], List[int]]
 
 Axis = axes._axes.Axes
+
+def floatarray(inp: Any) -> FloatArray:
+    return np.asanyarray(inp, dtype=np.float64)
