@@ -62,7 +62,7 @@ def total_loudness(cbr: FloatArray) -> FloatArray:
     Returns:
         Total loudness
     """
-    return _tools.fsum(specific_loudness(cbr), axis=0)
+    return specific_loudness(cbr).sum(axis=0)
 
 
 def filter_bank(frqs: FloatArray) -> FloatArray:
@@ -114,7 +114,7 @@ def sharpness(cbr_spctrm: FloatArray) -> FloatArray:
         Sharpness for each time instant of the ``cbr_spctrm``.
     """
     loud_specific = _np.maximum(specific_loudness(cbr_spctrm), _np.finfo('float64').eps)
-    loud_total = _tools.fsum(loud_specific, keepdims=True)
+    loud_total = loud_specific.sum(keepdims=True)
 
     cbrs = _np.arange(1, 25, dtype=_np.int64)
     return ((cbrs * weight_factor(cbrs)) @ cbr_spctrm) / loud_total

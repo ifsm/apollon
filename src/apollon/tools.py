@@ -271,35 +271,3 @@ def within_any(val: float, windows: Array) -> bool:
     b = val <= windows[:, 1]
     c = np.logical_and(a, b)
     return np.any(c)
-
-
-def fsum(arr: Array, axis: int | None = None, keepdims: bool = False,
-         dtype: 'str' = 'float64') -> Array:
-    """Return math.fsum along the specifyed axis.
-
-    This function supports at most two-dimensional arrays.
-
-    Args:
-        arr:      Input array.
-        axis:     Reduction axis.
-        keepdims: If ``True``, the output will have the same dimensionality
-                  as the input.
-        dtype:    Numpy data type.
-    Returns:
-        Sums along axis.
-    """
-    if axis is None:
-        out = np.float64(_math.fsum(arr.flatten()))
-        if keepdims:
-            out = np.array(out, ndmin=arr.ndim)
-    elif axis == 0:
-        out = np.array([_math.fsum(col) for col in arr.T], dtype=dtype)
-        if keepdims:
-            out = np.expand_dims(out, 0)
-    elif axis == 1:
-        out = np.array([_math.fsum(row) for row in arr], dtype=dtype)
-        if keepdims:
-            out = np.expand_dims(out, 1)
-    else:
-        raise ValueError(f'``Axis is {axis} but must be 0, 1, or ``None``.')
-    return out

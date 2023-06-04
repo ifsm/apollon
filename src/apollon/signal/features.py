@@ -184,7 +184,7 @@ def spectral_centroid(frqs: _Array, amps: _Array) -> _Array:
         where :math:`f_i` is the center frequency, and :math:`p(i)` the
         relative amplitude of the :math:`i` th DFT bin.
     """
-    return tools.fsum(frqs*_power_distr(amps), axis=0, keepdims=True)
+    return _np.sum(frqs*_power_distr(amps), axis=0, keepdims=True)
 
 
 def spectral_spread(frqs: _Array, bins: _Array,
@@ -215,8 +215,8 @@ def spectral_spread(frqs: _Array, bins: _Array,
     if centroids is None:
         centroids = spectral_centroid(frqs, bins)
     deviation = _np.power(frqs-centroids, 2)
-    return _np.sqrt(tools.fsum(deviation*_power_distr(bins), axis=0,
-                               keepdims=True))
+    return _np.sqrt(_np.sum(deviation*_power_distr(bins), axis=0,
+                            keepdims=True))
 
 
 def spectral_skewness(frqs: _Array, bins: _Array,
@@ -428,7 +428,7 @@ def _power_distr(bins: _Array) -> _Array:
     Returns:
         NxM array of spectral densities.
     """
-    total_power = tools.fsum(bins, axis=0, keepdims=True)
+    total_power = _np.sum(bins, axis=0, keepdims=True)
     total_power[total_power == 0] = 1
     return bins / total_power
 
