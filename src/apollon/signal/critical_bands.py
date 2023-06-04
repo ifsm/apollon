@@ -1,7 +1,11 @@
+"""
+Critical band helpers
+"""
+
 import numpy as _np
 from scipy.signal.windows import get_window as _get_window
 
-from .. types import FloatArray
+from .. types import FloatArray, IntArray
 from .. import tools as _tools
 
 
@@ -18,7 +22,7 @@ def frq2cbr(frq: FloatArray) -> FloatArray:
     return 13.0 * _np.arctan(0.00076*frq) + 3.5 * _np.arctan(_np.power(frq/7500, 2))
 
 
-def level(cbi: FloatArray):
+def level(cbi: FloatArray) -> FloatArray:
     """Compute the critical band level L_G from critical band intensities I_G.
 
     Args:
@@ -31,7 +35,7 @@ def level(cbi: FloatArray):
     return 10.0 * _np.log10(_np.maximum(cbi, ref) / ref)
 
 
-def specific_loudness(cbr: FloatArray):
+def specific_loudness(cbr: FloatArray) -> FloatArray:
     """Compute the specific loudness of a critical band rate spectra.
 
     The specific loudness is the loudness per critical band rate. The spectra
@@ -75,31 +79,27 @@ def filter_bank(frqs: FloatArray) -> FloatArray:
     """
     n_bands = 24
     z_frq = frq2cbr(frqs)
-    filter_bank = _np.zeros((n_bands, z_frq.size))
+    fbank = _np.zeros((n_bands, z_frq.size))
 
-    for z in range(n_bands):
-        lo = z
-        hi = z + 1
-
-        idx = _np.logical_and(lo <= z_frq, z_frq < hi)
-        n = idx.sum()
-        filter_bank[lo, idx] = _get_window('triang', n, False)
-    return filter_bank
+    for bnd in range(n_bands):
+        idx = _np.logical_and(bnd <= z_frq, z_frq < bnd+1)
+        fbank[bnd, idx] = _get_window('triang', idx.sum(), False)
+    return fbank
 
 
-def weight_factor(z):
+def weight_factor(cbr: IntArray) -> FloatArray:
     """Return weighting factor per critical band rate for sharpness calculation.
 
     This is an improved version of Peeters (2004), section 8.1.3.
 
     Args:
-        z: Critical band rate
+        cbr: Critical band rate
 
     Returns:
         Weighting factor
     """
-    base = _np.ones_like(z, dtype='float64')
-    slope = 0.066 * _np.exp(0.171 * _np.atleast_1d(z))
+    base = _np.ones_like(cbr, dtype='float64')
+    slope = 0.066 * _np.exp(0.171 * _np.atleast_1d(cbr))
     return _np.maximum(base, slope)
 
 
@@ -116,5 +116,5 @@ def sharpness(cbr_spctrm: FloatArray) -> FloatArray:
     loud_specific = _np.maximum(specific_loudness(cbr_spctrm), _np.finfo('float64').eps)
     loud_total = _tools.fsum(loud_specific, keepdims=True)
 
-    z = _np.arange(1, 25)
-    return ((z * weight_factor(z)) @ cbr_spctrm) / loud_total
+    cbrs = _np.arange(1, 25, dtype=_np.int64)
+    return ((cbrs * weight_factor(cbrs)) @ cbr_spctrm) / loud_total
