@@ -5,7 +5,7 @@ Critical band helpers
 import numpy as _np
 from scipy.signal.windows import get_window as _get_window
 
-from .. types import FloatArray, IntArray
+from .. types import FloatArray, IntArray, floatarray
 from .. import tools as _tools
 
 
@@ -19,7 +19,9 @@ def frq2cbr(frq: FloatArray) -> FloatArray:
         Critical band rate
     """
     frq = _np.atleast_1d(frq)
-    return 13.0 * _np.arctan(0.00076*frq) + 3.5 * _np.arctan(_np.power(frq/7500, 2))
+    part1 = 13.0 * _np.arctan(0.00076*frq)
+    part2 = 3.5 * _np.arctan(_np.power(frq/7500, 2))
+    return floatarray(part1+part2)
 
 
 def level(cbi: FloatArray) -> FloatArray:
@@ -32,7 +34,7 @@ def level(cbi: FloatArray) -> FloatArray:
         Critical band levels
     """
     ref = 10e-12
-    return 10.0 * _np.log10(_np.maximum(cbi, ref) / ref)
+    return floatarray(10.0 * _np.log10(_np.maximum(cbi, ref) / ref))
 
 
 def specific_loudness(cbr: FloatArray) -> FloatArray:
@@ -62,7 +64,7 @@ def total_loudness(cbr: FloatArray) -> FloatArray:
     Returns:
         Total loudness
     """
-    return specific_loudness(cbr).sum(axis=0)
+    return floatarray(specific_loudness(cbr).sum(axis=0))
 
 
 def filter_bank(frqs: FloatArray) -> FloatArray:
@@ -117,4 +119,4 @@ def sharpness(cbr_spctrm: FloatArray) -> FloatArray:
     loud_total = loud_specific.sum(keepdims=True)
 
     cbrs = _np.arange(1, 25, dtype=_np.int64)
-    return ((cbrs * weight_factor(cbrs)) @ cbr_spctrm) / loud_total
+    return floatarray(((cbrs * weight_factor(cbrs)) @ cbr_spctrm) / loud_total)
