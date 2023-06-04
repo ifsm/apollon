@@ -1,35 +1,37 @@
 """
 Simple filter implementations
 """
-
 import scipy.signal as _scs
 
-from .. types import Array as _Array
+from .. types import FloatArray, floatarray
 
 
-def coef_bw_bandpass(low: int, high: int, fs: int, order: int = 4) -> tuple:
+def coef_bw_bandpass(low: int, high: int, fps: int, order: int = 4
+                     ) -> tuple[FloatArray, FloatArray]:
     """Return coefficients for a Butterworth bandpass filter
 
     Args:
         low:    Lower cutoff frequency in Hz
         high:   Upper cutoff freqency in Hz
-        fs:     Sample of signal to be filtered
+        fps:    Signal sample rate
         order:  Order of the filter
 
     Returns:
         Filter coefficients
     """
-    nyq = fs / 2
-    b, a = _scs.butter(order, (low/nyq, high/nyq), btype='bandpass')
-    return b, a
+    nyq = fps / 2
+
+    num, denom = _scs.butter(order, (low/nyq, high/nyq), btype='bandpass')
+    return (floatarray(num), floatarray(denom))
 
 
-def bandpass_filter(x: _Array, fs: int, low: int, high: int, order: int = 4) -> _Array:
+def bandpass_filter(inp: FloatArray, fps: int, low: int, high: int,
+                    order: int = 4) -> FloatArray:
     """Apply a Butterworth bandpass filter to input signal ``x``
 
     Args:
-        x:      One-dimensional input array
-        fs:     Samplerate of ``x``
+        inp:    One-dimensional input array
+        fps:    Samplerate of ``x``
         low:    Lower cut-off frequency in Hz
         high:   Upper cut-off frequency in Hz
         order:  Order of the filter
@@ -37,7 +39,5 @@ def bandpass_filter(x: _Array, fs: int, low: int, high: int, order: int = 4) -> 
     Returns:
         Filtered input signal
     """
-    b, a = coef_bw_bandpass(low, high, fs, order)
-    w, h = _scs.freqz(b, a)
-
-    return _scs.lfilter(b, a, x)
+    coeffs = coef_bw_bandpass(low, high, fps, order)
+    return floatarray(_scs.lfilter(*coeffs, inp))
