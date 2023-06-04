@@ -1,15 +1,17 @@
 """
 Signal processing tools
 """
+from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 from scipy import stats
 
 from .. import _defaults
-from .. types import Array, Optional, Sequence, Union
+from .. types import FloatArray, floatarray
 
 
-def acf(inp: Array) -> Array:
+def acf(inp: FloatArray) -> FloatArray:
     """Normalized estimate of the autocorrelation function of ``inp``
     by means of cross correlation.
 
@@ -19,11 +21,11 @@ def acf(inp: Array) -> Array:
     Returns:
         Autocorrelation function for all positive lags.
     """
-    N = len(inp)
+    n_elem = len(inp)
     norm = inp @ inp
-    out = np.empty(N)
+    out = np.empty(n_elem)
     out[0] = 1
-    for lag in range(1, N):
+    for lag in range(1, n_elem):
         pre = inp[:-lag]
         post = inp[lag:]
         prod = pre @ post
@@ -34,16 +36,16 @@ def acf(inp: Array) -> Array:
     return out
 
 
-def acf_pearson(inp_sig):
-    """Normalized estimate of the autocorrelation function of `inp_sig`
+def acf_pearson(sig: FloatArray) -> FloatArray:
+    """Normalized estimate of the autocorrelation function of `sig`
        by means of pearson correlation coefficient."""
 
-    N = len(inp_sig)
-    out = np.empty(N-1)
+    n_elem = len(sig)
+    out = np.empty(n_elem-1)
     out[0] = 1
-    for lag in range(1, N-1):
-        pre = inp_sig[:-lag]
-        post = inp_sig[lag:]
+    for lag in range(1, n_elem-1):
+        pre = sig[:-lag]
+        post = sig[lag:]
         prod = corr_coef_pearson(pre, post)
         if prod == 0:
             out[lag] = 0
@@ -52,23 +54,23 @@ def acf_pearson(inp_sig):
     return out
 
 
-def corr_coef_pearson(x_sig: Array, y_sig: Array) -> float:
+def corr_coef_pearson(x_sig: FloatArray, y_sig: FloatArray) -> float:
     """Fast perason correlation coefficient."""
     x_dtr = x_sig - np.mean(x_sig)
     y_dtr = y_sig - np.mean(y_sig)
     r_xy = np.convolve(x_dtr, y_dtr[::-1], mode='valid')
     r_xx_yy = (x_dtr @ x_dtr) * (y_dtr @ y_dtr)
-    return r_xy / r_xx_yy
+    return floatarray(np.divide(r_xy, r_xx_yy)).item()
 
 
-def c_weighting(frqs: Array) -> Array:
+def c_weighting(frqs: FloatArray) -> FloatArray:
     """C-weighhting for SPL.
 
     Args:
-        frq:    Frequencies.
+        frqs:    Frequencies
 
     Returns:
-        Weight for DFT bin with center frequency ``frq``.
+        Weight for DFT bin with center frequency ``frq``
     """
     aaa = 148693636.0
     bbb = 424.36
@@ -76,37 +78,37 @@ def c_weighting(frqs: Array) -> Array:
     return np.divide(aaa*sqf, (sqf+aaa)*(sqf+bbb))
 
 
-def freq2mel(frqs):
+def freq2mel(frqs: FloatArray) -> FloatArray:
     """Transforms Hz to Mel-Frequencies.
 
-    Params:
-        frqs:  Frequency in Hz.
+    Args:
+        frqs:  Frequencies in Hz
 
-    Return:
-        Frequency transformed to Mel scale.
+    Returns:
+        Frequency transformed to Mel scale
     """
     frqs = np.atleast_1d(frqs)
-    return 1125 * np.log(1 + frqs / 700)
+    return floatarray(1125 * np.log(1 + frqs / 700))
 
 
-def limit(inp: Array, ldb: Union[float] | None = None,
-          udb: Union[float] | None = None) -> Array:
+def limit(inp: FloatArray, ldb: float | None = None,
+          udb: float | None = None) -> FloatArray:
     """Limit the dynamic range of ``inp`` to  [``ldb``, ``udb``].
 
     Boundaries are given in dB SPL.
 
     Args:
-        inp:  DFT bin magnitudes.
-        ldb:  Lower clip boundary in deci Bel.
-        udb:  Upper clip boundary in deci Bel.
+        inp:  DFT bin magnitudes
+        ldb:  Lower clip boundary in deci Bel
+        udb:  Upper clip boundary in deci Bel
 
     Returns:
-        Copy of ``inp`` with values clipped.
+        Copy of ``inp`` with values clipped
     """
     if ldb is None:
         lth = 0.0
-    elif isinstance(ldb, int) or isinstance(ldb, float):
-        lth = amp(ldb)
+    elif isinstance(ldb, (int, float)):
+        lth = amp(ldb).item()
     else:
         msg = (f'Argument to ``ldb`` must be of types ``int``, or ``float``.\n'
                f'Found {type(ldb)}.')
@@ -114,7 +116,7 @@ def limit(inp: Array, ldb: Union[float] | None = None,
 
     if udb is None:
         uth = 0.0
-    elif isinstance(udb, int) or isinstance(udb, float):
+    elif isinstance(udb, (int, float)):
         uth = inp.max()
     else:
         msg = (f'Argument to ``udb`` must be of types ``int``, or ``float``.\n'
@@ -125,72 +127,79 @@ def limit(inp: Array, ldb: Union[float] | None = None,
     return np.minimum(low, uth)
 
 
-def mel2freq(zfrq):
+def mel2freq(zfrq: FloatArray) -> FloatArray:
     """Transforms Mel-Frequencies to Hzfrq.
 
     Args:
-        zfrq:  Mel-Frequency.
+        zfrq:  Mel-Frequencies
 
     Returns:
         Frequency in Hz.
     """
     zfrq = np.atleast_1d(zfrq)
-    return 700 * (np.exp(zfrq / 1125) - 1)
+    out = np.empty_like(zfrq)
+    np.exp(zfrq / 1125, out=out)
+    np.subtract(out, 1, out=out)
+    np.multiply(out, 700, out=out)
+    return out
 
 
-def maxamp(sig):
+def maxamp(sig: FloatArray) -> float:
     """Maximal absolute elongation within the signal.
 
-    Params:
-        sig    (array-like) Input signal.
+    Args:
+        sig: Input signal
 
-    Return:
-        (scalar) Maximal amplitude.
+    Returns:
+        Maximal amplitude
     """
-    return np.max(np.absolute(sig))
+    val: FloatArray = np.absolute(sig, dtype=np.float64).max(axis=0)
+    return val.item()
 
 
-def minamp(sig):
+def minamp(sig: FloatArray) -> float:
     """Minimal absolute elongation within the signal.
 
-    Params
-        sig    (array-like) Input signal.
+    Args:
+        sig: Input signal
 
-    Return:
-        (scalar) Maximal amplitude.
+    Returns:
+        Minimal amplitude
     """
-    return np.min(np.absolute(sig))
+    val: FloatArray = np.absolute(sig, dtype=np.float64).min(axis=0)
+    return val.item()
 
 
-def noise(level, n=9000):
+def noise(level: float, n_samples: int =9000) -> FloatArray:
     """Generate withe noise.
 
-    Params:
-        level       (float) Noise level as standard deviation of a gaussian.
-        n           (int) Length of noise signal in samples.
+    Args:
+        level:      Noise level as standard deviation of Gaussian
+        n_samples:  Length of noise signal in samples
 
-    Return:
-        (ndarray)   White noise signal.
+    Returns:
+        White noise signal
     """
-    return stats.norm.rvs(0, level, size=n)
+    return np.random.normal(0, level, n_samples)
+    # return stats.norm.rvs(0, level, size=n_samples, dtype=np.float64)
 
 
-def normalize(sig):
+def normalize(sig: FloatArray) -> FloatArray:
     """Normlize a signal to [-1.0, 1.0].
 
-    Params:
-        sig (np.nadarray)    Signal to normalize.
+    Args:
+        sig: Input signal
 
     Return:
-        (np.ndarray) Normalized signal.
+        Normalized signal
     """
-    return sig / np.max(np.absolute(sig), axis=0)
+    return sig / maxamp(sig)
 
 
-def sinusoid(frqs: Union[Sequence, Array, int, float],
-             amps: Union[Sequence, Array, int, float] = 1,
+def sinusoid(frqs: Sequence[float] | float,
+             amps: Sequence[float] | float = 1,
              fps: int = 9000, length: float = 1.0,
-             noise: float | None = None, comps: bool = False) -> Array:
+             noise: float | None = None, comps: bool = False) -> FloatArray:
     """Generate sinusoidal signal.
 
     Args:
@@ -207,47 +216,52 @@ def sinusoid(frqs: Union[Sequence, Array, int, float],
                  else return the sum.
 
     Return:
-        Array of signals.
+        FloatArray of signals.
     """
-    frqs_: Array = np.atleast_1d(frqs)
-    amps_: Array = np.atleast_1d(amps)
+    frqs_: FloatArray = np.atleast_1d(frqs).astype(np.float64)
+    amps_: FloatArray = np.atleast_1d(amps).astype(np.float64)
 
+    size = np.ceil(fps*length).astype(np.int64)
+    out = np.empty((size, len(frqs_)), dtype=np.float64)
     if frqs_.shape == amps_.shape or amps_.size == 1:
         txs = np.arange(fps*length)[:, None] / fps
-        sig = np.sin(2*np.pi*txs*frqs_) * amps_
+        np.sin(2*np.pi*txs*frqs_, out=out)
+        np.multiply(out, amps_, out=out)
     else:
         raise ValueError(f'Shape of ``frqs`` ({frqs_.shape}) differs from shape '
                          f' of ``amps``({amps_.shape}).')
     if noise:
-        sig += stats.norm.rvs(0, noise, size=sig.shape)
+        out += stats.norm.rvs(0, noise, size=out.shape)
 
     if comps:
-        return sig
-    return sig.sum(axis=1, keepdims=True)
+        return out
+    total = np.empty((out.shape[0], 1))
+    np.sum(total, axis=1, keepdims=True, out=total)
+    return total
 
 
-def amp(spl: Union[Array, int, float],
-        ref: float = _defaults.SPL_REF) -> Union[Array, float]:
+def amp(spl: Sequence[float] | float,
+        ref: float = _defaults.SPL_REF) -> FloatArray:
     """Computes amplitudes form sound pressure level.
 
     The reference pressure defaults to the human hearing
     treshold of 20 μPa.
 
     Args:
-        spl:    Sound pressure level.
+        spl:    Sound pressure level
 
     Returns:
-        DFT magnituds.
+        DFT magnituds
     """
-    return np.power(10.0, 0.05*spl) * ref
+    return np.power(10.0, 0.05*np.atleast_1d(spl)) * ref
 
 
-def zero_padding(sig: Array, n_pad: int,
-                 dtype: Optional[Union[str, np.dtype]] = None) -> Array:
+def zero_padding(sig: FloatArray, n_pad: int,
+                 dtype: str | np.dtype[Any] | None = None) -> FloatArray:
     """Append n zeros to signal. `sig` must be 1D array.
 
     Args:
-        sig:    Array to be padded.
+        sig:    FloatArray to be padded.
         n_pad:  Number of zeros to be appended.
 
     Returns:
