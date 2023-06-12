@@ -160,14 +160,14 @@ def fourplot(data: _Array, lag: int = 1) -> tuple:
 
     # data as time series
     ax1.plot(data, lw=2, alpha=.5)
-    ax1.set_title(r'Time series ($N$={})'.format(data.size))
+    ax1.set_title(rf'Time series ($N$={data.size})')
     ax1.set_xlabel('i')
     ax1.set_ylabel(r'x[$i$]')
 
     # lag-plot
     ax2.scatter(data[:-lag], data[lag:], alpha=.5)
     ax2.plot(data[:-lag], data[lag:], 'k', alpha=.05)
-    ax2.set_title(r'Lag plot ($ \ \theta$={})'.format(lag))
+    ax2.set_title(rf'Lag plot ($ \ \theta$={lag})')
     ax2.set_xlabel(r'x[$i$]')
     ax2.set_ylabel(r'x[$i-\theta$]')
 
@@ -180,8 +180,7 @@ def fourplot(data: _Array, lag: int = 1) -> tuple:
     # probability plot
     ax4.scatter(osm, osr, alpha=.5)
     ax4.plot(x_scale, regr, 'r', lw=2, alpha=.8)
-    ax4.set_title(r'Normal probability plot ($R^2$={})'
-                  .format((r**2).round(4)))
+    ax4.set_title(r'Normal probability plot ($R^2$={(r**2).round(4)})')
     ax4.set_xlabel('Qunatiles')
     ax4.set_ylabel('Sorted values')
 
@@ -211,7 +210,7 @@ def marginal_distr(train_data: _Array, state_means: _Array, stat_dist: _Array, b
         support = _np.arange(lower, upper, dtype=int)
         prob_mass = _stats.poisson.pmf(support, mean_val) * stat_prob
 
-        plot_label = r'$\lambda_{}={}$'.format(i, round(mean_val, 2))
+        plot_label = rf'$\lambda_{i}={round(mean_val, 2)}$'
         _ = ax.plot(support, prob_mass, alpha=.7, lw=2, ls='dashed', label=plot_label)
 
     if legend:
