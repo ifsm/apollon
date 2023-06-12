@@ -88,7 +88,7 @@ def _new_axis(spines: str = 'nice', fig: MplFig = None, sp_pos: SubplotPos = Non
     if not axison:
         ax.axison = False
     elif spines == 'nice':
-        _nice_spines(ax, offset=10)
+        outward_spines(ax, offset=10)
 
     _plt.subplots_adjust(top=.95, bottom=.15)
     return fig, ax
