@@ -3,10 +3,9 @@ Type aliases
 """
 
 import pathlib
-from typing import (Any, Collection, Dict, Generator, Iterable, List, Optional,
+from typing import (Any, Collection, Dict, Generator, Iterable, List,
                     Sequence, Tuple, Union)
 import numpy as np
-import numpy.typing as npt
 from matplotlib import axes
 
 
@@ -27,7 +26,7 @@ SomDims = Tuple[int, int, int]
 Coord = Tuple[int, int]
 AdIndex = Tuple[List[int], List[int]]
 
-Axis = axes._axes.Axes
+Axis = axes.Axes
 
 def floatarray(inp: Any) -> FloatArray:
     return np.asanyarray(inp, dtype=np.float64)

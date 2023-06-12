@@ -10,7 +10,7 @@ from scipy import stats as _stats
 
 from . import _defaults
 from . import tools as _tools
-from . types import Array as _Array, Axis
+from . types import Axis, FloatArray, IntArray
 
 
 Limits = Optional[Tuple[int, int]]
@@ -18,6 +18,7 @@ MplFig = Optional[_plt.Figure]
 FigSize = Tuple[float, float]
 SubplotPos = Optional[Tuple[int, int, int]]
 Axes = Union[Axis, Iterable[Axis]]
+FigAxis = tuple[_plt.Figure, Axis]
 
 
 def outward_spines(axs: Axes, offset: float = 10.0) -> None:
@@ -59,7 +60,7 @@ def center_spines(axs: Axes,
 
 
 def _new_axis(spines: str = 'nice', fig: MplFig = None, sp_pos: SubplotPos = None,
-              axison: bool = True, **kwargs) -> tuple:
+              axison: bool = True, **kwargs) -> FigAxis:
     """Create a new figure with a single axis and fancy spines.
 
     All ``kwargs`` are passed on to _plt.figure().
@@ -94,7 +95,7 @@ def _new_axis(spines: str = 'nice', fig: MplFig = None, sp_pos: SubplotPos = Non
     return fig, ax
 
 
-def _new_axis_3d(fig: MplFig = None, **kwargs) -> tuple:
+def _new_axis_3d(fig: MplFig = None, **kwargs) -> FigAxis:
     """Create a 3d cartesian coordinate system.
 
     Args:
@@ -109,7 +110,7 @@ def _new_axis_3d(fig: MplFig = None, **kwargs) -> tuple:
     return fig, ax_3d
 
 
-def signal(values: _Array, fps: int | None = None, **kwargs) -> tuple:
+def signal(values: FloatArray, fps: int | None = None, **kwargs) -> FigAxis:
     """Plot time series with constant sampling interval.
 
     Args:
@@ -136,7 +137,7 @@ def signal(values: _Array, fps: int | None = None, **kwargs) -> tuple:
     return fig, ax
 
 
-def fourplot(data: _Array, lag: int = 1) -> tuple:
+def fourplot(data: FloatArray, lag: int = 1) -> tuple:
     """Plot time series, lag-plot, histogram, and probability plot.
 
     Args:
@@ -187,8 +188,8 @@ def fourplot(data: _Array, lag: int = 1) -> tuple:
     return osm, osr, slope, intercept, r
 
 
-def marginal_distr(train_data: _Array, state_means: _Array, stat_dist: _Array, bins: int = 20,
-                   legend: bool = True, **kwargs) -> tuple:
+def marginal_distr(train_data: FloatArray, state_means: FloatArray, stat_dist: FloatArray, bins: int = 20,
+                   legend: bool = True, **kwargs) -> FigAxis:
     """Plot the marginal distribution of a PoissonHMM.
 
     Args:
@@ -219,7 +220,7 @@ def marginal_distr(train_data: _Array, state_means: _Array, stat_dist: _Array, b
     return ax
 
 
-def onsets(sig, ons, **kwargs) -> tuple:
+def onsets(sig, ons, **kwargs) -> FigAxis:
     """Indicate onsets on a time series.
 
     Args:
@@ -237,8 +238,8 @@ def onsets(sig, ons, **kwargs) -> tuple:
     return fig, ax
 
 
-def onset_decoding(odf: _Array, onset_index: _Array, decoding: _Array,
-                   cmap='viridis', **kwargs) -> tuple:
+def onset_decoding(odf: FloatArray, onset_index: IntArray, decoding: IntArray,
+                   cmap='viridis', **kwargs) -> FigAxis:
     """Plot sig and and onsetes color coded regarding dec.
 
     Args:
@@ -248,7 +249,7 @@ def onset_decoding(odf: _Array, onset_index: _Array, decoding: _Array,
         cmap:           Colormap for onsets.
 
     Returns:
-        Figure and axes.
+        Figure and axis
     """
     fig, ax = onsets(odf, onset_index, **kwargs)
     color_space = getattr(_cm, cmap)(_np.linspace(0, 1, decoding.max()+1))
