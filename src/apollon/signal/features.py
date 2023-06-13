@@ -1,15 +1,14 @@
 """
 Audio feature extraction routines
 """
+from typing import Optional
 
 import numpy as _np
 from scipy.signal import hilbert as _hilbert
-from typing import Optional
 
-import _features
+from . import _features
 from . import tools as _sigtools
 from .. import segment as _segment
-from .. import tools
 from .. types import Array as _Array
 from . import critical_bands as _cb
 from .. audio import fti16
