@@ -1,6 +1,7 @@
 """
 Audio feature extraction routines
 """
+from typing import Optional
 
 import numpy as _np
 from scipy.signal import hilbert as _hilbert
