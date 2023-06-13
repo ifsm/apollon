@@ -10,13 +10,13 @@ from pydantic import BaseModel
 import scipy.signal as _sps
 
 from .. segment import Segmentation, Segments
-from .. types import Array, Optional
+from .. types import FloatArray, IntArray, ComplexArray, Optional
 from . container import DftParams, StftParams
 from apollon.signal import features
 
 
 def fft(sig, window: str | None = None, n_fft: int | None = None,
-        norm: bool = True):
+        norm: bool = True) -> ComplexArray:
     """Compute the Discrete Fouier Transform for real input
 
     This is a simple wrapper around ``numpy.fft.rfft``. Input signal must
@@ -56,17 +56,17 @@ def fft(sig, window: str | None = None, n_fft: int | None = None,
 
 class TransformResult:
     """Base class for transformation results"""
-    def __init__(self, params: Any, bins: np.ndarray) -> None:
+    def __init__(self, params: Any, bins: ComplexArray) -> None:
         self._params = params
         self._bins = bins
 
     @property
-    def abs(self) -> Array:
+    def abs(self) -> FloatArray:
         """Compute magnitude spectrum"""
         return abs(self)
 
     @property
-    def bins(self) -> Array:
+    def bins(self) -> ComplexArray:
         """Raw FFT bins"""
         return self._bins
 
@@ -76,7 +76,7 @@ class TransformResult:
         return self._params.fps / self._n_fft
 
     @property
-    def frqs(self) -> Array:
+    def frqs(self) -> FloatArray:
         """Frequency axis"""
         return np.fft.rfftfreq(self._n_fft,
                                1.0/self._params.fps).reshape(-1, 1)
@@ -87,19 +87,19 @@ class TransformResult:
         return self._params
 
     @property
-    def phase(self):
+    def phase(self) -> FloatArray:
         """Compute phase spectrum"""
         if self._bins is None:
             return None
         return np.angle(self._bins)
 
     @property
-    def power(self):
+    def power(self) -> FloatArray:
         """Compute power spectrum"""
         return np.square(self.abs)
 
     @property
-    def centroid(self):
+    def centroid(self) -> FloatArray:
         """Compute spectral centroid"""
         return features.spectral_centroid(self.frqs, self.abs)
 
@@ -112,10 +112,10 @@ class TransformResult:
             n_fft = self._params.n_fft
         return n_fft
 
-    def __abs__(self) -> Array:
+    def __abs__(self) -> FloatArray:
         return np.absolute(self._bins)
 
-    def __getitem__(self, key) -> Array:
+    def __getitem__(self, key) -> ComplexArray:
         return self._bins[key]
 
     def __len__(self) -> int:
@@ -124,7 +124,7 @@ class TransformResult:
 
 class Spectrum(TransformResult):
     """FFT Spectrum"""
-    def __init__(self, params: DftParams, bins: np.ndarray,
+    def __init__(self, params: DftParams, bins: ComplexArray,
                  inp_size: int) -> None:
         """Representation of DFT bins with frequency axis
 
@@ -150,7 +150,7 @@ class Spectrum(TransformResult):
 
 class Spectrogram(TransformResult):
     """Result of Short Time Fourier Transform"""
-    def __init__(self, params: StftParams, bins: np.ndarray,
+    def __init__(self, params: StftParams, bins: ComplexArray,
                  inp_size: int) -> None:
         """Representation of DFT bins with time and frequency axis
 
@@ -168,7 +168,7 @@ class Spectrogram(TransformResult):
         return self._bins.shape[1]
 
     @property
-    def index(self) -> Array:
+    def index(self) -> IntArray:
         """Center index regarding original signal per bin"""
         if self._params.extend:
             offset = 0
@@ -178,7 +178,7 @@ class Spectrogram(TransformResult):
                 (self._params.n_perseg - self._params.n_overlap))
 
     @property
-    def times(self) -> Array:
+    def times(self) -> FloatArray:
         """Time axis"""
         return self.index / self._params.fps
 
@@ -218,7 +218,7 @@ class Dft(SpectralTransform):
         """
         super().__init__(DftParams(fps=fps, window=window, n_fft=n_fft))
 
-    def transform(self, data: np.ndarray) -> Spectrum:
+    def transform(self, data: FloatArray) -> Spectrum:
         """Transform ``data`` to spectral domain."""
         bins = fft(data, self.params.window, self.params.n_fft)
         return Spectrum(self.params, bins, data.shape[0])
@@ -241,7 +241,7 @@ class Stft(SpectralTransform):
         self._cutter = Segmentation(self.params.n_perseg, self.params.n_overlap,
                                     self.params.extend, self.params.pad)
 
-    def transform(self, data: np.ndarray) -> Spectrogram:
+    def transform(self, data: FloatArray) -> Spectrogram:
         """Transform ``data`` to spectral domain"""
         segs = self._cutter.transform(data)
         bins = fft(segs.data, self.params.window, self.params.n_fft)
