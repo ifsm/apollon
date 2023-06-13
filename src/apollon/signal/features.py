@@ -9,14 +9,14 @@ from scipy.signal import hilbert as _hilbert
 from . import _features
 from . import tools as _sigtools
 from .. import segment as _segment
-from .. types import Array as _Array
+from .. types import FloatArray, IntArray
 from . import critical_bands as _cb
 from .. audio import fti16
 from .. import _defaults
 
 
-def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
-         scaling_size: int = 10, mode: str = 'bader') -> _Array:
+def cdim(inp: FloatArray, delay: int, m_dim: int, n_bins: int = 1000,
+         scaling_size: int = 10, mode: str = 'bader') -> FloatArray:
     # pylint: disable = too-many-arguments
     r"""Compute an estimate of the correlation dimension ``inp``.
 
@@ -67,8 +67,8 @@ def cdim(inp: _Array, delay: int, m_dim: int, n_bins: int = 1000,
     return _np.expand_dims(out, 0)
 
 
-def correlogram(inp: _Array, wlen: int, n_delay: int,
-                total: bool = False) -> _Array:
+def correlogram(inp: FloatArray, wlen: int, n_delay: int,
+                total: bool = False) -> FloatArray:
     r"""Windowed autocorrelation of ``inp``.
 
     This function estimates autocorrelation functions between ``wlen``-sized
@@ -113,7 +113,7 @@ def correlogram(inp: _Array, wlen: int, n_delay: int,
     return out
 
 
-def energy(sig: _Array) -> _Array:
+def energy(sig: FloatArray) -> FloatArray:
     """Total energy of time domain signal.
 
     Args:
@@ -127,7 +127,7 @@ def energy(sig: _Array) -> _Array:
     return _np.sum(_np.square(_np.abs(sig)), axis=0, keepdims=True)
 
 
-def frms(bins: _Array, n_sig: int, window: str | None = None) -> _Array:
+def frms(bins: FloatArray, n_sig: int, window: str | None = None) -> FloatArray:
     """Root meann square of signal energy estimate in the spectral domain.
 
     Args:
@@ -149,7 +149,7 @@ def frms(bins: _Array, n_sig: int, window: str | None = None) -> _Array:
     return rms_
 
 
-def rms(sig: _Array) -> _Array:
+def rms(sig: FloatArray) -> FloatArray:
     """Root mean square of time domain signal.
 
     Args:
@@ -161,7 +161,7 @@ def rms(sig: _Array) -> _Array:
     return _np.sqrt(_np.mean(_np.square(_np.abs(sig)), axis=0, keepdims=True))
 
 
-def spectral_centroid(frqs: _Array, amps: _Array) -> _Array:
+def spectral_centroid(frqs: FloatArray, amps: FloatArray) -> FloatArray:
     r"""Estimate the spectral centroid frequency.
 
     Spectral centroid is always computed along the second axis of ``amps``.
@@ -186,8 +186,8 @@ def spectral_centroid(frqs: _Array, amps: _Array) -> _Array:
     return _np.sum(frqs*_power_distr(amps), axis=0, keepdims=True)
 
 
-def spectral_spread(frqs: _Array, bins: _Array,
-                    centroids: Optional[_Array] = None) -> _Array:
+def spectral_spread(frqs: FloatArray, bins: ComplexArray,
+                    centroids: Optional[FloatArray] = None) -> FloatArray:
     """Estimate spectral spread.
 
     Spectral Spread is always computed along the second axis of ``bins``.
@@ -218,9 +218,9 @@ def spectral_spread(frqs: _Array, bins: _Array,
                             keepdims=True))
 
 
-def spectral_skewness(frqs: _Array, bins: _Array,
-                      centroid: Optional[_Array] = None,
-                      spreads: Optional[_Array] = None) -> _Array:
+def spectral_skewness(frqs: FloatArray, bins: FloatArray,
+                      centroid: Optional[FloatArray] = None,
+                      spreads: Optional[FloatArray] = None) -> FloatArray:
     r"""Estimate the spectral skewness.
 
     Args:
@@ -244,9 +244,9 @@ def spectral_skewness(frqs: _Array, bins: _Array,
     """
     pass
 
-def spectral_kurtosis(frqs: _Array, bins: _Array,
-                      centroid: Optional[_Array] = None,
-                      spreads: Optional[_Array] = None) -> _Array:
+def spectral_kurtosis(frqs: FloatArray, bins: FloatArray,
+                      centroid: Optional[FloatArray] = None,
+                      spreads: Optional[FloatArray] = None) -> FloatArray:
     r"""Estimate spectral kurtosis.
 
     Args:
@@ -271,8 +271,8 @@ def spectral_kurtosis(frqs: _Array, bins: _Array,
     pass
 
 
-def spectral_flux(inp: _Array, delta: float = 1.0,
-                  total: bool = True) -> _Array:
+def spectral_flux(inp: FloatArray, delta: float = 1.0,
+                  total: bool = True) -> FloatArray:
     r"""Estimate the spectral flux
 
     Args:
@@ -299,8 +299,8 @@ def spectral_flux(inp: _Array, delta: float = 1.0,
     return out
 
 
-def fspl(amps: _Array, total: bool | None = False, ref: float | None = None
-         ) -> _Array:
+def fspl(amps: FloatArray, total: bool | None = False, ref: float | None = None
+         ) -> FloatArray:
     """Computes sound pressure level from spectrum.
 
     The values of ``amp`` are assumed to be magnitudes of DFT bins.
@@ -326,8 +326,8 @@ def fspl(amps: _Array, total: bool | None = False, ref: float | None = None
     return 10.0*_np.log10(vals)
 
 
-def fsplc(frqs: _Array, amps: _Array, total: bool | None = False,
-         ref: float | None = None) -> _Array:
+def fsplc(frqs: FloatArray, amps: FloatArray, total: bool | None = False,
+         ref: float | None = None) -> FloatArray:
     """Apply C-weighted to SPL.
 
     Args:
@@ -340,7 +340,7 @@ def fsplc(frqs: _Array, amps: _Array, total: bool | None = False,
     """
     return spl(_sigtools.c_weighting(frqs)*amps, total, ref)
 
-def spl(inp: _Array, ref=_defaults.SPL_REF):
+def spl(inp: FloatArray, ref=_defaults.SPL_REF):
     """Computes the average sound pressure level of time domain signal.
 
     Args:
@@ -353,8 +353,8 @@ def spl(inp: _Array, ref=_defaults.SPL_REF):
     level = rms(inp)/ref
     return 20 * _np.log10(level, where=level>0)
 
-def log_attack_time(inp: _Array, fps: int, ons_idx: _Array,
-                    wlen: float = 0.05) -> _Array:
+def log_attack_time(inp: FloatArray, fps: int, ons_idx: IntArray,
+                    wlen: float = 0.05) -> FloatArray:
     """Estimate the attack time of each onset and return its logarithm.
 
     This function estimates the attack time as the duration between the
@@ -377,7 +377,7 @@ def log_attack_time(inp: _Array, fps: int, ons_idx: _Array,
     return _np.log(attack_time)
 
 
-def loudness(frqs: _Array, bins: _Array) -> _Array:
+def loudness(frqs: FloatArray, bins: FloatArray) -> FloatArray:
     """Calculate a measure for the perceived loudness from a spectrogram.
 
     Args:
@@ -391,8 +391,8 @@ def loudness(frqs: _Array, bins: _Array) -> _Array:
     return _cb.total_loudness(cbrs)
 
 
-def roughness_helmholtz(d_frq: float, bins: _Array, frq_max: float,
-                        total: bool = True) -> _Array:
+def roughness_helmholtz(d_frq: float, bins: FloatArray, frq_max: float,
+                        total: bool = True) -> FloatArray:
     kernel = _roughnes_kernel(d_frq, frq_max)
     out = _np.empty((kernel.size, bins.shape[1]))
     for i, bin_slice in enumerate(bins.T):
@@ -403,7 +403,7 @@ def roughness_helmholtz(d_frq: float, bins: _Array, frq_max: float,
     return out
 
 
-def sharpness(frqs: _Array, bins: _Array) -> _Array:
+def sharpness(frqs: FloatArray, bins: FloatArray) -> FloatArray:
     """Calculate a measure for the perception of auditory sharpness from a
     spectrogram.
 
@@ -418,7 +418,7 @@ def sharpness(frqs: _Array, bins: _Array) -> _Array:
     return _cb.sharpness(cbrs)
 
 
-def _power_distr(bins: _Array) -> _Array:
+def _power_distr(bins: FloatArray) -> FloatArray:
     """Computes the spectral energy distribution.
 
     Args:
@@ -432,7 +432,7 @@ def _power_distr(bins: _Array) -> _Array:
     return bins / total_power
 
 
-def _roughnes_kernel(frq_res: float, frq_max: float) -> _Array:
+def _roughnes_kernel(frq_res: float, frq_max: float) -> FloatArray:
     """Comput the convolution kernel for roughness computation.
 
     Args:

@@ -12,6 +12,7 @@ from matplotlib import axes
 Array = np.ndarray
 IntArray = np.ndarray[Any, np.dtype[np.int_]]
 FloatArray = np.ndarray[Any, np.dtype[np.float64]]
+ComplexArray = np.ndarray[Any, np.dtype[np.complex128]]
 
 ArrayOrStr = Union[Array, str]
 IterOrNone = Union[Iterable, None]
