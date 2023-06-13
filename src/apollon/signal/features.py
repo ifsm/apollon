@@ -48,7 +48,7 @@ def cdim(inp: FloatArray, delay: int, m_dim: int, n_bins: int = 1000,
     .. [Grassberger1983] P. Grassberger, and I. Procaccia, "Measuring the strangeness of strange attractors,"  *Physica 9d*, pp. 189-208.
     """
     if inp.ndim != 2:
-        raise ValueError(f'Input array must be two-dimensional.')
+        raise ValueError('Input array must be two-dimensional.')
 
     if mode == 'bader':
         cdim_func = _features.cdim_bader
@@ -186,9 +186,9 @@ def spectral_centroid(frqs: FloatArray, amps: FloatArray) -> FloatArray:
     return _np.sum(frqs*_power_distr(amps), axis=0, keepdims=True)
 
 
-def spectral_spread(frqs: FloatArray, bins: ComplexArray,
+def spectral_spread(frqs: FloatArray, bins: FloatArray,
                     centroids: Optional[FloatArray] = None) -> FloatArray:
-    """Estimate spectral spread.
+    r"""Estimate spectral spread.
 
     Spectral Spread is always computed along the second axis of ``bins``.
     This function computes the square roote of spectral spread.
@@ -242,7 +242,7 @@ def spectral_skewness(frqs: FloatArray, bins: FloatArray,
         relative amplitude of the :math:`i` th DFT bin. :math:`f_C` is the
         spectral centroid frequency, and :math:`\sigma = \sqrt{f_S}.`
     """
-    pass
+    raise NotImplementedError
 
 def spectral_kurtosis(frqs: FloatArray, bins: FloatArray,
                       centroid: Optional[FloatArray] = None,
@@ -268,8 +268,7 @@ def spectral_kurtosis(frqs: FloatArray, bins: FloatArray,
         relative amplitude of the :math:`i` th DFT bin. :math:`f_C` is the
         spectral centroid frequency, and :math:`\sigma = \sqrt{f_S}.`
     """
-    pass
-
+    raise NotImplementedError
 
 def spectral_flux(inp: FloatArray, delta: float = 1.0,
                   total: bool = True) -> FloatArray:
@@ -326,8 +325,8 @@ def fspl(amps: FloatArray, total: bool | None = False, ref: float | None = None
     return 10.0*_np.log10(vals)
 
 
-def fsplc(frqs: FloatArray, amps: FloatArray, total: bool | None = False,
-         ref: float | None = None) -> FloatArray:
+def fsplc(frqs: FloatArray, amps: FloatArray, ref: float | None = None
+          ) -> FloatArray:
     """Apply C-weighted to SPL.
 
     Args:
@@ -338,7 +337,7 @@ def fsplc(frqs: FloatArray, amps: FloatArray, total: bool | None = False,
     Returns:
         C-weighted sound pressure level.
     """
-    return spl(_sigtools.c_weighting(frqs)*amps, total, ref)
+    return spl(_sigtools.c_weighting(frqs)*amps, ref)
 
 def spl(inp: FloatArray, ref=_defaults.SPL_REF):
     """Computes the average sound pressure level of time domain signal.
@@ -393,6 +392,17 @@ def loudness(frqs: FloatArray, bins: FloatArray) -> FloatArray:
 
 def roughness_helmholtz(d_frq: float, bins: FloatArray, frq_max: float,
                         total: bool = True) -> FloatArray:
+    """Estimate auditory roughness using Helmholtz' algorithm.
+
+    Args:
+        d_frq:      Frequency spacing
+        bin:        DFT bins
+        frq_max:    Maximum frequency
+        total:      If ``True``, return total roughness over time.
+
+    Returns:
+        Auditoory roughness
+    """
     kernel = _roughnes_kernel(d_frq, frq_max)
     out = _np.empty((kernel.size, bins.shape[1]))
     for i, bin_slice in enumerate(bins.T):
