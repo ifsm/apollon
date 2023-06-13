@@ -30,4 +30,5 @@ AdIndex = Tuple[List[int], List[int]]
 Axis = axes.Axes
 
 def floatarray(inp: Any) -> FloatArray:
+    """Cast sequence type to float64 array"""
     return np.asanyarray(inp, dtype=np.float64)
