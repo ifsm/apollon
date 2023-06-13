@@ -2,7 +2,7 @@
 Generic Discrete Fourier Transforms for real input
 """
 
-from typing import Any, Union
+from typing import Any
 
 import matplotlib.pyplot as _plt
 import numpy as np
@@ -10,7 +10,7 @@ from pydantic import BaseModel
 import scipy.signal as _sps
 
 from .. segment import Segmentation, Segments
-from .. types import FloatArray, IntArray, ComplexArray, Optional
+from .. types import FloatArray, IntArray, ComplexArray
 from . container import DftParams, StftParams
 from apollon.signal import features
 
@@ -71,7 +71,7 @@ class TransformResult:
         return self._bins
 
     @property
-    def d_frq(self) -> Union[float, None]:
+    def d_frq(self) -> float | None:
         """Retrun the frequency resolution"""
         return self._params.fps / self._n_fft
 
@@ -208,7 +208,7 @@ class SpectralTransform:
 class Dft(SpectralTransform):
     """Discrete Fourier Transform"""
     def __init__(self, fps: int, window: str,
-                 n_fft: Optional[int] = None) -> None:
+                 n_fft: int | None = None) -> None:
         """Create a new spectrum
 
         Args:
@@ -228,7 +228,7 @@ class Stft(SpectralTransform):
     """Short Time Fourier Transform of AudioFile."""
     def __init__(self, fps: int, window: str,
                  n_perseg: int, n_overlap: int,
-                 n_fft: Optional[int] = None, extend: bool = True,
+                 n_fft: int | None = None, extend: bool = True,
                  pad: bool = True) -> None:
         """Create a new spectrogram.
 
@@ -251,7 +251,7 @@ class Stft(SpectralTransform):
 class StftSegments(SpectralTransform):
     """Short Time Fourier Transform on already segmented audio"""
     def __init__(self, fps: int, window: str,
-                 n_fft: Optional[int] = None) -> None:
+                 n_fft: int | None = None) -> None:
         """Create a new ``Spectrogram`` from ``Segments``
 
         Args:
