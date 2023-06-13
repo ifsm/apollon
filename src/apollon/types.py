@@ -4,7 +4,7 @@ Type aliases
 
 import pathlib
 from typing import (Any, Collection, Dict, Generator, Iterable, List,
-                    Sequence, Tuple, Union)
+                    Tuple, Union)
 import numpy as np
 from matplotlib import axes
 
