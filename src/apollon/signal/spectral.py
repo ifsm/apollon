@@ -63,7 +63,7 @@ class TransformResult:
     @property
     def abs(self) -> Array:
         """Compute magnitude spectrum"""
-        return self.__abs__()
+        return abs(self)
 
     @property
     def bins(self) -> Array:
@@ -96,7 +96,7 @@ class TransformResult:
     @property
     def power(self):
         """Compute power spectrum"""
-        return np.square(self.__abs__())
+        return np.square(self.abs)
 
     @property
     def centroid(self):
