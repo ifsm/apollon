@@ -59,6 +59,7 @@ class TransformResult:
     def __init__(self, params: Any, bins: ComplexArray) -> None:
         self._params = params
         self._bins = bins
+        self._inp_size: int
 
     @property
     def abs(self) -> FloatArray:
