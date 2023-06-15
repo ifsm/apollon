@@ -4,7 +4,7 @@ Type aliases
 
 import pathlib
 from typing import (Any, Collection, Dict, Generator, Iterable, List,
-                    Tuple, Union)
+                    Tuple)
 import numpy as np
 import numpy.typing as npt
 from matplotlib import axes
@@ -17,11 +17,11 @@ Int16Array = np.ndarray[Any, np.dtype[np.int16]]
 FloatArray = np.ndarray[Any, np.dtype[np.float64]]
 ComplexArray = np.ndarray[Any, np.dtype[np.complex128]]
 
-ArrayOrStr = Union[Array, str]
-IterOrNone = Union[Iterable, None]
+ArrayOrStr = Array | str
+IterOrNone = Iterable | None
 
 ParamsType = Dict[str, Any]
-PathType = Union[str, pathlib.Path]
+PathType = pathlib.Path | str
 PathGen = Generator[PathType, None, None]
 Schema = Dict[str, Collection[str]]
 

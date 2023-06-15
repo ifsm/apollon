@@ -4,7 +4,7 @@ General JSON IO
 
 import json
 import pathlib
-from typing import Any, Union, Mapping
+from typing import Any, Mapping
 
 import numpy as np
 
@@ -91,7 +91,7 @@ def encode_ndarray(arr: NDArray) -> dict:
             'data': arr.tolist()}
 
 
-def _ndarray_hook(inp: dict) -> Union[NDArray, dict]:
+def _ndarray_hook(inp: dict) -> NDArray | dict:
     try:
         return decode_ndarray(inp)
     except TypeError:
