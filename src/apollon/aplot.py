@@ -1,7 +1,7 @@
 """
 General plotting routines
 """
-from typing import Iterable, Optional, Tuple
+from typing import Iterable, Tuple
 
 import matplotlib.pyplot as _plt
 import matplotlib.cm as _cm
@@ -13,10 +13,10 @@ from . import tools as _tools
 from . types import Axis, FloatArray, IntArray
 
 
-Limits = Optional[Tuple[int, int]]
-MplFig = Optional[_plt.Figure]
-FigSize = Tuple[float, float]
-SubplotPos = Optional[Tuple[int, int, int]]
+Limits = tuple[int, int] | None
+MplFig = _plt.Figure | None
+FigSize = tuple[float, float]
+SubplotPos = tuple[int, int, int] | None
 Axes = Axis | Iterable[Axis]
 FigAxis = tuple[_plt.Figure, Axis]
 

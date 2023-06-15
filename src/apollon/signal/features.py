@@ -1,7 +1,6 @@
 """
 Audio feature extraction routines
 """
-from typing import Optional
 
 import numpy as _np
 from scipy.signal import hilbert as _hilbert
@@ -187,7 +186,7 @@ def spectral_centroid(frqs: FloatArray, amps: FloatArray) -> FloatArray:
 
 
 def spectral_spread(frqs: FloatArray, bins: FloatArray,
-                    centroids: Optional[FloatArray] = None) -> FloatArray:
+                    centroids: FloatArray | None = None) -> FloatArray:
     r"""Estimate spectral spread.
 
     Spectral Spread is always computed along the second axis of ``bins``.
@@ -219,8 +218,8 @@ def spectral_spread(frqs: FloatArray, bins: FloatArray,
 
 
 def spectral_skewness(frqs: FloatArray, bins: FloatArray,
-                      centroid: Optional[FloatArray] = None,
-                      spreads: Optional[FloatArray] = None) -> FloatArray:
+                      centroid: FloatArray | None = None,
+                      spreads: FloatArray | None = None) -> FloatArray:
     r"""Estimate the spectral skewness.
 
     Args:
@@ -245,8 +244,8 @@ def spectral_skewness(frqs: FloatArray, bins: FloatArray,
     raise NotImplementedError
 
 def spectral_kurtosis(frqs: FloatArray, bins: FloatArray,
-                      centroid: Optional[FloatArray] = None,
-                      spreads: Optional[FloatArray] = None) -> FloatArray:
+                      centroid: FloatArray | None = None,
+                      spreads: FloatArray | None = None) -> FloatArray:
     r"""Estimate spectral kurtosis.
 
     Args:

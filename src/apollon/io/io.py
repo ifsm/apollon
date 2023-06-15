@@ -5,7 +5,7 @@ General I/O functionallity
 from contextlib import contextmanager as _contextmanager
 import pathlib
 import pickle
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
@@ -13,7 +13,7 @@ from .. types import NDArray, PathType
 from . json import ArrayEncoder
 
 def generate_outpath(in_path: PathType,
-                     out_path: Optional[PathType],
+                     out_path: PathType | None,
                      suffix: str | None = None) -> PathType:
     """Generate file paths for feature output
 
@@ -103,7 +103,7 @@ def load_from_pickle(path: PathType) -> Any:
 
 
 def repath(current_path: PathType, new_path: PathType,
-           ext: Optional[str] = None) -> PathType:
+           ext: str | None = None) -> PathType:
     """Change the path and keep the file name
 
     Optinally change the extension, too.
