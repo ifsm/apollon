@@ -10,12 +10,12 @@ from numpy.lib.stride_tricks import as_strided
 from . audio import AudioFile
 from . models import SegmentationParams, Segment
 from . signal.tools import zero_padding as _zero_padding
-from . types import Array
+from . types import FloatArray, IntArray
 
 
 class Segments:
     """Segement"""
-    def __init__(self, params: SegmentationParams, segs: Array) -> None:
+    def __init__(self, params: SegmentationParams, segs: FloatArray) -> None:
         self._segs = segs
         self._params = params
         if self._params.extend:
@@ -24,7 +24,7 @@ class Segments:
             self._offset = self._params.n_perseg // 2
 
     @property
-    def data(self) -> Array:
+    def data(self) -> FloatArray:
         """Return the raw segment data array"""
         return self._segs
 
@@ -98,11 +98,11 @@ class Segments:
                        center=self.center(seg_idx),
                        n_frames=self._params.n_perseg, data=self[seg_idx])
 
-    def __iter__(self) -> Generator[Array, None, None]:
+    def __iter__(self) -> Generator[FloatArray, None, None]:
         for seg in self._segs.T:
             yield _np.expand_dims(seg, 1)
 
-    def __getitem__(self, key) -> Array:
+    def __getitem__(self, key) -> FloatArray:
         out = self._segs[:, key]
         if out.ndim < 2:
             return _np.expand_dims(out, 1)
@@ -149,7 +149,7 @@ class Segmentation:
         self._ext_len = 0
         self._pad_len = 0
 
-    def transform(self, data: Array) -> Segments:
+    def transform(self, data: FloatArray) -> Segments:
         """Apply segmentation.
 
         Input array must be either one-, or two-dimensional.
@@ -190,7 +190,7 @@ class Segmentation:
                     'must be less then or equal to input data length.')
             raise ValueError(msg)
 
-    def _validate_data_shape(self, data: Array) -> None:
+    def _validate_data_shape(self, data: FloatArray) -> None:
         if not 0 < data.ndim < 3:
             msg = (f'Input array must have one or two dimensions.\n'
                    f'Found ``data.shape`` = {data.shape}.')
@@ -258,7 +258,7 @@ class LazySegments:
 
     def read_segment(self, seg_idx: int, norm: bool | None = None,
                      mono: bool | None = None, dtype: str | None = None
-                     ) -> Array:
+                     ) -> FloatArray:
         """Read single segement from file
 
         Args:
@@ -314,7 +314,7 @@ class LazySegments:
             yield self.compute_bounds(i)
 
 
-def _by_samples(arr: Array, n_perseg: int) -> Array:
+def _by_samples(arr: FloatArray, n_perseg: int) -> FloatArray:
     """Split ``arr`` into segments of lenght ``n_perseg`` samples.
 
     This function automatically applies zero padding for inputs that cannot be
@@ -340,7 +340,7 @@ def _by_samples(arr: Array, n_perseg: int) -> Array:
     return arr.reshape(-1, n_perseg)
 
 
-def _by_samples_with_hop(arr: Array, n_perseg: int, hop_size: int) -> Array:
+def _by_samples_with_hop(arr: FloatArray, n_perseg: int, hop_size: int) -> FloatArray:
     """Split `arr` into segments of lenght `n_perseg` samples. Move the
     extraction window `hop_size` samples.
 
@@ -382,7 +382,7 @@ def _by_samples_with_hop(arr: Array, n_perseg: int, hop_size: int) -> Array:
     return out
 
 
-def by_samples(arr: Array, n_perseg: int, hop_size: int = 0) -> Array:
+def by_samples(arr: FloatArray, n_perseg: int, hop_size: int = 0) -> FloatArray:
     """Segment the input into n segments of length ``n_perseg`` and move the
     window ``hop_size`` samples.
 
@@ -406,7 +406,7 @@ def by_samples(arr: Array, n_perseg: int, hop_size: int = 0) -> Array:
     return _by_samples_with_hop(arr, n_perseg, hop_size)
 
 
-def by_ms(arr: Array, fps: int, ms_perseg: int, hop_size: int = 0) -> Array:
+def by_ms(arr: FloatArray, fps: int, ms_perseg: int, hop_size: int = 0) -> FloatArray:
     """Segment the input into n segments of length ``ms_perseg`` and move the
     window ``hop_size`` milliseconds.
 
@@ -431,8 +431,8 @@ def by_ms(arr: Array, fps: int, ms_perseg: int, hop_size: int = 0) -> Array:
     return by_samples(arr, n_perseg, hop_size)
 
 
-def by_onsets(arr: Array, n_perseg: int, ons_idx: Array, off: int = 0
-              ) -> Array:
+def by_onsets(arr: FloatArray, n_perseg: int, ons_idx: IntArray, off: int = 0
+              ) -> FloatArray:
     """Split input ``arr`` into ``len(ons_idx)`` segments of length ``n_perseg``.
 
     Extraction windos start at ``ons_idx[i]`` + ``off``.

@@ -6,10 +6,11 @@ import pathlib
 
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import soundfile as _sf
 
 from . signal import tools as _ast
-from . types import Array, PathType
+from . types import FloatArray, Int16Array, PathType
 
 
 class AudioFile:
@@ -24,7 +25,7 @@ class AudioFile:
         self._file = _sf.SoundFile(self.path)
 
     @property
-    def data(self) -> Array:
+    def data(self) -> FloatArray:
         """Return audio data as array."""
         return self.read()
 
@@ -92,7 +93,7 @@ class AudioFile:
 
     def read(self, n_frames: int | None = None, offset: int | None = None,
              norm: bool = False, mono: bool = True, dtype: str = 'float64'
-        ) -> Array:
+        ) -> npt.NDArray:
         # pylint: disable=too-many-arguments
         """Read from audio file.
 
@@ -125,12 +126,12 @@ class AudioFile:
             data = _ast.normalize(data)
         return data
 
-    def _read(self, n_frames: int, dtype: str = 'float64') -> Array:
+    def _read(self, n_frames: int, dtype: str = 'float64') -> npt.NDArray:
         return self._file.read(n_frames, dtype=dtype, always_2d=True,
                                fill_value=0)
 
 
-def fti16(inp: Array) -> Array:
+def fti16(inp: npt.NDArray) -> Int16Array:
     """Cast audio loaded as float to int16.
 
     Args:

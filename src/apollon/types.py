@@ -6,11 +6,14 @@ import pathlib
 from typing import (Any, Collection, Dict, Generator, Iterable, List,
                     Tuple, Union)
 import numpy as np
+import numpy.typing as npt
 from matplotlib import axes
 
 
 Array = np.ndarray
+NDArray = npt.NDArray
 IntArray = np.ndarray[Any, np.dtype[np.int_]]
+Int16Array = np.ndarray[Any, np.dtype[np.int16]]
 FloatArray = np.ndarray[Any, np.dtype[np.float64]]
 ComplexArray = np.ndarray[Any, np.dtype[np.complex128]]
 

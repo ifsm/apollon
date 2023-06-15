@@ -6,10 +6,10 @@ import numpy as np
 from scipy import stats
 from scipy.spatial import distance
 
-from . types import Array
+from . types import FloatArray, NDArray
 
 
-def delay_embedding(inp: Array, delay: int, m_dim: int) -> Array:
+def delay_embedding(inp: NDArray, delay: int, m_dim: int) -> NDArray:
     """Compute a delay embedding of the `inp`
 
     This method makes a hard cut at the upper bound of `inp` and
@@ -31,8 +31,8 @@ def delay_embedding(inp: Array, delay: int, m_dim: int) -> Array:
     return emb_vects
 
 
-def embedding_dists(inp: Array, delay: int, m_dim: int,
-                    metric: str = 'euclidean') -> Array:
+def embedding_dists(inp: NDArray, delay: int, m_dim: int,
+                    metric: str = 'euclidean') -> NDArray:
     """Perfom a delay embedding and return the pairwaise distances
     of the delayed vectors
 
@@ -52,7 +52,7 @@ def embedding_dists(inp: Array, delay: int, m_dim: int,
     return distance.pdist(emb_vects, metric)
 
 
-def embedding_entropy(emb: Array, n_bins: int) -> Array:
+def embedding_entropy(emb: NDArray, n_bins: int) -> NDArray:
     """Compute the information entropy from an embedding
 
     Args:
@@ -67,7 +67,7 @@ def embedding_entropy(emb: Array, n_bins: int) -> Array:
 
 
 def lorenz_system(state: tuple[float, float, float],
-                  sigma: float, rho: float, beta: float) -> Array:
+                  sigma: float, rho: float, beta: float) -> FloatArray:
     """Compute the derivatives of the Lorenz system of coupled
        differential equations
 
@@ -83,14 +83,14 @@ def lorenz_system(state: tuple[float, float, float],
     x, y, z = state
     xyz_dot = np.array([sigma * (y - x),
                         x * (rho - z) - y,
-                        x * y - beta * z])
+                        x * y - beta * z], dtype=np.float64)
     return xyz_dot
 
 
 def lorenz_attractor(n_samples: int, sigma: float = 10.0, rho: float = 28.0,
                      beta: float = 8/3,
                      init_state: tuple[float, float, float] = (0., 1., 1.05),
-                     dt: float = 0.01) -> Array:
+                     dt: float = 0.01) -> FloatArray:
     """Simulate the Lorenz system
 
     Args:
@@ -110,7 +110,7 @@ def lorenz_attractor(n_samples: int, sigma: float = 10.0, rho: float = 28.0,
     if dt < 0:
         raise ValueError("``dt`` must be positive float")
 
-    xyz = np.empty((n_samples, 3))
+    xyz = np.empty((n_samples, 3), dtype=np.float64)
     xyz[0] = init_state
 
     for i in range(n_samples-1):

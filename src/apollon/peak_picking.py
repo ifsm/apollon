@@ -1,5 +1,5 @@
 import numpy as np
-from . types import Array
+from . types import FloatArray
 
 
 class FilterPeakPicker:
@@ -10,7 +10,7 @@ class FilterPeakPicker:
         self.alpha = alpha
         self.delta = delta
 
-    def detect(self, inp: Array) -> Array:
+    def detect(self, inp: FloatArray) -> FloatArray:
         """Pick local maxima from a numerical time series.
 
         Pick local maxima from the onset detection function `odf`, which is assumed

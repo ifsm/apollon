@@ -12,7 +12,7 @@ import chainsaddiction as _ca
 import apollon
 from apollon import types as _at
 import apollon.io.io as aio
-from apollon.types import Array as _Array
+from apollon.types import Array as FloatArray, IntArray, NDArray
 from apollon import tools as _tools
 import apollon.hmm.utilities as ahu
 
@@ -26,7 +26,7 @@ class PoissonHmm:
     __slots__ = ['hyper_params', 'init_params', 'params', 'decoding', 'quality',
                  'verbose', 'version', 'training_date', 'success']
 
-    def __init__(self, X: _Array, m_states: int,
+    def __init__(self, X: IntArray, m_states: int,
                  init_lambda: _at.ArrayOrStr = 'quantile',
                  init_gamma: _at.ArrayOrStr = 'uniform',
                  init_delta: _at.ArrayOrStr = 'stationary',
@@ -64,7 +64,7 @@ class PoissonHmm:
         self.quality = None
         self.success = None
 
-    def fit(self, X: _Array) -> bool:
+    def fit(self, X: IntArray) -> bool:
         """Fit the initialized PoissonHMM to the input data set.
 
         Args:
@@ -86,7 +86,7 @@ class PoissonHmm:
             _warnings.warn('EM did not converge.', category=RuntimeWarning)
 
 
-    def score(self, X: _Array):
+    def score(self, X: IntArray):
         """Compute the log-likelihood of `X` under this HMM."""
 
     def to_dict(self):
@@ -149,7 +149,7 @@ class _HyperParams:
         return {attr: getattr(self, attr) for attr in self.__slots__}
 
 
-    def _assert_lambda(self, _lambda: _at.ArrayOrStr) -> _np.ndarray:
+    def _assert_lambda(self, _lambda: _at.ArrayOrStr) -> FloatArray:
         """Assure that `_lambda` fits requirements for Poisson state-dependent means.
 
         Args:
@@ -176,7 +176,7 @@ class _HyperParams:
 
     @staticmethod
     def _assert_gamma(_gamma: _at.ArrayOrStr, gamma_dp: _at.IterOrNone,
-                      diag_val: float) -> _np.ndarray:
+                      diag_val: float) -> FloatArray:
         """Assure that `_gamma` fits requirements for Poisson transition probability matirces.
 
         Args:
@@ -212,7 +212,7 @@ class _HyperParams:
         return _gamma
 
     @staticmethod
-    def _assert_delta(_delta: _at.ArrayOrStr, delta_dp: _at.IterOrNone) -> _np.ndarray:
+    def _assert_delta(_delta: _at.ArrayOrStr, delta_dp: _at.IterOrNone) -> FloatArray:
         """Assure that `_delta` fits requirements for Poisson initial distributions.
 
         Args:
@@ -244,7 +244,7 @@ class _HyperParams:
         return _delta
 
 
-    def _assert_dirichlet_param(self, param: _typing.Iterable) -> _np.ndarray:
+    def _assert_dirichlet_param(self, param: _typing.Iterable) -> FloatArray:
         """Check for valid dirichlet params.
 
         Dirichlet parameter vectors are iterables of positive floats. Their
@@ -279,7 +279,7 @@ class _HyperParams:
 class _InitParams:
     """Initialize PoissonHmm parameters.
     """
-    def __init__(self, X: _np.ndarray, hy_params: _HyperParams):
+    def __init__(self, X: IntArray, hy_params: _HyperParams):
         """
         """
 
@@ -290,7 +290,7 @@ class _InitParams:
 
 
     @staticmethod
-    def _init_lambda(hy_params: _HyperParams, X: _Array) -> _Array:
+    def _init_lambda(hy_params: _HyperParams, X: IntArray) -> FloatArray:
         if isinstance(hy_params.init_lambda_meth, _np.ndarray):
             return hy_params.init_lambda_meth.copy()
 
@@ -310,7 +310,7 @@ class _InitParams:
 
 
     @staticmethod
-    def _init_gamma(hy_params: _HyperParams) -> _Array:
+    def _init_gamma(hy_params: _HyperParams) -> FloatArray:
 
         if isinstance(hy_params.init_gamma_meth, _np.ndarray):
             return hy_params.init_gamma_meth.copy()
@@ -327,7 +327,7 @@ class _InitParams:
         raise ValueError("Unknown init method or init_gamma_meth is not an array.")
 
 
-    def _init_delta(self, hy_params: _HyperParams) -> _Array:
+    def _init_delta(self, hy_params: _HyperParams) -> FloatArray:
         if isinstance(hy_params.init_delta_meth, _np.ndarray):
             return hy_params.init_delta_meth.copy()
 
@@ -390,7 +390,7 @@ class Params:
         return self.__str__()
 
 
-def assert_poisson_input_data(X: _np.ndarray):
+def assert_poisson_input_data(X: NDArray):
     """Raise if X is not a array of integers.
 
     Args:

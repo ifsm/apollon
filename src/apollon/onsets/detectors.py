@@ -16,7 +16,7 @@ from .. signal import tools as _ast
 from .. signal.spectral import Stft
 from .. import fractal as _fractal
 from .. import segment as aseg
-from .. types import Array, IntArray, FloatArray, PathType
+from .. types import IntArray, FloatArray, PathType
 from . import models
 
 
@@ -62,7 +62,7 @@ class OnsetDetector(ABC):
     def _compute_odf(self, inp: FloatArray) -> pd.DataFrame:
         return NotImplemented
 
-    def detect(self, inp: Array) -> None:
+    def detect(self, inp: FloatArray) -> None:
         """Detect onsets."""
         self._odf = self._compute_odf(inp)
         self._peaks = self._ppkr.detect(self._odf['value'].to_numpy().squeeze())
@@ -137,7 +137,7 @@ class EntropyOnsetDetector(OnsetDetector):
         else:
             self._ppkr = FilterPeakPicker()
 
-    def _compute_odf(self, inp: Array) -> pd.DataFrame:
+    def _compute_odf(self, inp: FloatArray) -> pd.DataFrame:
         """Compute onset detection function as the information entropy of
         ``m_dims``-dimensional delay embedding per segment.
 
@@ -183,7 +183,7 @@ class FluxOnsetDetector(OnsetDetector):
         else:
             self._ppkr = FilterPeakPicker()
 
-    def _compute_odf(self, inp: Array) -> pd.DataFrame:
+    def _compute_odf(self, inp: FloatArray) -> pd.DataFrame:
         """Onset detection function based on spectral flux
 
         Args:

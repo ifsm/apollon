@@ -9,7 +9,7 @@ from typing import Any, Optional
 
 import numpy as np
 
-from .. types import Array, PathType
+from .. types import NDArray, PathType
 from . json import ArrayEncoder
 
 def generate_outpath(in_path: PathType,
@@ -138,7 +138,7 @@ def save_to_pickle(data: Any, path: PathType) -> None:
         pickle.dump(data, file)
 
 
-def save_to_npy(data: Array, path: PathType) -> None:
+def save_to_npy(data: NDArray, path: PathType) -> None:
     """Save an array to numpy binary format without using pickle.
 
     Args:
@@ -150,7 +150,7 @@ def save_to_npy(data: Array, path: PathType) -> None:
         np.save(file, data, allow_pickle=False)
 
 
-def load_from_npy(path: PathType) -> Array:
+def load_from_npy(path: PathType) -> NDArray:
     """Load data from numpy's binary format.
 
     Args:

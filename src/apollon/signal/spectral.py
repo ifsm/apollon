@@ -197,7 +197,7 @@ class SpectralTransform:
         """
         self._params = params
 
-    def transform(self, data: np.ndarray):
+    def transform(self, data: FloatArray):
         """Transform ``data`` to spectral domain"""
 
     @property

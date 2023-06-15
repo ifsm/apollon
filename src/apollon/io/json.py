@@ -9,7 +9,7 @@ from typing import Any, Union, Mapping
 import numpy as np
 
 from .. _defaults import SCHEMA_DIR_PATH
-from .. types import Array, PathType
+from .. types import NDArray, PathType
 
 
 def dump(obj: Any, path: PathType) -> None:
@@ -61,7 +61,7 @@ def validate_ndarray(obj: Mapping) -> bool:
     )
 
 
-def decode_ndarray(instance: Mapping) -> Array:
+def decode_ndarray(instance: Mapping) -> NDArray:
     """Decode numerical numpy arrays from a JSON data stream.
 
     Args:
@@ -75,7 +75,7 @@ def decode_ndarray(instance: Mapping) -> Array:
     raise TypeError("xx")
 
 
-def encode_ndarray(arr: Array) -> dict:
+def encode_ndarray(arr: NDArray) -> dict:
     """Transform an numpy array to a JSON-serializable dict.
 
     Array must have a numerical dtype. Datetime objects are currently
@@ -91,7 +91,7 @@ def encode_ndarray(arr: Array) -> dict:
             'data': arr.tolist()}
 
 
-def _ndarray_hook(inp: dict) -> Union[Array, dict]:
+def _ndarray_hook(inp: dict) -> Union[NDArray, dict]:
     try:
         return decode_ndarray(inp)
     except TypeError:
@@ -116,6 +116,6 @@ class ArrayEncoder(json.JSONEncoder):
         Returns:
             JSON-serializable dictionary.
         """
-        if isinstance(inp, Array):
+        if isinstance(inp, np.ndarray):
             return encode_ndarray(inp)
         return json.JSONEncoder.default(self, inp)

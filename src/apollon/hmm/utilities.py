@@ -7,9 +7,10 @@ from numpy import linalg as _linalg
 from scipy import stats as _stats
 
 from apollon import tools as _tools
+from apollon.types import FloatArray, NDArray
 
 
-def assert_poisson_input(X: _np.ndarray):
+def assert_poisson_input(X: NDArray):
     """Check wether data is a one-dimensional array of integer values.
     Otherwise raise an exception.
 
@@ -30,7 +31,7 @@ def assert_poisson_input(X: _np.ndarray):
         raise TypeError('Input vector must be array of type int64')
 
 
-def assert_st_matrix(arr: _np.ndarray):
+def assert_st_matrix(arr: NDArray):
     """Raise if `arr` is not a valid two-dimensional
     stochastic matrix.
 
@@ -54,7 +55,7 @@ def assert_st_matrix(arr: _np.ndarray):
                           'least one row does not equal 1.'))
 
 
-def assert_st_vector(vect: _np.ndarray):
+def assert_st_vector(vect: NDArray):
     """Raise if `vect` is not a valid one-dimensional
     stochastic vector.
 
@@ -94,7 +95,7 @@ class StateDependentMeansInitializer:
     methods = ('hist', 'linear', 'quantile', 'random')
 
     @staticmethod
-    def hist(data: _np.ndarray, m_states: int) -> _np.ndarray:
+    def hist(data: FloatArray, m_states: int) -> FloatArray:
         """Initialize state-dependent means based on a histogram of ``data``.
 
         The histogram is calculated with ten bins. The centers of the
@@ -113,7 +114,7 @@ class StateDependentMeansInitializer:
 
 
     @staticmethod
-    def linear(X: _np.ndarray, m: int) -> _np.ndarray:
+    def linear(X: FloatArray, m: int) -> FloatArray:
         """Initialize state-dependent means with `m` linearily spaced values
         from [min(data), max(data)].
 
@@ -128,7 +129,7 @@ class StateDependentMeansInitializer:
 
 
     @staticmethod
-    def quantile(X: _np.ndarray, m: int) -> _np.ndarray:
+    def quantile(X: FloatArray, m: int) -> FloatArray:
         """Initialize state-dependent means with `m` equally spaced
         percentiles from data.
 
@@ -153,7 +154,7 @@ class StateDependentMeansInitializer:
 
 
     @staticmethod
-    def random(X: _np.ndarray, m: int) -> _np.ndarray:
+    def random(X: FloatArray, m: int) -> FloatArray:
         """Initialize state-dependent means with random integers from
         [min(x), max(x)[.
 
@@ -173,7 +174,7 @@ class TpmInitializer:
     methods = ('dirichlet', 'softmax', 'uniform')
 
     @staticmethod
-    def dirichlet(m: int, alpha: tuple) -> _np.ndarray:
+    def dirichlet(m: int, alpha: tuple) -> FloatArray:
         """
         Args:
             m       (int)       Number of states.
@@ -201,7 +202,7 @@ class TpmInitializer:
 
 
     @staticmethod
-    def softmax(m: int) -> _np.ndarray:
+    def softmax(m: int) -> FloatArray:
         """Initialize `init_gamma` by applying softmax to a sample
         of random floats.
 
@@ -216,7 +217,7 @@ class TpmInitializer:
 
 
     @staticmethod
-    def uniform(m: int, diag: float) -> _np.ndarray:
+    def uniform(m: int, diag: float) -> FloatArray:
         """Fill the main diagonal of `init_gamma` with `diag`. Set the
            off-diagoanl elements to the proportion of the remaining
            probability mass and the remaining number of elements per row.
@@ -246,7 +247,7 @@ class StartDistributionInitializer:
     methods = ('dirichlet', 'softmax', 'stationary', 'uniform')
 
     @staticmethod
-    def dirichlet(m: int, alpha: tuple) -> _np.ndarray:
+    def dirichlet(m: int, alpha: tuple) -> FloatArray:
         """Initialize the initial distribution with a Dirichlet random sample.
 
         Args:
@@ -272,7 +273,7 @@ class StartDistributionInitializer:
 
 
     @staticmethod
-    def softmax(m: int) -> _np.ndarray:
+    def softmax(m: int) -> FloatArray:
         """Initialize the initial distribution by applying softmax to a sample
         of random floats.
 
@@ -287,7 +288,7 @@ class StartDistributionInitializer:
 
 
     @staticmethod
-    def stationary(gamma_: _np.ndarray) -> _np.ndarray:
+    def stationary(gamma_: FloatArray) -> FloatArray:
         """Initialize the initial distribution with the stationary
         distribution of `init_gamma`.
 
@@ -301,7 +302,7 @@ class StartDistributionInitializer:
 
 
     @staticmethod
-    def uniform(m: int) -> _np.ndarray:
+    def uniform(m: int) -> FloatArray:
         """Initialize the initial distribution uniformly.
         The initial values are set to the inverse of the number of states.
 
@@ -314,7 +315,7 @@ class StartDistributionInitializer:
         return _np.full(m, 1/m)
 
 
-def stationary_distr(tpm: _np.ndarray) -> _np.ndarray:
+def stationary_distr(tpm: FloatArray) -> FloatArray:
     """Calculate the stationary distribution of the transition probability
     matrix `tpm`.
 
@@ -329,7 +330,7 @@ def stationary_distr(tpm: _np.ndarray) -> _np.ndarray:
     return _linalg.solve((_np.eye(m) - tpm + 1).T, _np.ones(m))
 
 
-def get_off_diag(mat: _np.ndarray) -> _np.ndarray:
+def get_off_diag(mat: FloatArray) -> FloatArray:
     """Return the off-diagonal elements of square array.
 
     Args:
@@ -350,7 +351,7 @@ def get_off_diag(mat: _np.ndarray) -> _np.ndarray:
     return offitems
 
 
-def set_offdiag(mat: _np.ndarray, vals: _np.ndarray):
+def set_offdiag(mat: NDArray, vals: NDArray) -> NDArray:
     """Set all off-diagonal elements of square array to
     elements of `values`.
 
@@ -374,7 +375,7 @@ def set_offdiag(mat: _np.ndarray, vals: _np.ndarray):
     mat[~mask] = vals
 
 
-def logit_tpm(tpm: _np.ndarray) -> _np.ndarray:
+def logit_tpm(tpm: FloatArray) -> FloatArray:
     """Transform tpm to logit space for unconstrained optimization.
 
     Note: There must be no zeros on the main diagonal.
@@ -393,7 +394,7 @@ def logit_tpm(tpm: _np.ndarray) -> _np.ndarray:
     return lg_tpm
 
 
-def expit_gamma(lg_tpm: _np.ndarray, m: int) -> _np.ndarray:
+def expit_gamma(lg_tpm: FloatArray, m: int) -> FloatArray:
     """Transform `lg_tpm` back from logit space.
 
     Args:
@@ -416,7 +417,7 @@ def expit_gamma(lg_tpm: _np.ndarray, m: int) -> _np.ndarray:
     return tpm
 
 
-def sort_param(m_key: _np.ndarray, m_param: _np.ndarray):
+def sort_param(m_key: FloatArray, m_param: FloatArray) -> FloatArray:
     """Sort one- or two-dimensional parameter array according to a unsorted
     1-d array of distribution parameters.
 
