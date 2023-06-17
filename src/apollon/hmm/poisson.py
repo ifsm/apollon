@@ -60,9 +60,9 @@ class PoissonHmm:
                                          g_dirichlet, d_dirichlet, fill_diag)
 
         self.init_params = _InitParams(X, self.hyper_params)
-        self.params = None
-        self.quality = None
-        self.success = None
+        self.params: Params
+        self.quality: QualityMeasures
+        self.success: bool
 
     def fit(self, X: IntArray) -> bool:
         """Fit the initialized PoissonHMM to the input data set.
@@ -78,12 +78,13 @@ class PoissonHmm:
         res = _ca.hmm_poisson_fit_em(X, self.hyper_params.m_states,
                                      *self.init_params.__dict__.values(), 1000, 1e-5)
 
-        self.success = True if res[0] == 1 else False
+        self.success = res[0] == 1
         self.params = Params(*res[1:4])
         self.quality = QualityMeasures(*res[4:])
 
         if self.success is False:
             _warnings.warn('EM did not converge.', category=RuntimeWarning)
+        return self.success
 
 
     def score(self, X: IntArray):
@@ -149,7 +150,7 @@ class _HyperParams:
         return {attr: getattr(self, attr) for attr in self.__slots__}
 
 
-    def _assert_lambda(self, _lambda: _at.ArrayOrStr) -> FloatArray:
+    def _assert_lambda(self, _lambda: FloatArray | str) -> FloatArray | str:
         """Assure that `_lambda` fits requirements for Poisson state-dependent means.
 
         Args:
@@ -175,8 +176,8 @@ class _HyperParams:
         return _lambda
 
     @staticmethod
-    def _assert_gamma(_gamma: _at.ArrayOrStr, gamma_dp: _at.IterOrNone,
-                      diag_val: float) -> FloatArray:
+    def _assert_gamma(_gamma: FloatArray | str, gamma_dp: _at.IterOrNone,
+                      diag_val: float | None) -> FloatArray | str:
         """Assure that `_gamma` fits requirements for Poisson transition probability matirces.
 
         Args:
@@ -212,7 +213,7 @@ class _HyperParams:
         return _gamma
 
     @staticmethod
-    def _assert_delta(_delta: _at.ArrayOrStr, delta_dp: _at.IterOrNone) -> FloatArray:
+    def _assert_delta(_delta: FloatArray | str, delta_dp: _at.IterOrNone) -> FloatArray | str:
         """Assure that `_delta` fits requirements for Poisson initial distributions.
 
         Args:
@@ -244,7 +245,7 @@ class _HyperParams:
         return _delta
 
 
-    def _assert_dirichlet_param(self, param: _typing.Iterable) -> FloatArray:
+    def _assert_dirichlet_param(self, param: _typing.Iterable) -> None:
         """Check for valid dirichlet params.
 
         Dirichlet parameter vectors are iterables of positive floats. Their
@@ -256,7 +257,7 @@ class _HyperParams:
         Raises:
             ValueError
         """
-        param = _np.asarray(param)
+        param = _np.asarray(param).astype(_np.float64)
 
         if param.size != self.m_states:
             raise ValueError('Size of dirichlet parameter must equal number of states.')

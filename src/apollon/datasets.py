@@ -7,13 +7,13 @@ import os.path
 
 import numpy as _np
 
-from apollon.__init__ import APOLLON_PATH
+from apollon import APOLLON_PATH
 
 
-DataSet = _collections.namedtuple('EarthquakeData',
+EarthquakesData = _collections.namedtuple('EarthquakesData',
                                   ('data', 'N', 'description'))
 
-def load_earthquakes() -> DataSet:
+def load_earthquakes() -> EarthquakesData:
     """Load earthquakes dataset.
 
     Returns:
@@ -30,4 +30,4 @@ def load_earthquakes() -> DataSet:
     with open(eq_descr_path) as file:
         eq_descr = ''.join(row for row in file)
 
-    return DataSet(eq_data, len(eq_data), eq_descr)
+    return EarthquakesData(eq_data, len(eq_data), eq_descr)

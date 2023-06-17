@@ -1,13 +1,13 @@
 """
 HMM utility functions
 """
-
 import numpy as _np
+from numpy.typing import ArrayLike
 from numpy import linalg as _linalg
 from scipy import stats as _stats
 
 from apollon import tools as _tools
-from apollon.types import FloatArray, NDArray
+from apollon.types import FloatArray, IntArray, NDArray
 
 
 def assert_poisson_input(X: NDArray):
@@ -95,7 +95,7 @@ class StateDependentMeansInitializer:
     methods = ('hist', 'linear', 'quantile', 'random')
 
     @staticmethod
-    def hist(data: FloatArray, m_states: int) -> FloatArray:
+    def hist(data: IntArray, m_states: int) -> FloatArray:
         """Initialize state-dependent means based on a histogram of ``data``.
 
         The histogram is calculated with ten bins. The centers of the
@@ -114,7 +114,7 @@ class StateDependentMeansInitializer:
 
 
     @staticmethod
-    def linear(X: FloatArray, m: int) -> FloatArray:
+    def linear(X: IntArray, m: int) -> FloatArray:
         """Initialize state-dependent means with `m` linearily spaced values
         from [min(data), max(data)].
 
@@ -129,7 +129,7 @@ class StateDependentMeansInitializer:
 
 
     @staticmethod
-    def quantile(X: FloatArray, m: int) -> FloatArray:
+    def quantile(X: IntArray, m: int) -> FloatArray:
         """Initialize state-dependent means with `m` equally spaced
         percentiles from data.
 
@@ -148,13 +148,13 @@ class StateDependentMeansInitializer:
             return _np.percentile(X, [25, 75])
 
         if m == 1:
-            return _np.median(X)
+            return _np.atleast_1d(_np.median(X)).astype(_np.float64)
 
         raise ValueError('Wrong input: m={}. 1 < m <= 100.'.format(m))
 
 
     @staticmethod
-    def random(X: FloatArray, m: int) -> FloatArray:
+    def random(X: IntArray, m: int) -> FloatArray:
         """Initialize state-dependent means with random integers from
         [min(x), max(x)[.
 
@@ -174,7 +174,7 @@ class TpmInitializer:
     methods = ('dirichlet', 'softmax', 'uniform')
 
     @staticmethod
-    def dirichlet(m: int, alpha: tuple) -> FloatArray:
+    def dirichlet(m: int, alpha: float | ArrayLike) -> FloatArray:
         """
         Args:
             m       (int)       Number of states.
@@ -197,7 +197,8 @@ class TpmInitializer:
                               'Expected {}, got {}\n')
                              .format(m, alpha.size))
 
-        distr = (_stats.dirichlet(_np.roll(alpha, i)).rvs() for i in range(m))
+        distr = [_stats.dirichlet(_np.roll(alpha, i)).rvs()
+                 for i in range(m)]
         return _np.vstack(distr)
 
 
@@ -247,7 +248,7 @@ class StartDistributionInitializer:
     methods = ('dirichlet', 'softmax', 'stationary', 'uniform')
 
     @staticmethod
-    def dirichlet(m: int, alpha: tuple) -> FloatArray:
+    def dirichlet(m: int, alpha: float | ArrayLike) -> FloatArray:
         """Initialize the initial distribution with a Dirichlet random sample.
 
         Args:
@@ -373,6 +374,7 @@ def set_offdiag(mat: NDArray, vals: NDArray) -> NDArray:
 
     mask = _np.eye(s_x, dtype=bool)
     mat[~mask] = vals
+    return mat
 
 
 def logit_tpm(tpm: FloatArray) -> FloatArray:
