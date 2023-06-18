@@ -10,7 +10,7 @@ import numpy.typing as npt
 import soundfile as _sf
 
 from . signal import tools as _ast
-from . types import FloatArray, Int16Array, PathType
+from . types import FloatArray, Int16Array, NDArray, PathType
 
 
 class AudioFile:
@@ -43,17 +43,17 @@ class AudioFile:
     @property
     def n_channels(self) -> int:
         """Return number of channels."""
-        return self._file.channels
+        return int(self._file.channels)
 
     @property
     def n_frames(self) -> int:
         """Return number of frames."""
-        return self._file.frames
+        return int(self._file.frames)
 
     @property
     def fps(self) -> int:
         """Return sample rate."""
-        return self._file.samplerate
+        return int(self._file.samplerate)
 
     @property
     def path(self) -> str:
@@ -61,7 +61,7 @@ class AudioFile:
         return str(self._path)
 
     @property
-    def shape(self) -> tuple:
+    def shape(self) -> tuple[int, int]:
         """Return (n_frames, n_channels)."""
         return self.n_frames, self.n_channels
 
@@ -81,19 +81,19 @@ class AudioFile:
         ax1 = fig.add_subplot(1, 1, 1)
         ax1.plot(self.data)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "<{}, {} kHz, {:.3} s>" \
                .format(self._path.name, self.fps/1000, self.n_frames/self.fps)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.n_frames
 
     def read(self, n_frames: int | None = None, offset: int | None = None,
              norm: bool = False, mono: bool = True, dtype: str = 'float64'
-        ) -> npt.NDArray:
+        ) -> NDArray:
         # pylint: disable=too-many-arguments
         """Read from audio file.
 
@@ -126,12 +126,14 @@ class AudioFile:
             data = _ast.normalize(data)
         return data
 
-    def _read(self, n_frames: int, dtype: str = 'float64') -> npt.NDArray:
-        return self._file.read(n_frames, dtype=dtype, always_2d=True,
-                               fill_value=0)
+    def _read(self, n_frames: int, dtype: str = 'float64') -> NDArray:
+        out = np.empty((n_frames, self.n_channels), dtype=dtype)
+        self._file.read(n_frames, dtype=dtype, always_2d=True, fill_value=0,
+                        out=out)
+        return out
 
 
-def fti16(inp: npt.NDArray) -> Int16Array:
+def fti16(inp: FloatArray) -> Int16Array:
     """Cast audio loaded as float to int16.
 
     Args:
@@ -140,7 +142,8 @@ def fti16(inp: npt.NDArray) -> Int16Array:
     Returns:
         Array of dtype int16.
     """
-    return np.clip(np.floor(inp*2**15), -2**15, 2**15-1).astype('int16')
+    vals = np.clip(np.floor(inp*2**15), -2**15, 2**15-1)
+    return np.asarray(vals).astype('int16')
 
 
 def load_audio(path: PathType) -> AudioFile:

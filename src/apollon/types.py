@@ -11,7 +11,7 @@ from matplotlib import axes
 
 
 Array = np.ndarray
-NDArray = npt.NDArray
+NDArray = np.ndarray[Any, Any]
 IntArray = np.ndarray[Any, np.dtype[np.int_]]
 Int16Array = np.ndarray[Any, np.dtype[np.int16]]
 FloatArray = np.ndarray[Any, np.dtype[np.float64]]
