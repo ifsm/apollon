@@ -9,6 +9,7 @@ import numpy as np
 from pydantic import BaseModel
 
 from . signal.container import StftParams
+from . types import NDArray
 
 
 class LazySegmentParams(BaseModel):
@@ -34,7 +35,7 @@ class Segment:
     stop: int
     center: int
     n_frames: int
-    data: np.ndarray
+    data: NDArray
 
 
 class PeakPickingParams(BaseModel):

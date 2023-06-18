@@ -10,7 +10,7 @@ from numpy.lib.stride_tricks import as_strided
 from . audio import AudioFile
 from . models import SegmentationParams, Segment
 from . signal.tools import zero_padding as _zero_padding
-from . types import FloatArray, IntArray
+from . types import FloatArray, IntArray, NDArray
 
 
 class Segments:
@@ -53,7 +53,7 @@ class Segments:
         """Return initialized parameters"""
         return self._params
 
-    def center(self, seg_idx) -> int:
+    def center(self, seg_idx: int) -> int:
         """Return the center of segment ``seg_idx`` as frame number
         of the original signal.
 
@@ -67,7 +67,7 @@ class Segments:
             raise IndexError('Requested index out of range.')
         return seg_idx * self.step + self._offset
 
-    def bounds(self, seg_idx) -> Tuple[int, int]:
+    def bounds(self, seg_idx: int) -> Tuple[int, int]:
         """Return the frame numbers of the lower and upper bound
         of segment ``seg_idx``. Lower bound index is inclusive,
         upper bound index is exclusive.
@@ -84,7 +84,7 @@ class Segments:
         upb = lob + self._params.n_perseg
         return lob, upb
 
-    def get(self, seg_idx) -> Segment:
+    def get(self, seg_idx: int) -> Segment:
         """Retrun segment ``seg_idx`` wrapped in an ``Segment`` object.
 
         Args:
@@ -102,7 +102,7 @@ class Segments:
         for seg in self._segs.T:
             yield _np.expand_dims(seg, 1)
 
-    def __getitem__(self, key) -> FloatArray:
+    def __getitem__(self, key: int) -> FloatArray:
         out = self._segs[:, key]
         if out.ndim < 2:
             return _np.expand_dims(out, 1)
@@ -296,19 +296,19 @@ class LazySegments:
         return Segment(idx=seg_idx, start=seg_start, stop=seg_stop,
                        center=self.n_perseg, n_frames=self._snd.fps, data=data)
 
-    def __getitem__(self, key: int):
+    def __getitem__(self, key: int) -> Segment:
         return self.loc(key)
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[Segment, None, None]:
         for i in range(self.n_segs):
             yield self.__getitem__(i)
 
-    def iter_data(self):
+    def iter_data(self) -> Generator[NDArray, None, None]:
         """Iterate over segment data"""
         for _ in range(self.n_segs):
             yield self._snd.read(self.n_perseg)
 
-    def iter_bounds(self):
+    def iter_bounds(self) -> Generator[tuple[int, int], None, None]:
         """Iterate over segment boundaries"""
         for i in range(self.n_segs):
             yield self.compute_bounds(i)

@@ -6,7 +6,7 @@ import numpy as np
 from scipy import stats
 from scipy.spatial import distance
 
-from . types import FloatArray, NDArray
+from . types import FloatArray, floatarray, NDArray
 
 
 def delay_embedding(inp: NDArray, delay: int, m_dim: int) -> NDArray:
@@ -49,10 +49,10 @@ def embedding_dists(inp: NDArray, delay: int, m_dim: int,
         Flattened upper triangle of the distance matrix
     """
     emb_vects = delay_embedding(inp, delay, m_dim)
-    return distance.pdist(emb_vects, metric)
+    return floatarray(distance.pdist(emb_vects, metric))
 
 
-def embedding_entropy(emb: NDArray, n_bins: int) -> NDArray:
+def embedding_entropy(emb: NDArray, n_bins: int) -> FloatArray:
     """Compute the information entropy from an embedding
 
     Args:
@@ -63,7 +63,7 @@ def embedding_entropy(emb: NDArray, n_bins: int) -> NDArray:
         Entropy of the embedding
     """
     counts, edges = np.histogramdd(emb, bins=n_bins)
-    return stats.entropy(counts.flatten())
+    return floatarray(stats.entropy(counts.flatten()))
 
 
 def lorenz_system(state: tuple[float, float, float],
