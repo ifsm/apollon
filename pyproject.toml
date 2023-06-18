@@ -52,6 +52,7 @@ plugins = [
     "numpy.typing.mypy_plugin",
     "pydantic.mypy"
 ]
+strict = true
 
 [[tool.mypy.overrides]]
 module = "scipy.*"
