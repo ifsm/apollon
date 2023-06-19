@@ -144,7 +144,7 @@ def mel2freq(zfrq: FloatArray) -> FloatArray:
     return out
 
 
-def maxamp(sig: FloatArray) -> float:
+def maxamp(sig: FloatArray) -> FloatArray:
     """Maximal absolute elongation within the signal.
 
     Args:
@@ -154,10 +154,10 @@ def maxamp(sig: FloatArray) -> float:
         Maximal amplitude
     """
     val: FloatArray = np.absolute(sig, dtype=np.float64).max(axis=0)
-    return val.item()
+    return val
 
 
-def minamp(sig: FloatArray) -> float:
+def minamp(sig: FloatArray) -> FloatArray:
     """Minimal absolute elongation within the signal.
 
     Args:
@@ -167,7 +167,7 @@ def minamp(sig: FloatArray) -> float:
         Minimal amplitude
     """
     val: FloatArray = np.absolute(sig, dtype=np.float64).min(axis=0)
-    return val.item()
+    return val
 
 
 def noise(level: float, n_samples: int =9000) -> FloatArray:
