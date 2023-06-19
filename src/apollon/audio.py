@@ -127,7 +127,8 @@ class AudioFile:
         return data
 
     def _read(self, n_frames: int, dtype: str = 'float64') -> NDArray:
-        out = np.empty((n_frames, self.n_channels), dtype=dtype)
+        ffs = self.n_frames if n_frames == -1 else n_frames
+        out = np.empty((ffs, self.n_channels), dtype=dtype)
         self._file.read(n_frames, dtype=dtype, always_2d=True, fill_value=0,
                         out=out)
         return out
