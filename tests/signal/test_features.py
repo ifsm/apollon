@@ -11,7 +11,7 @@ from apollon.signal.spectral import Dft
 from apollon.signal.tools import sinusoid
 from apollon._defaults import SPL_REF
 
-finite_float_arrays = htn.arrays(np.float,
+finite_float_arrays = htn.arrays(float,
         htn.array_shapes(min_dims=2, max_dims=2, min_side=2),
         elements = st.floats(allow_nan=False, allow_infinity=False))
 
@@ -45,17 +45,17 @@ class TestEnergy(unittest.TestCase):
 
 
 class TestSpl(unittest.TestCase):
-    def setUp(self):
-        self.lower_bound = np.array([SPL_REF, SPL_REF*0.1])
-        self.range = np.array([SPL_REF+1e-6, 1.0])
 
-    def test_spl_lower_bound(self):
-        cnd = np.all(features.spl(self.lower_bound) == 0)
-        self.assertTrue(cnd)
+    def test_spl_at_1Pa(self) -> None:
+        sig = np.array([[1.0]], dtype=np.float64)
+        res = features.spl(sig)
+        self.assertGreater(res, 93.9)
+        self.assertLessEqual(res, 94.0)
 
-    def test_spl_range(self):
-        cnd = np.all(features.spl(self.range) > 0)
-        self.assertTrue(cnd)
+    def test_spl_at_threshold(self) -> None:
+        sig = np.array([[SPL_REF]], dtype=np.float64)
+        res = features.spl(sig)
+        self.assertEqual(res, 0.0)
 
 
 class TestSpectralCentroid(unittest.TestCase):

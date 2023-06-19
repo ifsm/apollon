@@ -9,19 +9,17 @@ from apollon.signal import tools
 
 
 class TestAmp(unittest.TestCase):
-    def setUp(self):
-        self.lower_bound = np.array([SPL_REF, SPL_REF*0.1])
-        self.range = np.array([SPL_REF+1e-6, 1.0])
+    def test_amp_at_1Pa(self):
+        sig = np.array([[1.0]], dtype=np.float64)
+        res = tools.amp(features.spl(sig))
+        self.assertTrue(np.allclose(res, sig))
+        self.assertEqual(res.dtype.name, "float64")
 
-    def test_amp_lower_bound(self):
-        res = tools.amp(features.spl(self.lower_bound))
-        cnd = np.array_equal(res, np.array([SPL_REF, SPL_REF]))
-        self.assertTrue(cnd)
-
-    def test_amp_range(self):
-        res = st.amp(feat.spl(self.range))
-        cnd = np.allclose(res, self.range)
-        self.assertTrue(cnd)
+    def test_amp_at_threshold(self):
+        sig = np.array([[SPL_REF]], dtype=np.float64)
+        res = tools.amp(features.spl(sig))
+        self.assertTrue(np.allclose(res, sig))
+        self.assertEqual(res.dtype.name, "float64")
 
 
 class TestSinusoid(unittest.TestCase):
@@ -32,7 +30,7 @@ class TestSinusoid(unittest.TestCase):
         self.multi_amp = (0.5, .3, .2)
 
     def test_returns_2darray_on_scalar_frq(self):
-        sig = sinusoid(self.single_frq)
+        sig = tools.sinusoid(self.single_frq)
         self.assertTrue(sig.ndim>1)
 
 
