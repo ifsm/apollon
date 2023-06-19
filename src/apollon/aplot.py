@@ -1,16 +1,18 @@
 """
 General plotting routines
 """
-from typing import Iterable, Tuple
+from typing import Any, Iterable, Tuple
 
 import matplotlib.pyplot as _plt
 import matplotlib.cm as _cm
 import numpy as _np
 from scipy import stats as _stats
 
+from . audio import AudioFile
 from . import _defaults
 from . import tools as _tools
-from . types import Axis, FloatArray, IntArray
+from . onsets.detectors import OnsetDetector
+from . types import Axis, FloatArray, IntArray, NDArray
 
 
 Limits = tuple[int, int] | None
@@ -60,7 +62,7 @@ def center_spines(axs: Axes,
 
 
 def _new_axis(spines: str = 'nice', fig: MplFig = None, sp_pos: SubplotPos = None,
-              axison: bool = True, **kwargs) -> FigAxis:
+              axison: bool = True, **kwargs: Any) -> FigAxis:
     """Create a new figure with a single axis and fancy spines.
 
     All ``kwargs`` are passed on to _plt.figure().
@@ -95,7 +97,7 @@ def _new_axis(spines: str = 'nice', fig: MplFig = None, sp_pos: SubplotPos = Non
     return fig, ax
 
 
-def _new_axis_3d(fig: MplFig = None, **kwargs) -> FigAxis:
+def _new_axis_3d(fig: MplFig = None, **kwargs: Any) -> FigAxis:
     """Create a 3d cartesian coordinate system.
 
     Args:
@@ -110,7 +112,7 @@ def _new_axis_3d(fig: MplFig = None, **kwargs) -> FigAxis:
     return fig, ax_3d
 
 
-def signal(values: FloatArray, fps: int | None = None, **kwargs) -> FigAxis:
+def signal(values: FloatArray, fps: int | None = None, **kwargs: Any) -> FigAxis:
     """Plot time series with constant sampling interval.
 
     Args:
@@ -137,7 +139,7 @@ def signal(values: FloatArray, fps: int | None = None, **kwargs) -> FigAxis:
     return fig, ax
 
 
-def fourplot(data: FloatArray, lag: int = 1) -> tuple:
+def fourplot(data: FloatArray, lag: int = 1) -> tuple[tuple[NDArray, NDArray], tuple[float, float, float]]:
     """Plot time series, lag-plot, histogram, and probability plot.
 
     Args:
@@ -151,7 +153,12 @@ def fourplot(data: FloatArray, lag: int = 1) -> tuple:
     # pylint: disable=invalid-name
 
     data = _tools.standardize(data)
-    (osm, osr), (slope, intercept, r) = _stats.probplot(data, dist='norm')
+    qar, lsf= _stats.probplot(data, dist='norm')
+    if lsf is None:
+        raise ValueError("Least-square fit failed")
+    (osm, osr) = _np.asanyarray(qar[0]), _np.asanyarray(qar[1])
+    (slope, intercept, r) = float(lsf[0]), float(lsf[1]), float(lsf[2])
+
     x_scale = _np.arange(_np.ceil(osm[0])-1, _np.ceil(osm[-1]+1))
     regr = slope * x_scale + intercept
 
@@ -185,11 +192,11 @@ def fourplot(data: FloatArray, lag: int = 1) -> tuple:
     ax4.set_xlabel('Qunatiles')
     ax4.set_ylabel('Sorted values')
 
-    return osm, osr, slope, intercept, r
+    return (osm, osr), (slope, intercept, r)
 
 
 def marginal_distr(train_data: FloatArray, state_means: FloatArray, stat_dist: FloatArray, bins: int = 20,
-                   legend: bool = True, **kwargs) -> FigAxis:
+                   legend: bool = True, **kwargs: Any) -> FigAxis:
     """Plot the marginal distribution of a PoissonHMM.
 
     Args:
@@ -203,7 +210,7 @@ def marginal_distr(train_data: FloatArray, state_means: FloatArray, stat_dist: F
 
     # pylint: disable=too-many-arguments, too-many-locals
 
-    _, ax = _new_axis(**kwargs)
+    fig, ax = _new_axis(**kwargs)
     _ = ax.hist(train_data, normed=True, alpha=.2, bins=bins)
 
     for i, (mean_val, stat_prob) in enumerate(zip(state_means, stat_dist)):
@@ -217,10 +224,10 @@ def marginal_distr(train_data: FloatArray, state_means: FloatArray, stat_dist: F
     if legend:
         # Place legend outside the axe
         _ = ax.legend(bbox_to_anchor=(1.05, 1), loc=2)
-    return ax
+    return fig, ax
 
 
-def onsets(sig, ons, **kwargs) -> FigAxis:
+def onsets(sig: AudioFile, osd: OnsetDetector, **kwargs: Any) -> FigAxis:
     """Indicate onsets on a time series.
 
     Args:
@@ -238,8 +245,8 @@ def onsets(sig, ons, **kwargs) -> FigAxis:
     return fig, ax
 
 
-def onset_decoding(odf: FloatArray, onset_index: IntArray, decoding: IntArray,
-                   cmap='viridis', **kwargs) -> FigAxis:
+def onset_decoding(osd: OnsetDetector, decoding: IntArray,
+                   cmap: str = 'viridis', **kwargs: Any) -> FigAxis:
     """Plot sig and and onsetes color coded regarding dec.
 
     Args:
@@ -251,8 +258,8 @@ def onset_decoding(odf: FloatArray, onset_index: IntArray, decoding: IntArray,
     Returns:
         Figure and axis
     """
-    fig, ax = onsets(odf, onset_index, **kwargs)
+    fig, ax = onsets(osd.odf.value.to_numpy(), osd, **kwargs)
     color_space = getattr(_cm, cmap)(_np.linspace(0, 1, decoding.max()+1))
-    ax.vlines(onset_index, -1, 1, linewidths=3, linestyle='dashed',
+    ax.vlines(osd.onsets, -1, 1, linewidths=3, linestyle='dashed',
               colors=color_space(decoding))
     return fig, ax
