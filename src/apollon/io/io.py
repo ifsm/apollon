@@ -5,12 +5,13 @@ General I/O functionallity
 from contextlib import contextmanager as _contextmanager
 import pathlib
 import pickle
-from typing import Any
+from typing import Any, Generator
 
 import numpy as np
 
 from .. types import NDArray, PathType
 from . json import ArrayEncoder
+from .. hmm.poisson import PoissonHmm
 
 def generate_outpath(in_path: PathType,
                      out_path: PathType | None,
@@ -45,10 +46,11 @@ def generate_outpath(in_path: PathType,
             raise ValueError(msg)
     return out_path
 
+
 class PoissonHmmEncoder(ArrayEncoder):
     """JSON encoder for PoissonHmm.
     """
-    def default(self, o):
+    def default(self, o: Any) -> Any:
         """Custon default JSON encoder. Properly handles <class 'PoissonHMM'>.
 
         Note: Falls back to ``ArrayEncoder`` for all types that do not implement
@@ -60,7 +62,7 @@ class PoissonHmmEncoder(ArrayEncoder):
         Returns:
             (dict)
         """
-        if isinstance(o, HMM):
+        if isinstance(o, PoissonHmm):
             items = {}
             for attr in o.__slots__:
                 try:
@@ -72,7 +74,7 @@ class PoissonHmmEncoder(ArrayEncoder):
 
 
 @_contextmanager
-def array_print_opt(*args, **kwargs):
+def array_print_opt(*args: Any, **kwargs: Any) -> Generator[None, None, None]:
     """Set print format for numpy arrays
 
     Thanks to unutbu:
@@ -162,5 +164,4 @@ def load_from_npy(path: PathType) -> NDArray:
     path = pathlib.Path(path)
     with path.open('rb') as file:
         data = np.load(file, allow_pickle=False)
-    return data
-
+    return np.asarray(data)

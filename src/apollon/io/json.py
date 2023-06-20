@@ -29,7 +29,7 @@ def dump(obj: Any, path: PathType) -> None:
         json.dump(obj, json_file, cls=ArrayEncoder)
 
 
-def load(path: PathType):
+def load(path: PathType) -> Any:
     """Load JSON file.
 
     Args:
@@ -43,7 +43,7 @@ def load(path: PathType):
         return json.load(fobj, object_hook=_ndarray_hook)
 
 
-def validate_ndarray(obj: Mapping) -> bool:
+def validate_ndarray(obj: dict[str, Any]) -> bool:
     """Check whether ``encoded_arr`` is a valid instance of
     ``ndarray.schema.json``.
 
@@ -61,7 +61,7 @@ def validate_ndarray(obj: Mapping) -> bool:
     )
 
 
-def decode_ndarray(instance: Mapping) -> NDArray:
+def decode_ndarray(instance: dict[str, Any]) -> NDArray:
     """Decode numerical numpy arrays from a JSON data stream.
 
     Args:
@@ -75,7 +75,7 @@ def decode_ndarray(instance: Mapping) -> NDArray:
     raise TypeError("xx")
 
 
-def encode_ndarray(arr: NDArray) -> dict:
+def encode_ndarray(arr: NDArray) -> dict[str, Any]:
     """Transform an numpy array to a JSON-serializable dict.
 
     Array must have a numerical dtype. Datetime objects are currently
@@ -91,7 +91,7 @@ def encode_ndarray(arr: NDArray) -> dict:
             'data': arr.tolist()}
 
 
-def _ndarray_hook(inp: dict) -> NDArray | dict:
+def _ndarray_hook(inp: dict[str, Any]) -> NDArray | dict[str, Any]:
     try:
         return decode_ndarray(inp)
     except TypeError:
