@@ -3,9 +3,11 @@ General plotting routines
 """
 from typing import Any, Iterable, Tuple
 
+from matplotlib.axes import Axes
 import matplotlib.pyplot as _plt
 import matplotlib.cm as _cm
 import numpy as _np
+import numpy.typing as npt
 from scipy import stats as _stats
 
 from . audio import AudioFile
@@ -19,11 +21,11 @@ Limits = tuple[int, int] | None
 MplFig = _plt.Figure | None
 FigSize = tuple[float, float]
 SubplotPos = tuple[int, int, int] | None
-Axes = Axis | Iterable[Axis]
+AxesArray = npt.NDArray[Axes]
 FigAxis = tuple[_plt.Figure, Axis]
 
 
-def outward_spines(axs: Axes, offset: float = 10.0) -> None:
+def outward_spines(axs: Axes | AxesArray, offset: float = 10.0) -> None:
     """Display only left and bottom spine and displace them.
 
     Args:
@@ -61,7 +63,7 @@ def center_spines(axs: Axes,
         ax.yaxis.set_ticks_position('left')
 
 
-def _new_axis(spines: str = 'nice', fig: MplFig = None, sp_pos: SubplotPos = None,
+def _new_axis(spines: str = 'nice', fig: _plt.Figure | None = None, sp_pos: SubplotPos = None,
               axison: bool = True, **kwargs: Any) -> FigAxis:
     """Create a new figure with a single axis and fancy spines.
 
@@ -97,7 +99,7 @@ def _new_axis(spines: str = 'nice', fig: MplFig = None, sp_pos: SubplotPos = Non
     return fig, ax
 
 
-def _new_axis_3d(fig: MplFig = None, **kwargs: Any) -> FigAxis:
+def _new_axis_3d(fig: _plt.Figure | None = None, **kwargs: Any) -> FigAxis:
     """Create a 3d cartesian coordinate system.
 
     Args:
@@ -230,22 +232,26 @@ def marginal_distr(train_data: FloatArray, state_means: FloatArray, stat_dist: F
 def onsets(sig: AudioFile, osd: OnsetDetector, **kwargs: Any) -> FigAxis:
     """Indicate onsets on a time series.
 
+    All keyword arguments are passed down to plt.figure.
+
     Args:
-        sig:    Input to onset detection.
-        ons:    Onset detector instance.
+        sig:    Input signal
+        osd:    Onset detector instance
 
     Returns:
-        Figure and axes.
+        Figure and axes
     """
     fig, ax = signal(sig.data, fps=None, **kwargs)
-    odf_domain = _np.linspace(ons.n_perseg // 2, ons.hop_size * ons.odf.size,
-                              ons.odf.size)
-    ax.plot(odf_domain, ons.odf/ons.odf.max(), alpha=.8, lw=2)
-    ax.vlines(ons.index(), -1, 1, colors='C1', lw=2, alpha=.8)
+    hop_size = osd.params.n_perseg - osd.params.n_overlap
+    odf_domain = _np.linspace(osd.params.n_perseg // 2,
+                              hop_size * osd.odf.index.size,
+                              osd.odf.index.size)
+    ax.plot(odf_domain, osd.odf.value/osd.odf.value.max(), alpha=.8, lw=2)
+    ax.vlines(osd.onsets.frame, -1, 1, colors='C1', lw=2, alpha=.8)
     return fig, ax
 
 
-def onset_decoding(osd: OnsetDetector, decoding: IntArray,
+def onset_decoding(sig: AudioFile, osd: OnsetDetector, decoding: IntArray,
                    cmap: str = 'viridis', **kwargs: Any) -> FigAxis:
     """Plot sig and and onsetes color coded regarding dec.
 
@@ -258,7 +264,7 @@ def onset_decoding(osd: OnsetDetector, decoding: IntArray,
     Returns:
         Figure and axis
     """
-    fig, ax = onsets(osd.odf.value.to_numpy(), osd, **kwargs)
+    fig, ax = onsets(sig, osd, **kwargs)
     color_space = getattr(_cm, cmap)(_np.linspace(0, 1, decoding.max()+1))
     ax.vlines(osd.onsets, -1, 1, linewidths=3, linestyle='dashed',
               colors=color_space(decoding))
