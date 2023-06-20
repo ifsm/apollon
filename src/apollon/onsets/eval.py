@@ -18,4 +18,6 @@ def evaluate_onsets(targets: FloatArray,
     Returns:
         Precison, recall, f-measure
     """
-    return _me.onset.evaluate(targets, estimates)
+    res: tuple[float, float, float]
+    res = _me.onset.evaluate(targets, estimates)
+    return res

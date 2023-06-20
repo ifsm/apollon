@@ -18,7 +18,7 @@ from .. import fractal as _fractal
 from .. import segment as aseg
 from .. types import IntArray, FloatArray, PathType
 from . import models
-
+from .. models import PeakPickingParams
 
 
 class OnsetDetector(ABC):
@@ -54,7 +54,7 @@ class OnsetDetector(ABC):
         return self._odf.iloc[self._peaks][['frame', 'time']]
 
     @property
-    def params(self):
+    def params(self) -> BaseModel:
         """Return initial parameters"""
         return self._params
 
@@ -65,7 +65,7 @@ class OnsetDetector(ABC):
     def detect(self, inp: FloatArray) -> None:
         """Detect onsets."""
         self._odf = self._compute_odf(inp)
-        self._peaks = self._ppkr.detect(self._odf['value'].to_numpy().squeeze())
+        self._peaks = self._ppkr.detect(self._odf['value'].to_numpy().squeeze()).astype(np.int64)
 
     def to_csv(self, path: PathType) -> None:
         """Serialize odf in csv format.
@@ -105,7 +105,7 @@ class EntropyOnsetDetector(OnsetDetector):
     """
     def __init__(self, fps: int, m_dims: int = 3, delay: int = 10,
                  bins: int = 10, n_perseg: int = 1024, n_overlap: int = 512,
-                 pp_params: dict | None = None) -> None:
+                 pp_params: PeakPickingParams | None = None) -> None:
         """Detect onsets as local maxima of information entropy of consecutive
         windows.
 
@@ -133,7 +133,7 @@ class EntropyOnsetDetector(OnsetDetector):
                                        n_perseg=n_perseg, n_overlap=n_overlap)
 
         if pp_params:
-            self._ppkr = FilterPeakPicker(**pp_params)
+            self._ppkr = FilterPeakPicker(**pp_params.dict())
         else:
             self._ppkr = FilterPeakPicker()
 
@@ -162,7 +162,7 @@ class FluxOnsetDetector(OnsetDetector):
     """Onset detection based on spectral flux """
 
     def __init__(self, fps: int, window: str = 'hamming', n_perseg: int = 1024,
-                 n_overlap: int = 512, pp_params: dict | None = None) -> None:
+                 n_overlap: int = 512, pp_params: PeakPickingParams | None = None) -> None:
         """Detect onsets as local maxima in the energy difference of
         consecutive stft time steps.
 
@@ -179,7 +179,7 @@ class FluxOnsetDetector(OnsetDetector):
                                            n_perseg=n_perseg,
                                            n_overlap=n_overlap)
         if pp_params:
-            self._ppkr = FilterPeakPicker(**pp_params)
+            self._ppkr = FilterPeakPicker(**pp_params.dict())
         else:
             self._ppkr = FilterPeakPicker()
 

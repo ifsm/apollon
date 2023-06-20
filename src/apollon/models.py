@@ -12,6 +12,13 @@ from . signal.container import StftParams
 from . types import NDArray
 
 
+class PeakPickingParams(BaseModel):
+    n_after: int
+    n_before: int
+    alpha: float
+    delta: float
+
+
 class LazySegmentParams(BaseModel):
     n_perseg: int
     n_overlap: int
