@@ -236,7 +236,7 @@ def sinusoid(frqs: Sequence[float] | float,
     if comps:
         return out
     total = np.empty((out.shape[0], 1))
-    np.sum(total, axis=1, keepdims=True, out=total)
+    np.sum(out, axis=1, keepdims=True, out=total)
     return total
 
 
