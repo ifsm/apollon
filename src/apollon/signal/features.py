@@ -8,7 +8,7 @@ from scipy.signal import hilbert as _hilbert
 from . import _features
 from . import tools as _sigtools
 from .. import segment as _segment
-from .. types import FloatArray, IntArray
+from .. types import FloatArray, floatarray, IntArray, NDArray
 from . import critical_bands as _cb
 from .. audio import fti16
 from .. import _defaults
@@ -51,16 +51,20 @@ def cdim(inp: FloatArray, delay: int, m_dim: int, n_bins: int = 1000,
 
     if mode == 'bader':
         cdim_func = _features.cdim_bader
-        if inp.dtype != 'int16':
-            inp = fti16(inp)
+        inp_: NDArray
+        if inp.dtype == 'int16':
+            inp_ = inp.copy()
+        else:
+            inp_ = fti16(inp)
+
     elif mode == 'blass':
         raise NotImplementedError
         # cdim_func = fractal.cdim
     else:
         raise ValueError(f'Unknown mode "{mode}". Expected either "bader", '
                          'or "blass"')
-    out = _np.zeros(inp.shape[1])
-    for i, seg in enumerate(inp.T):
+    out = _np.zeros(inp_.shape[1])
+    for i, seg in enumerate(inp_.T):
         out[i] = _np.nan_to_num(cdim_func(seg, delay, m_dim, n_bins,
                                           scaling_size))
     return _np.expand_dims(out, 0)
@@ -104,11 +108,11 @@ def correlogram(inp: FloatArray, wlen: int, n_delay: int,
     if inp.ndim != 2:
         raise ValueError('Input must be two-dimensional.')
 
-    out = _np.zeros((inp.shape[1], n_delay, inp.shape[0]-wlen-n_delay))
+    out = _np.zeros((inp.shape[1], n_delay, inp.shape[0]-wlen-n_delay), dtype=_np.float64)
     for i, seg in enumerate(inp.T):
         out[i] = _features.correlogram(seg, wlen, n_delay)
     if total is True:
-        return out.sum(axis=(1, 2)) / _np.prod(out.shape[1:])
+        return floatarray(out.sum(axis=(1, 2)) / _np.prod(out.shape[1:]))
     return out
 
 
@@ -123,7 +127,11 @@ def energy(sig: FloatArray) -> FloatArray:
     """
     if not _np.isfinite(sig).all():
         raise ValueError('Input ``sig`` contains NaNs or infinite values.')
-    return _np.sum(_np.square(_np.abs(sig)), axis=0, keepdims=True)
+    buff = _np.empty_like(sig, dtype=_np.float64)
+    _np.abs(sig, out=buff)
+    _np.square(buff, out=buff)
+    total = _np.empty((1, buff.shape[1]))
+    return _np.sum(buff, axis=0, dtype=_np.float64, out=total, keepdims=True)
 
 
 def frms(bins: FloatArray, n_sig: int, window: str | None = None) -> FloatArray:
@@ -157,7 +165,13 @@ def rms(sig: FloatArray) -> FloatArray:
     Returns:
         RMS of signal along first axis.
     """
-    return _np.sqrt(_np.mean(_np.square(_np.abs(sig)), axis=0, keepdims=True))
+    buff = _np.empty_like(sig, dtype=_np.float64)
+    out = _np.empty((sig.shape[1], 1), dtype=_np.float64)
+    _np.abs(sig, out=buff)
+    _np.square(buff, out=buff)
+    _np.mean(buff, axis=0, keepdims=True, out=out)
+    _np.sqrt(out, out=out)
+    return out
 
 
 def spectral_centroid(frqs: FloatArray, amps: FloatArray) -> FloatArray:
@@ -182,7 +196,8 @@ def spectral_centroid(frqs: FloatArray, amps: FloatArray) -> FloatArray:
         where :math:`f_i` is the center frequency, and :math:`p(i)` the
         relative amplitude of the :math:`i` th DFT bin.
     """
-    return _np.sum(frqs*_power_distr(amps), axis=0, keepdims=True)
+    out = _np.empty_like((1, amps.shape[1]), dtype=_np.float64)
+    return _np.sum(frqs*_power_distr(amps), axis=0, keepdims=True, out=out)
 
 
 def spectral_spread(frqs: FloatArray, bins: FloatArray,
@@ -213,8 +228,8 @@ def spectral_spread(frqs: FloatArray, bins: FloatArray,
     if centroids is None:
         centroids = spectral_centroid(frqs, bins)
     deviation = _np.power(frqs-centroids, 2)
-    return _np.sqrt(_np.sum(deviation*_power_distr(bins), axis=0,
-                            keepdims=True))
+    return floatarray(_np.sqrt(_np.sum(deviation*_power_distr(bins), axis=0,
+                            keepdims=True)))
 
 
 def spectral_skewness(frqs: FloatArray, bins: FloatArray,
@@ -291,14 +306,15 @@ def spectral_flux(inp: FloatArray, delta: float = 1.0,
         th spectrum :math:`X` of a spectrogram :math:`\boldsymbol X`.
     """
     inp = _np.atleast_2d(inp).astype('float64')
-    out = _np.maximum(_np.gradient(inp, delta, axis=-1), 0)
+    out = _np.empty_like(inp, dtype=_np.float64)
+    _np.maximum(_np.gradient(inp, delta, axis=-1), 0, out=out)
     if total:
-        return out.sum(axis=0, keepdims=True)
+        return floatarray(out.sum(axis=0, keepdims=True))
     return out
 
 
-def fspl(amps: FloatArray, total: bool | None = False, ref: float | None = None
-         ) -> FloatArray:
+def fspl(amps: FloatArray, n_sig: int, window: str | None = None,
+         ref: float | None = None) -> FloatArray:
     """Computes sound pressure level from spectrum.
 
     The values of ``amp`` are assumed to be magnitudes of DFT bins.
@@ -317,14 +333,13 @@ def fspl(amps: FloatArray, total: bool | None = False, ref: float | None = None
     if ref is None:
         ref = _defaults.SPL_REF
 
-    vals = _np.power(amps/ref, 2)
-    if total:
-        vals = vals.sum(axis=0, keepdims=True)
-    vals = _np.maximum(1.0, vals)
-    return 10.0*_np.log10(vals)
+    out = _np.empty((1, amps.shape[1]), dtype=_np.float64)
+    _np.log10(frms(amps, n_sig, window)/ref, out)
+    _np.multiply(20.0, out, out=out)
+    return out
 
 
-def fsplc(frqs: FloatArray, amps: FloatArray, ref: float | None = None
+def fsplc(frqs: FloatArray, amps: FloatArray, ref: float = _defaults.SPL_REF
           ) -> FloatArray:
     """Apply C-weighted to SPL.
 
@@ -338,7 +353,8 @@ def fsplc(frqs: FloatArray, amps: FloatArray, ref: float | None = None
     """
     return spl(_sigtools.c_weighting(frqs)*amps, ref)
 
-def spl(inp: FloatArray, ref=_defaults.SPL_REF):
+
+def spl(inp: FloatArray, ref: float = _defaults.SPL_REF) -> FloatArray:
     """Computes the average sound pressure level of time domain signal.
 
     Args:
@@ -349,7 +365,10 @@ def spl(inp: FloatArray, ref=_defaults.SPL_REF):
         Average sound pressure level.
     """
     level = rms(inp)/ref
-    return 20 * _np.log10(level, where=level>0)
+    _np.log10(level, where=level>0, out=level)
+    _np.multiply(level, 20.0, out=level)
+    return level
+
 
 def log_attack_time(inp: FloatArray, fps: int, ons_idx: IntArray,
                     wlen: float = 0.05) -> FloatArray:
@@ -372,7 +391,7 @@ def log_attack_time(inp: FloatArray, fps: int, ons_idx: IntArray,
     segs = _segment.by_onsets(inp, wlen, ons_idx)
     attack_time = _np.absolute(_hilbert(segs)).argmax(axis=1) / fps
     attack_time[attack_time == 0.0] = 1.0
-    return _np.log(attack_time)
+    return floatarray(_np.log(attack_time))
 
 
 def loudness(frqs: FloatArray, bins: FloatArray) -> FloatArray:
@@ -436,7 +455,8 @@ def _power_distr(bins: FloatArray) -> FloatArray:
     Returns:
         NxM array of spectral densities.
     """
-    total_power = _np.sum(bins, axis=0, keepdims=True)
+    total_power = _np.empty((1, bins.shape[1]), dtype=_np.float64)
+    _np.sum(bins, axis=0, keepdims=True, out=total_power)
     total_power[total_power == 0] = 1
     return bins / total_power
 
@@ -452,7 +472,11 @@ def _roughnes_kernel(frq_res: float, frq_max: float) -> FloatArray:
         Weight for each frequency below ``frq_max``.
     """
     frm = 33.5
-    bin_idx = int(_np.round(frq_max/frq_res))
+    bin_idx = int(round(frq_max/frq_res))
     norm = frm * _np.exp(-1)
     base = _np.abs(_np.arange(-bin_idx, bin_idx+1)) * frq_res
-    return base / norm * _np.exp(-base/frm)
+
+    out = _np.empty_like(base, dtype=_np.float64)
+    _np.divide(base, norm, out=out)
+    _np.multiply(out, _np.exp(-base/frm), out)
+    return out
