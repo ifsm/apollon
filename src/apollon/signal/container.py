@@ -3,12 +3,12 @@ from pydantic import BaseModel
 
 class DftParams(BaseModel):
     fps: int
-    window: str = 'hamming'
+    window: str | None = None
     n_fft: int | None = None
 
 
 class StftParams(DftParams):
-    n_perseg: int | None= None
+    n_perseg: int | None = None
     n_overlap: int | None = None
     extend: bool | None = None
     pad: bool | None = None

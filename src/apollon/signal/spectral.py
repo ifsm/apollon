@@ -208,7 +208,7 @@ class SpectralTransform:
 
 class Dft(SpectralTransform):
     """Discrete Fourier Transform"""
-    def __init__(self, fps: int, window: str,
+    def __init__(self, fps: int, window: str | None = None,
                  n_fft: int | None = None) -> None:
         """Create a new spectrum
 
@@ -227,8 +227,8 @@ class Dft(SpectralTransform):
 
 class Stft(SpectralTransform):
     """Short Time Fourier Transform of AudioFile."""
-    def __init__(self, fps: int, window: str,
-                 n_perseg: int, n_overlap: int,
+    def __init__(self, fps: int, n_perseg: int, n_overlap: int,
+                 window: str | None = None,
                  n_fft: int | None = None, extend: bool = True,
                  pad: bool = True) -> None:
         """Create a new spectrogram.
@@ -251,7 +251,7 @@ class Stft(SpectralTransform):
 
 class StftSegments(SpectralTransform):
     """Short Time Fourier Transform on already segmented audio"""
-    def __init__(self, fps: int, window: str,
+    def __init__(self, fps: int, window: str | None = None,
                  n_fft: int | None = None) -> None:
         """Create a new ``Spectrogram`` from ``Segments``
 
