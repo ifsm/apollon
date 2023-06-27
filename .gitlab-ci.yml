@@ -1,4 +1,0 @@
-build:
-  image: python:latest
-  script:
-    - pip install . 
