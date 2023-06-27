@@ -1,9 +1,5 @@
 from setuptools import setup, Extension
-from setuptools.config import read_configuration
 import numpy as np
-
-
-config = read_configuration('./setup.cfg')
 
 ext_features = Extension('_features',
     sources = ['src/apollon/signal/cdim.c',
