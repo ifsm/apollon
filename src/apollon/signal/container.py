@@ -5,6 +5,7 @@ class DftParams(BaseModel):
     fps: int
     window: str | None = None
     n_fft: int | None = None
+    norm: bool = True
 
 
 class StftParams(DftParams):

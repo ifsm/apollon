@@ -209,19 +209,20 @@ class SpectralTransform:
 class Dft(SpectralTransform):
     """Discrete Fourier Transform"""
     def __init__(self, fps: int, window: str | None = None,
-                 n_fft: int | None = None) -> None:
+                 n_fft: int | None = None, norm: bool = True) -> None:
         """Create a new spectrum
 
         Args:
             fps:     Sample rate
             window:  Name of window function
             n_fft:   FFT length
+            norm:    If ``True``, normalize the spectrum
         """
-        super().__init__(DftParams(fps=fps, window=window, n_fft=n_fft))
+        super().__init__(DftParams(fps=fps, window=window, n_fft=n_fft, norm=norm))
 
     def transform(self, data: FloatArray) -> Spectrum:
         """Transform ``data`` to spectral domain."""
-        bins = fft(data, self.params.window, self.params.n_fft)
+        bins = fft(data, self.params.window, self.params.n_fft, norm=self.params.norm)
         return Spectrum(self.params, bins, data.shape[0])
 
 
