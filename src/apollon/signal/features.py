@@ -134,28 +134,6 @@ def energy(sig: FloatArray) -> FloatArray:
     return _np.sum(buff, axis=0, dtype=_np.float64, out=total, keepdims=True)
 
 
-def frms(bins: FloatArray, n_sig: int, window: str | None = None) -> FloatArray:
-    """Root meann square of signal energy estimate in the spectral domain.
-
-    Args:
-        bins:    DFT bins.
-        n_sig:   Size of original signal.
-        window:  Window function applied to original signal.
-
-    Returns:
-        Estimate of signal energy along first axis.
-    """
-    vals = bins * n_sig
-    if n_sig % 2:
-        vals /= 2
-    else:
-        vals[:-1] /= 2
-    rms_ = _np.sqrt(2*energy(vals)) / n_sig
-    if window:
-        rms_ /= rms(getattr(_np, window)(n_sig))
-    return rms_
-
-
 def rms(sig: FloatArray) -> FloatArray:
     """Root mean square of time domain signal.
 
@@ -311,47 +289,6 @@ def spectral_flux(inp: FloatArray, delta: float = 1.0,
     if total:
         return floatarray(out.sum(axis=0, keepdims=True))
     return out
-
-
-def fspl(amps: FloatArray, n_sig: int, window: str | None = None,
-         ref: float | None = None) -> FloatArray:
-    """Computes sound pressure level from spectrum.
-
-    The values of ``amp`` are assumed to be magnitudes of DFT bins.
-
-    The reference pressure defaults to the human hearing treshold of 20 μPa.
-
-    Args:
-        amps:     Amplitude values.
-        total:    If True, returns the total spl over all values. In case
-                  ``amp`` is two-dimensional, the first axis is aggregated.
-        ref:      Custom reference value.
-
-    Returns:
-        Sound pressure level of ``amp``.
-    """
-    if ref is None:
-        ref = _defaults.SPL_REF
-
-    out = _np.empty((1, amps.shape[1]), dtype=_np.float64)
-    _np.log10(frms(amps, n_sig, window)/ref, out)
-    _np.multiply(20.0, out, out=out)
-    return out
-
-
-def fsplc(frqs: FloatArray, amps: FloatArray, ref: float = _defaults.SPL_REF
-          ) -> FloatArray:
-    """Apply C-weighted to SPL.
-
-    Args:
-        frqs:    Center frequency of DFT band.
-        amps:    Magnitude of DFT band.
-        ref:     Reference value for p_0.
-
-    Returns:
-        C-weighted sound pressure level.
-    """
-    return spl(_sigtools.c_weighting(frqs)*amps, ref)
 
 
 def spl(inp: FloatArray, ref: float = _defaults.SPL_REF) -> FloatArray:
