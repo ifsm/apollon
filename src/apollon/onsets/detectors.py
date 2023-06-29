@@ -174,7 +174,7 @@ class FluxOnsetDetector(OnsetDetector):
             pp_params:  Keyword args for peak picking
         """
         super().__init__()
-        self._stft = Stft(fps, window, n_perseg, n_overlap)
+        self._stft = Stft(fps, n_perseg, n_overlap, window)
         self._params = models.FluxODParams(fps=fps, window=window,
                                            n_perseg=n_perseg,
                                            n_overlap=n_overlap)
