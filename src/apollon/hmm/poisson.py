@@ -11,7 +11,7 @@ from chainsaddiction import poishmm
 
 import apollon
 from apollon import types as _at
-import apollon.io.io as aio
+from apollon.io.utils import array_print_opt
 from apollon.types import FloatArray, IntArray
 from apollon import tools as _tools
 import apollon.hmm.utilities as ahu
@@ -348,7 +348,7 @@ class _InitParams:
         raise ValueError("Unknown init method or init_delta_meth is not an array.")
 
     def __str__(self):
-        with aio.array_print_opt(precision=4, suppress=True):
+        with array_print_opt(precision=4, suppress=True):
             out = 'Initial Lambda:\n{}\n\nInitial Gamma:\n{}\n\nInitial Delta:\n{}\n'
             out = out.format(*self.__dict__.values())
         return out
@@ -381,8 +381,8 @@ class Params:
         self.gamma_ = gamma_
         self.delta_ = delta_
 
-    def __str__(self):
-        with aio.array_print_opt(precision=4, suppress=True):
+    def __str__(self) -> str:
+        with array_print_opt(precision=4, suppress=True):
             out = 'Lambda:\n{}\n\nGamma:\n{}\n\nDelta:\n{}\n'
             out = out.format(*self.__dict__.values())
         return out
