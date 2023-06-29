@@ -3,6 +3,7 @@ HMM with Poisson-distributed state dependent process
 """
 
 import typing as _typing
+from typing import Any
 import warnings as _warnings
 
 import numpy as _np
@@ -90,10 +91,11 @@ class PoissonHmm:
         return self.success
 
 
-    def score(self, X: IntArray):
+    def score(self, X: IntArray) -> float:
         """Compute the log-likelihood of `X` under this HMM."""
+        raise NotImplementedError
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
         """Returns HMM parameters as dict."""
         attrs = ('hyper_params', 'init_params', 'params',
                  'quality', 'success')
@@ -148,7 +150,7 @@ class _HyperParams:
         self.init_delta_meth = self._assert_delta(init_delta, delta_dp)
 
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
         """Return dict representation."""
         return {attr: getattr(self, attr) for attr in self.__slots__}
 
@@ -248,7 +250,7 @@ class _HyperParams:
         return _delta
 
 
-    def _assert_dirichlet_param(self, param: _typing.Iterable) -> None:
+    def _assert_dirichlet_param(self, param: _typing.Iterable[float]) -> None:
         """Check for valid dirichlet params.
 
         Dirichlet parameter vectors are iterables of positive floats. Their
@@ -269,10 +271,10 @@ class _HyperParams:
             raise ValueError('All elements of dirichlet parameter must be > 0.')
 
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(list(self.__dict__.items()))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         items = ('\t{}={!r}'.format(name, attr)
                  for name, attr in self.__dict__.items())
         return '_HyerParameters(\n{})'.format(',\n'.join(items))
@@ -283,7 +285,7 @@ class _HyperParams:
 class _InitParams:
     """Initialize PoissonHmm parameters.
     """
-    def __init__(self, X: IntArray, hy_params: _HyperParams):
+    def __init__(self, X: IntArray, hy_params: _HyperParams) -> None:
         """
         """
 
@@ -350,20 +352,20 @@ class _InitParams:
 
         raise ValueError("Unknown init method or init_delta_meth is not an array.")
 
-    def __str__(self):
+    def __str__(self) -> str:
         with array_print_opt(precision=4, suppress=True):
             out = 'Initial Lambda:\n{}\n\nInitial Gamma:\n{}\n\nInitial Delta:\n{}\n'
             out = out.format(*self.__dict__.values())
         return out
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
 
 class QualityMeasures:
     """
     """
-    def __init__(self, aic: float, bic: float, nllk: float, n_iter: int):
+    def __init__(self, aic: float, bic: float, nllk: float, n_iter: int) -> None:
         self.aic = aic
         self.bic = bic
         self.nllk = nllk
