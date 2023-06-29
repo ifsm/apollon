@@ -7,7 +7,7 @@ import warnings as _warnings
 
 import numpy as _np
 
-import chainsaddiction as _ca
+from chainsaddiction import poishmm
 
 import apollon
 from apollon import types as _at
