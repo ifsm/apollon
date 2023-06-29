@@ -2,20 +2,21 @@
 Generic Discrete Fourier Transforms for real input
 """
 
+from abc import ABC, abstractmethod
 from typing import Any
 
 import matplotlib.pyplot as _plt
 import numpy as np
-from pydantic import BaseModel
 import scipy.signal as _sps
 
 from .. segment import Segmentation, Segments
 from .. types import FloatArray, IntArray, ComplexArray
-from . container import DftParams, StftParams
-from apollon.signal import features
+from . container import DftParams, StftParams, SpectralTransformParams
+from .. signal import features
+from .. models import SegmentationParams
 
 
-def fft(sig, window: str | None = None, n_fft: int | None = None,
+def fft(sig: FloatArray, window: str | None = None, n_fft: int | None = None,
         norm: bool = True) -> ComplexArray:
     """Compute the Discrete Fouier Transform for real input
 
@@ -54,11 +55,11 @@ def fft(sig, window: str | None = None, n_fft: int | None = None,
     return bins
 
 
-class TransformResult:
+class TransformResult(ABC):
     """Base class for transformation results"""
-    def __init__(self, params: Any, bins: ComplexArray) -> None:
-        self._params = params
+    def __init__(self, bins: ComplexArray) -> None:
         self._bins = bins
+        self._params: SpectralTransformParams
         self._inp_size: int
 
     @property
@@ -72,9 +73,9 @@ class TransformResult:
         return self._bins
 
     @property
-    def d_frq(self) -> float | None:
+    def d_frq(self) -> float:
         """Retrun the frequency resolution"""
-        return self._params.fps / self._n_fft
+        return int(self._params.fps) / self._n_fft
 
     @property
     def frqs(self) -> FloatArray:
@@ -83,7 +84,8 @@ class TransformResult:
                                1.0/self._params.fps).reshape(-1, 1)
 
     @property
-    def params(self) -> DftParams:
+    @abstractmethod
+    def params(self) -> SpectralTransformParams:
         """Initial parameters"""
         return self._params
 
@@ -116,8 +118,8 @@ class TransformResult:
     def __abs__(self) -> FloatArray:
         return np.absolute(self._bins)
 
-    def __getitem__(self, key) -> ComplexArray:
-        return self._bins[key]
+    def __getitem__(self, key: int) -> ComplexArray:
+        return np.asarray(self._bins[key]).astype(np.complex_)
 
     def __len__(self) -> int:
         return self._bins.shape[0]
@@ -134,14 +136,19 @@ class Spectrum(TransformResult):
             params:    DFT parameters
             inp_size:  Length of original signal
         """
+        super().__init__(bins)
         if not isinstance(params, DftParams):
             raise TypeError('Expected type ``DftParams``')
         if not isinstance(bins, np.ndarray):
             raise TypeError('Expected numpy array')
-        super().__init__(params, bins)
+        self._params: DftParams = params
         self._inp_size = inp_size
 
-    def plot(self, fmt='-') -> None:
+    @property
+    def params(self) -> DftParams:
+        return self._params
+
+    def plot(self, fmt: str = '-') -> None:
         """Plot the spectrum"""
         _plt.plot(self.frqs, self.abs, fmt)
 
@@ -160,7 +167,8 @@ class Spectrogram(TransformResult):
             bins:      FFT bins
             inp_size:  Length time domain signal
         """
-        super().__init__(params, bins)
+        super().__init__(bins)
+        self._params: StftParams = params
         self._inp_size = inp_size
 
     @property
@@ -183,25 +191,31 @@ class Spectrogram(TransformResult):
         """Time axis"""
         return self.index / self._params.fps
 
+    @property
+    def params(self) -> StftParams:
+        return self._params
+
     def __repr__(self) -> str:
         return f'Spectrogram({self._params})'
 
 
-class SpectralTransform:
+class SpectralTransform(ABC):
     """Base class for spectral transforms"""
-    def __init__(self, params: BaseModel):
+    def __init__(self) -> None:
         """SpectralTransform base class
 
         Args:
             params:  Parameter object
         """
-        self._params = params
+        self._params: SpectralTransformParams
 
-    def transform(self, data: FloatArray):
+    @abstractmethod
+    def transform(self, data: Any) -> TransformResult:
         """Transform ``data`` to spectral domain"""
 
     @property
-    def params(self) -> BaseModel:
+    @abstractmethod
+    def params(self) -> SpectralTransformParams:
         """Return parameters"""
         return self._params
 
@@ -218,12 +232,17 @@ class Dft(SpectralTransform):
             n_fft:   FFT length
             norm:    If ``True``, normalize the spectrum
         """
-        super().__init__(DftParams(fps=fps, window=window, n_fft=n_fft, norm=norm))
+        super().__init__()
+        self._params: DftParams = DftParams(fps=fps, window=window, n_fft=n_fft, norm=norm)
 
     def transform(self, data: FloatArray) -> Spectrum:
         """Transform ``data`` to spectral domain."""
         bins = fft(data, self.params.window, self.params.n_fft, norm=self.params.norm)
         return Spectrum(self.params, bins, data.shape[0])
+
+    @property
+    def params(self) -> DftParams:
+        return self._params
 
 
 class Stft(SpectralTransform):
@@ -237,9 +256,10 @@ class Stft(SpectralTransform):
         Args:
             params:  Initial parameters
         """
-        super().__init__(StftParams(fps=fps, window=window, n_fft=n_fft,
+        super().__init__()
+        self._params: StftParams = StftParams(fps=fps, window=window, n_fft=n_fft,
                                     n_perseg=n_perseg, n_overlap=n_overlap,
-                                    extend=extend, pad=pad))
+                                    extend=extend, pad=pad)
         self._cutter = Segmentation(self.params.n_perseg, self.params.n_overlap,
                                     self.params.extend, self.params.pad)
 
@@ -249,10 +269,14 @@ class Stft(SpectralTransform):
         bins = fft(segs.data, self.params.window, self.params.n_fft)
         return Spectrogram(self._params, bins, segs.params.n_perseg)
 
+    @property
+    def params(self) -> StftParams:
+        return self._params
+
 
 class StftSegments(SpectralTransform):
     """Short Time Fourier Transform on already segmented audio"""
-    def __init__(self, fps: int, window: str | None = None,
+    def __init__(self, fps: int, seg_params: SegmentationParams, window: str | None = None,
                  n_fft: int | None = None) -> None:
         """Create a new ``Spectrogram`` from ``Segments``
 
@@ -261,11 +285,14 @@ class StftSegments(SpectralTransform):
             window:  Name of window function
             n_fft:   FFT length
         """
-        super().__init__(StftParams(fps, window, n_fft))
+        super().__init__()
+        self._params: StftParams = StftParams(fps=fps, window=window, n_fft=n_fft, **seg_params.dict())
 
     def transform(self, segments: Segments) -> Spectrogram:
         """Transform ``data`` to spectral domain"""
-        for key, val in segments.params.to_dict().items():
-            setattr(self.params, key, val)
-        bins = fft(segments.data, self.params.window, self.params.n_fft)
-        return Spectrogram(self.params, bins, segments.params.n_perseg)
+        bins = fft(segments.data, self._params.window, self._params.n_fft)
+        return Spectrogram(self._params, bins, segments._params.n_perseg)
+
+    @property
+    def params(self) -> StftParams:
+        return self._params
