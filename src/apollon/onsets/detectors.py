@@ -28,7 +28,7 @@ class OnsetDetector(ABC):
         self._odf: pd.DataFrame
         self._peaks: IntArray
         self._ppkr: FilterPeakPicker
-        self._params: BaseModel
+        self._params: models.OnsetDetectorParams
 
     @property
     def odf(self) -> pd.DataFrame:
@@ -54,7 +54,8 @@ class OnsetDetector(ABC):
         return self._odf.iloc[self._peaks][['frame', 'time']]
 
     @property
-    def params(self) -> BaseModel:
+    @abstractmethod
+    def params(self) -> models.OnsetDetectorParams:
         """Return initial parameters"""
         return self._params
 
@@ -128,7 +129,7 @@ class EntropyOnsetDetector(OnsetDetector):
         self.delay = delay
         self.cutter = aseg.Segmentation(n_perseg, n_overlap)
 
-        self._params = models.EntropyODParams(fps=fps, m_dim=m_dims,
+        self._params: models.EntropyODParams  = models.EntropyODParams(fps=fps, m_dim=m_dims,
                                        delay=delay, bins=bins,
                                        n_perseg=n_perseg, n_overlap=n_overlap)
 
@@ -157,6 +158,10 @@ class EntropyOnsetDetector(OnsetDetector):
             odf[i, 2] = np.maximum(odf[i, 2], odf[i, 2].mean())
         return pd.DataFrame(data=odf, columns=['frame', 'time', 'value'])
 
+    @property
+    def params(self) -> models.EntropyODParams:
+        return self._params
+
 
 class FluxOnsetDetector(OnsetDetector):
     """Onset detection based on spectral flux """
@@ -175,7 +180,7 @@ class FluxOnsetDetector(OnsetDetector):
         """
         super().__init__()
         self._stft = Stft(fps, n_perseg, n_overlap, window)
-        self._params = models.FluxODParams(fps=fps, window=window,
+        self._params: models.FluxODParams = models.FluxODParams(fps=fps, window=window,
                                            n_perseg=n_perseg,
                                            n_overlap=n_overlap)
         if pp_params:
@@ -199,3 +204,7 @@ class FluxOnsetDetector(OnsetDetector):
                'time': times,
                'value': np.maximum(flux.squeeze(), flux.mean())}
         return pd.DataFrame(odf)
+
+    @property
+    def params(self) -> models.FluxODParams:
+        return self._params

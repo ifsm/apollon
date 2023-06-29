@@ -1,17 +1,16 @@
 from pydantic import BaseModel
 
-
-class FluxODParams(BaseModel):
+class OnsetDetectorParams(BaseModel):
     fps: int
-    window: str
     n_perseg: int
     n_overlap: int
 
 
-class EntropyODParams(BaseModel):
-    fps: int
+class FluxODParams(OnsetDetectorParams):
+    window: str
+
+
+class EntropyODParams(OnsetDetectorParams):
     m_dim: int
     delay: int
     bins: int
-    n_perseg: int
-    n_overlap: int
