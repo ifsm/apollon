@@ -1,10 +1,11 @@
 from pydantic import BaseModel
 
-
-class DftParams(BaseModel):
+class SpectralTransformParams(BaseModel):
     fps: int
     window: str | None = None
     n_fft: int | None = None
+
+class DftParams(SpectralTransformParams):
     norm: bool = True
 
 
