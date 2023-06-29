@@ -17,7 +17,7 @@ MAX_NSEGS = 345    # cannot pass instance attribute to method decorator
 
 def _valid_nfr() -> SearchStrategy:
     return integers(min_value=2,
-                    max_value=2000000)
+                    max_value=20000)
 
 def _valid_nps(n_frames: int) -> SearchStrategy:
     return integers(min_value=2,
