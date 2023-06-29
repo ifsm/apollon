@@ -116,6 +116,9 @@ class _HyperParams:
     """Check and save model hyper parameters. Meant for compositional and internal only use.
     """
 
+    __slots__ = ["m_states", "gamma_dp", "delta_dp", "fill_diag", "init_lambda_meth",
+                 "init_gamma_meth", "init_delta_meth"]
+
     def __init__(self,
                  m_states: int,
                  init_lambda: _at.ArrayOrStr,
