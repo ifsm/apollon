@@ -7,10 +7,10 @@ from numpy import linalg as _linalg
 from scipy import stats as _stats
 
 from apollon import tools as _tools
-from apollon.types import FloatArray, IntArray, NDArray
+from apollon.types import FloatArray, floatarray, IntArray, NDArray
 
 
-def assert_poisson_input(X: NDArray):
+def assert_poisson_input(X: NDArray) -> None:
     """Check wether data is a one-dimensional array of integer values.
     Otherwise raise an exception.
 
@@ -31,7 +31,7 @@ def assert_poisson_input(X: NDArray):
         raise TypeError('Input vector must be array of type int64')
 
 
-def assert_st_matrix(arr: NDArray):
+def assert_st_matrix(arr: NDArray) -> None:
     """Raise if `arr` is not a valid two-dimensional
     stochastic matrix.
 
@@ -55,7 +55,7 @@ def assert_st_matrix(arr: NDArray):
                           'least one row does not equal 1.'))
 
 
-def assert_st_vector(vect: NDArray):
+def assert_st_vector(vect: NDArray) -> None:
     """Raise if `vect` is not a valid one-dimensional
     stochastic vector.
 
@@ -72,7 +72,7 @@ def assert_st_vector(vect: NDArray):
         raise ValueError('Vector is not stochastic, i. e., sum(vect) != 1.')
 
 
-def assert_st_val(val: float):
+def assert_st_val(val: float) -> None:
     """Check wheter `val` is suitable as element of stochastic matrix.
 
     Args:
@@ -125,7 +125,7 @@ class StateDependentMeansInitializer:
             Returns:
                 (np.ndarray)    Initial state-dependent means of shape (m, ).
         """
-        return _np.linspace(X.min(), X.max(), m)
+        return _np.linspace(X.min(), X.max(), m, dtype=_np.float64)
 
 
     @staticmethod
@@ -148,7 +148,7 @@ class StateDependentMeansInitializer:
             return _np.percentile(X, [25, 75])
 
         if m == 1:
-            return _np.atleast_1d(_np.median(X)).astype(_np.float64)
+            return _np.asarray(_np.atleast_1d(_np.median(X))).astype(_np.float64)
 
         raise ValueError('Wrong input: m={}. 1 < m <= 100.'.format(m))
 
@@ -213,8 +213,10 @@ class TpmInitializer:
         Returns:
             (np.ndarray)    Transition probability matrix of shape (m, m).
         """
-        init_gamma = _np.random.rand(m, m)
-        return _np.exp(init_gamma) / _np.exp(init_gamma).sum(axis=1, keepdims=True)
+        gamma: FloatArray = _np.random.rand(m, m)
+        _np.exp(gamma, out=gamma)
+        _np.divide(gamma, gamma.sum(axis=1, keepdims=True), out=gamma)
+        return gamma
 
 
     @staticmethod
@@ -270,7 +272,7 @@ class StartDistributionInitializer:
                               'Expected {}, got {}\n')
                              .format(m, alpha.size))
 
-        return _stats.dirichlet(alpha).rvs()
+        return floatarray(_stats.dirichlet(alpha).rvs())
 
 
     @staticmethod
@@ -284,8 +286,10 @@ class StartDistributionInitializer:
         Returns:
             (np.ndarray)    Stochastic vector of shape (m, ).
         """
-        rnd_vals = _np.random.rand(m)
-        return _np.exp(rnd_vals) / _np.exp(rnd_vals).sum()
+        rnd_vals: FloatArray = _np.random.rand(m)
+        _np.exp(rnd_vals, out=rnd_vals)
+        _np.divide(rnd_vals, rnd_vals.sum(), out=rnd_vals)
+        return rnd_vals
 
 
     @staticmethod
