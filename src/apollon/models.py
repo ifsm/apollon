@@ -13,8 +13,8 @@ from . types import NDArray
 
 
 class PeakPickingParams(BaseModel):
-    n_after: int
     n_before: int
+    n_after: int
     alpha: float
     delta: float
 
@@ -45,11 +45,6 @@ class Segment:
     data: NDArray
 
 
-class PeakPickingParams(BaseModel):
-    n_before: int
-    n_after: int
-    alpha: float
-    delta: float
 
 
 class FluxOnsetDetectorParams(BaseModel):
