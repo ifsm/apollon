@@ -75,12 +75,15 @@ class PoissonHmm:
         """
         assert_poisson_input_data(X)
 
-        res = _ca.hmm_poisson_fit_em(X, self.hyper_params.m_states,
-                                     *self.init_params.__dict__.values(), 1000, 1e-5)
+        res = poishmm.fit(X.size, self.hyper_params.m_states, 1000, 1e-5,
+                          self.init_params.lambda_, self.init_params.gamma_,
+                          self.init_params.delta_, X)
 
-        self.success = res[0] == 1
-        self.params = Params(*res[1:4])
-        self.quality = QualityMeasures(*res[4:])
+        self.success = not res.err
+        self.params = Params(res.lambda_.astype(_np.float64),
+                             res.gamma_.astype(_np.float64),
+                             res.delta_.astype(_np.float64))
+        self.quality = QualityMeasures(res.aic, res.bic, res.llk, res.n_iter)
 
         if self.success is False:
             _warnings.warn('EM did not converge.', category=RuntimeWarning)
