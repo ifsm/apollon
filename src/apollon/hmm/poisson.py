@@ -360,16 +360,16 @@ class _InitParams:
 class QualityMeasures:
     """
     """
-    def __init__(self, aic, bic, nll, n_iter):
+    def __init__(self, aic: float, bic: float, nllk: float, n_iter: int):
         self.aic = aic
         self.bic = bic
-        self.nll = nll
+        self.nllk = nllk
         self.n_iter = n_iter
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'AIC = {}\nBIC = {}\nNLL = {}\nn_iter = {}'.format(*self.__dict__.values())
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
 
@@ -387,7 +387,7 @@ class Params:
             out = out.format(*self.__dict__.values())
         return out
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
 
