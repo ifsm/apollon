@@ -31,8 +31,8 @@ class LazySegmentParams(BaseModel):
 class SegmentationParams(BaseModel):
     n_perseg: int = 512
     n_overlap: int = 256
-    extend: int | bool = True
-    pad: int | bool = True
+    extend: bool = True
+    pad: bool = True
 
 
 @dataclass
