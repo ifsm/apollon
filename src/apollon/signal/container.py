@@ -9,10 +9,10 @@ class DftParams(BaseModel):
 
 
 class StftParams(DftParams):
-    n_perseg: int | None = None
-    n_overlap: int | None = None
-    extend: bool | None = None
-    pad: bool | None = None
+    n_perseg: int
+    n_overlap: int
+    extend: bool
+    pad: bool
 
 
 class CorrDimParams(BaseModel):
