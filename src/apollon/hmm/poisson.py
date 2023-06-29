@@ -12,7 +12,7 @@ from chainsaddiction import poishmm
 import apollon
 from apollon import types as _at
 import apollon.io.io as aio
-from apollon.types import Array as FloatArray, IntArray, NDArray
+from apollon.types import FloatArray, IntArray
 from apollon import tools as _tools
 import apollon.hmm.utilities as ahu
 
@@ -376,7 +376,7 @@ class QualityMeasures:
 class Params:
     """Easy access to estimated HMM parameters and quality measures.
     """
-    def __init__(self, lambda_, gamma_, delta_):
+    def __init__(self, lambda_: FloatArray, gamma_: FloatArray, delta_: FloatArray) -> None:
         self.lambda_ = lambda_
         self.gamma_ = gamma_
         self.delta_ = delta_
@@ -391,7 +391,7 @@ class Params:
         return self.__str__()
 
 
-def assert_poisson_input_data(X: NDArray):
+def assert_poisson_input_data(X: IntArray) -> None:
     """Raise if X is not a array of integers.
 
     Args:
