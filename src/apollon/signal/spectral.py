@@ -9,9 +9,9 @@ import matplotlib.pyplot as _plt
 import numpy as np
 import scipy.signal as _sps
 
+from . models import DftParams, StftParams, SpectralTransformParams
 from .. segment import Segmentation, Segments
 from .. types import FloatArray, IntArray, ComplexArray
-from . container import DftParams, StftParams, SpectralTransformParams
 from .. signal import features
 from .. models import SegmentationParams
 
