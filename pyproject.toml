@@ -75,4 +75,4 @@ ignore_missing_imports = true
 good-names = ["_", "i", "j", "ax"]
 
 [tool.pylint.'MESSAGES CONTROL']
-extension-pkg-whitelist = "pydantic"
+extension-pkg-allow-list = "pydantic"
