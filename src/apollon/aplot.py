@@ -14,7 +14,7 @@ from . audio import AudioFile
 from . import _defaults
 from . import tools as _tools
 from . onsets.detectors import OnsetDetector
-from . types import Axis, FloatArray, IntArray, NDArray
+from . types import FloatArray, IntArray, NDArray
 
 
 Limits = tuple[int, int] | None
@@ -22,7 +22,7 @@ MplFig = _plt.Figure | None
 FigSize = tuple[float, float]
 SubplotPos = tuple[int, int, int] | None
 AxesArray = npt.NDArray[Axes]
-FigAxis = tuple[_plt.Figure, Axis]
+FigAxis = tuple[_plt.Figure, _plt.Axes]
 
 
 def outward_spines(axs: Axes | AxesArray, offset: float = 10.0) -> None:
