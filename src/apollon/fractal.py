@@ -62,7 +62,7 @@ def embedding_entropy(emb: NDArray, n_bins: int) -> FloatArray:
     Returns:
         Entropy of the embedding
     """
-    counts, edges = np.histogramdd(emb, bins=n_bins)
+    counts, _ = np.histogramdd(emb, bins=n_bins)
     return floatarray(stats.entropy(counts.flatten()))
 
 
