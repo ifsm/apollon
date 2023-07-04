@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel
 
-from . signal.container import StftParams
+from . signal.models import StftParams
 from . types import NDArray
 
 
