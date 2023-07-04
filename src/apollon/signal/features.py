@@ -44,7 +44,8 @@ def cdim(inp: FloatArray, delay: int, m_dim: int, n_bins: int = 1000,
     Raises:
         ValueError
 
-    .. [Grassberger1983] P. Grassberger, and I. Procaccia, "Measuring the strangeness of strange attractors,"  *Physica 9d*, pp. 189-208.
+    .. [Grassberger1983] P. Grassberger, and I. Procaccia,
+       "Measuring the strangeness of strange attractors,"  *Physica 9d*, pp. 189-208.
     """
     if inp.ndim != 2:
         raise ValueError('Input array must be two-dimensional.')
@@ -99,7 +100,8 @@ def correlogram(inp: FloatArray, wlen: int, n_delay: int,
         Two-dimensional array in which each column is an auto-correlation
         function.
 
-    .. [Granqvist2003] S. Granqvist, B. Hammarberg, "The correlogram: a visual display of periodicity," *JASA,* 114, pp. 2934.
+    .. [Granqvist2003] S. Granqvist, B. Hammarberg, 
+       "The correlogram: a visual display of periodicity," *JASA,* 114, pp. 2934.
     """
     if not isinstance(inp, _np.ndarray):
         raise TypeError(f'Argument ``inp`` is of type {type(inp)}. It has '

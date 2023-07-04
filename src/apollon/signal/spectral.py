@@ -287,7 +287,8 @@ class StftSegments(SpectralTransform):
             n_fft:   FFT length
         """
         super().__init__()
-        self._params: StftParams = StftParams(fps=fps, window=window, n_fft=n_fft, **seg_params.dict())
+        self._params: StftParams = StftParams(fps=fps, window=window,
+                                              n_fft=n_fft, **seg_params.dict())
 
     def transform(self, segments: Segments) -> Spectrogram:
         """Transform ``data`` to spectral domain"""

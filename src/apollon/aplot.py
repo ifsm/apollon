@@ -141,7 +141,8 @@ def signal(values: FloatArray, fps: int | None = None, **kwargs: Any) -> FigAxis
     return fig, ax
 
 
-def fourplot(data: FloatArray, lag: int = 1) -> tuple[tuple[NDArray, NDArray], tuple[float, float, float]]:
+def fourplot(data: FloatArray, lag: int = 1
+             ) -> tuple[tuple[NDArray, NDArray], tuple[float, float, float]]:
     """Plot time series, lag-plot, histogram, and probability plot.
 
     Args:
@@ -197,7 +198,8 @@ def fourplot(data: FloatArray, lag: int = 1) -> tuple[tuple[NDArray, NDArray], t
     return (osm, osr), (slope, intercept, r)
 
 
-def marginal_distr(train_data: FloatArray, state_means: FloatArray, stat_dist: FloatArray, bins: int = 20,
+def marginal_distr(train_data: FloatArray, state_means: FloatArray,
+                   stat_dist: FloatArray, bins: int = 20,
                    legend: bool = True, **kwargs: Any) -> FigAxis:
     """Plot the marginal distribution of a PoissonHMM.
 
