@@ -27,7 +27,7 @@ def load_earthquakes() -> EarthquakesData:
 
     eq_data = _np.fromfile(eq_data_path, dtype='int64', sep=',')
 
-    with open(eq_descr_path) as file:
+    with open(eq_descr_path, encoding='utf-8') as file:
         eq_descr = ''.join(row for row in file)
 
     return EarthquakesData(eq_data, len(eq_data), eq_descr)

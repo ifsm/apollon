@@ -24,7 +24,7 @@ def dump(obj: Any, path: PathType) -> None:
         path:  Output file path.
     """
     path = pathlib.Path(path)
-    with path.open('w') as json_file:
+    with path.open('w', encoding='utf-8') as json_file:
         json.dump(obj, json_file, cls=ArrayEncoder)
 
 
@@ -38,7 +38,7 @@ def load(path: PathType) -> Any:
         JSON file as FeatureSpace.
     """
     path = pathlib.Path(path)
-    with path.open('r') as fobj:
+    with path.open('r', encoding='utf-8') as fobj:
         return json.load(fobj, object_hook=_ndarray_hook)
 
 
