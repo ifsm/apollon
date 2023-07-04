@@ -67,38 +67,35 @@ def embedding_entropy(emb: NDArray, n_bins: int) -> FloatArray:
 
 
 def lorenz_system(state: tuple[float, float, float],
-                  sigma: float, rho: float, beta: float) -> FloatArray:
+                  params: tuple[float, float, float]
+                  ) -> FloatArray:
     """Compute the derivatives of the Lorenz system of coupled
        differential equations
 
     Args:
         state:  Current system state
-        sigma:  System parameter
-        rho:    System parameter
-        beta:   System parameter
+        params: Szstem parameters sigma, rho, beta
 
     Return:
         xyz_dot    Derivatives of current system state
     """
     # pylint: disable=invalid-name
     x, y, z = state
+    sigma, rho, beta = params
     xyz_dot = np.array([sigma * (y - x),
                         x * (rho - z) - y,
                         x * y - beta * z], dtype=np.float64)
     return xyz_dot
 
 
-def lorenz_attractor(n_samples: int, sigma: float = 10.0, rho: float = 28.0,
-                     beta: float = 8/3,
+def lorenz_attractor(n_samples: int, params: tuple[float, float, float] = (10.0, 28.0, 8/3),
                      init_state: tuple[float, float, float] = (0., 1., 1.05),
                      diff_t: float = 0.01) -> FloatArray:
     """Simulate the Lorenz system
 
     Args:
         n_samples:   Number of data points to generate
-        sigma:       System parameter
-        rho:         System parameter
-        beta:        System parameter
+        params:      System parameters sigma, rho, beta
         init_state:  Initial System state
         dt:          Positive step size
 
@@ -115,7 +112,7 @@ def lorenz_attractor(n_samples: int, sigma: float = 10.0, rho: float = 28.0,
     xyz[0] = init_state
 
     for i in range(n_samples-1):
-        xyz_prime = lorenz_system(xyz[i], sigma, rho, beta)
+        xyz_prime = lorenz_system(xyz[i], params)
         xyz[i+1] = xyz[i] + xyz_prime * diff_t
 
     return xyz

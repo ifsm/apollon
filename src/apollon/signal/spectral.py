@@ -251,6 +251,7 @@ class Stft(SpectralTransform):
                  window: str | None = None,
                  n_fft: int | None = None, extend: bool = True,
                  pad: bool = True) -> None:
+        # pylint: disable = R0913
         """Create a new spectrogram.
 
         Args:

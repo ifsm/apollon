@@ -200,6 +200,7 @@ def sinusoid(frqs: Sequence[float] | float,
              amps: Sequence[float] | float = 1,
              fps: int = 9000, length: float = 1.0,
              noise: float | None = None, comps: bool = False) -> FloatArray:
+    # pylint: disable = R0913
     """Generate sinusoidal signal.
 
     Args:

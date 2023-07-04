@@ -106,6 +106,7 @@ class EntropyOnsetDetector(OnsetDetector):
     def __init__(self, fps: int, m_dims: int = 3, delay: int = 10,
                  bins: int = 10, n_perseg: int = 1024, n_overlap: int = 512,
                  pp_params: PeakPickingParams | None = None) -> None:
+        # pylint: disable = R0913
         """Detect onsets as local maxima of information entropy of consecutive
         windows.
 
@@ -167,6 +168,7 @@ class FluxOnsetDetector(OnsetDetector):
 
     def __init__(self, fps: int, window: str = 'hamming', n_perseg: int = 1024,
                  n_overlap: int = 512, pp_params: PeakPickingParams | None = None) -> None:
+        # pylint: disable = R0913
         """Detect onsets as local maxima in the energy difference of
         consecutive stft time steps.
 
