@@ -27,7 +27,7 @@ class FilterPeakPicker:
         Return:
             Peak indices.
         """
-        g = [0]
+        weight = [0]
         out = []
 
         for n, val in enumerate(inp):
@@ -38,9 +38,9 @@ class FilterPeakPicker:
             cond1 = np.all(val >= window)
             cond2 = val >= (np.mean(window) + self.delta)
 
-            foo = max(val, self.alpha*g[n] + (1-self.alpha)*val)
-            g.append(foo)
-            cond3 = val >= foo
+            tol = max(val, self.alpha*weight[n] + (1-self.alpha)*val)
+            weight.append(tol)
+            cond3 = val >= tol
 
             if cond1 and cond2 and cond3:
                 out.append(n)

@@ -80,6 +80,7 @@ def lorenz_system(state: tuple[float, float, float],
     Return:
         xyz_dot    Derivatives of current system state
     """
+    # pylint: disable=invalid-name
     x, y, z = state
     xyz_dot = np.array([sigma * (y - x),
                         x * (rho - z) - y,
@@ -90,7 +91,7 @@ def lorenz_system(state: tuple[float, float, float],
 def lorenz_attractor(n_samples: int, sigma: float = 10.0, rho: float = 28.0,
                      beta: float = 8/3,
                      init_state: tuple[float, float, float] = (0., 1., 1.05),
-                     dt: float = 0.01) -> FloatArray:
+                     diff_t: float = 0.01) -> FloatArray:
     """Simulate the Lorenz system
 
     Args:
@@ -107,14 +108,14 @@ def lorenz_attractor(n_samples: int, sigma: float = 10.0, rho: float = 28.0,
     if n_samples < 0:
         raise ValueError("``n_samples`` must be positive integer")
 
-    if dt < 0:
-        raise ValueError("``dt`` must be positive float")
+    if diff_t < 0:
+        raise ValueError("``diff_t`` must be positive float")
 
     xyz = np.empty((n_samples, 3), dtype=np.float64)
     xyz[0] = init_state
 
     for i in range(n_samples-1):
         xyz_prime = lorenz_system(xyz[i], sigma, rho, beta)
-        xyz[i+1] = xyz[i] + xyz_prime * dt
+        xyz[i+1] = xyz[i] + xyz_prime * diff_t
 
     return xyz

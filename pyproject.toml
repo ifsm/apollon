@@ -72,7 +72,7 @@ module = "mir_eval"
 ignore_missing_imports = true
 
 [tool.pylint.basic]
-good-names = ["_", "i", "j", "ax"]
+good-names = ["_", "i", "j", "n", "ax"]
 
 [tool.pylint.'MESSAGES CONTROL']
 extension-pkg-allow-list = ["pydantic", "chainsaddiction"]

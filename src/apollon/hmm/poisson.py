@@ -27,7 +27,7 @@ class PoissonHmm:
     __slots__ = ['hyper_params', 'init_params', 'params', 'decoding', 'quality',
                  'verbose', 'version', 'training_date', 'success']
 
-    def __init__(self, X: IntArray, m_states: int,
+    def __init__(self, data: IntArray, m_states: int,
                  init_lambda: _at.ArrayOrStr = 'quantile',
                  init_gamma: _at.ArrayOrStr = 'uniform',
                  init_delta: _at.ArrayOrStr = 'stationary',
@@ -39,7 +39,7 @@ class PoissonHmm:
         """Initialize PoissonHMM
 
         Args:
-            X           (np.ndarray of ints)    Data set.
+            data           (np.ndarray of ints)    Data set.
             m_states    (int)                   Number of states.
             init_lambda (str or np.ndarray)     Method name or array of init values.
             init_gamma  (str or np.ndarray)     Method name or array of init values.
@@ -60,25 +60,25 @@ class PoissonHmm:
         self.hyper_params = _HyperParams(m_states, init_lambda, init_gamma, init_delta,
                                          g_dirichlet, d_dirichlet, fill_diag)
 
-        self.init_params = _InitParams(X, self.hyper_params)
+        self.init_params = _InitParams(data, self.hyper_params)
         self.params: Params
         self.quality: QualityMeasures
         self.success: bool
 
-    def fit(self, X: IntArray) -> bool:
+    def fit(self, data: IntArray) -> bool:
         """Fit the initialized PoissonHMM to the input data set.
 
         Args:
-            X   (np.ndarray)    Input data set.
+            data   (np.ndarray)    Input data set.
 
         Returns:
             (int)   True on success else False.
         """
-        assert_poisson_input_data(X)
+        assert_poisson_input_data(data)
 
-        res = poishmm.fit(X.size, self.hyper_params.m_states, 1000, 1e-5,
+        res = poishmm.fit(data.size, self.hyper_params.m_states, 1000, 1e-5,
                           self.init_params.lambda_, self.init_params.gamma_,
-                          self.init_params.delta_, X)
+                          self.init_params.delta_, data)
 
         self.success = not res.err
         self.params = Params(res.lambda_.astype(_np.float64),
@@ -91,8 +91,8 @@ class PoissonHmm:
         return self.success
 
 
-    def score(self, X: IntArray) -> float:
-        """Compute the log-likelihood of `X` under this HMM."""
+    def score(self, data: IntArray) -> float:
+        """Compute the log-likelihood of `data` under this HMM."""
         raise NotImplementedError
 
     def to_dict(self) -> dict[str, Any]:
@@ -288,32 +288,32 @@ class _HyperParams:
 class _InitParams:
     """Initialize PoissonHmm parameters.
     """
-    def __init__(self, X: IntArray, hy_params: _HyperParams) -> None:
+    def __init__(self, data: IntArray, hy_params: _HyperParams) -> None:
         """
         """
 
-        assert_poisson_input_data(X)
-        self.lambda_ = self._init_lambda(hy_params, X)
+        assert_poisson_input_data(data)
+        self.lambda_ = self._init_lambda(hy_params, data)
         self.gamma_ = self._init_gamma(hy_params)
         self.delta_ = self._init_delta(hy_params)
 
 
     @staticmethod
-    def _init_lambda(hy_params: _HyperParams, X: IntArray) -> FloatArray:
+    def _init_lambda(hy_params: _HyperParams, data: IntArray) -> FloatArray:
         if isinstance(hy_params.init_lambda_meth, _np.ndarray):
             return hy_params.init_lambda_meth.copy()
 
         if hy_params.init_lambda_meth == 'hist':
-            return ahu.StateDependentMeansInitializer.hist(X, hy_params.m_states)
+            return ahu.StateDependentMeansInitializer.hist(data, hy_params.m_states)
 
         if hy_params.init_lambda_meth == 'linear':
-            return ahu.StateDependentMeansInitializer.linear(X, hy_params.m_states)
+            return ahu.StateDependentMeansInitializer.linear(data, hy_params.m_states)
 
         if hy_params.init_lambda_meth == 'quantile':
-            return ahu.StateDependentMeansInitializer.quantile(X, hy_params.m_states)
+            return ahu.StateDependentMeansInitializer.quantile(data, hy_params.m_states)
 
         if hy_params.init_lambda_meth == 'random':
-            return ahu.StateDependentMeansInitializer.random(X, hy_params.m_states)
+            return ahu.StateDependentMeansInitializer.random(data, hy_params.m_states)
 
         raise ValueError("Unknown init method or init_lambda_meth is not an array.")
 
@@ -399,20 +399,20 @@ class Params:
         return self.__str__()
 
 
-def assert_poisson_input_data(X: IntArray) -> None:
-    """Raise if X is not a array of integers.
+def assert_poisson_input_data(data: IntArray) -> None:
+    """Raise if data is not a array of integers.
 
     Args:
-        X (np.ndarray)    Data set.
+        data (np.ndarray)    Data set.
 
     Raises:
         ValueError
     """
-    if not isinstance(X, _np.ndarray):
+    if not isinstance(data, _np.ndarray):
         raise TypeError('Data set is not a numpy array.')
 
-    if X.dtype is not _np.dtype(_np.int64):
+    if data.dtype is not _np.dtype(_np.int64):
         raise TypeError('Elements of input data set must be integers.')
 
-    if _np.any(X < 0):
+    if _np.any(data < 0):
         raise ValueError('Elements of input data must be positive.')
