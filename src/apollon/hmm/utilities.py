@@ -150,7 +150,7 @@ class StateDependentMeansInitializer:
         if m_states == 1:
             return _np.asarray(_np.atleast_1d(_np.median(data))).astype(_np.float64)
 
-        raise ValueError('Wrong input: m_states={}. 1 < m_states <= 100.'.format(m_states))
+        raise ValueError(f'Wrong input: {m_states=}. Expected 1 < m_states <= 100.')
 
 
     @staticmethod
@@ -188,14 +188,13 @@ class TpmInitializer:
         alpha = _np.atleast_1d(alpha)
 
         if alpha.ndim != 1:
-            raise ValueError(('Wrong shape of param `alpha`. '
-                              'Expected 1, got {}\n')
-                             .format(alpha.ndim))
+            raise ValueError('Wrong shape of param `alpha`. Expected float '
+                             f'or array-like of shape {m_states}, got '
+                             f'{alpha.ndim=}.')
 
         if alpha.size != m_states:
-            raise ValueError(('Wrong size of param `alpha`. '
-                              'Expected {}, got {}\n')
-                             .format(m_states, alpha.size))
+            raise ValueError('Wrong size of param `alpha`. Expected {m_states} '
+                             f', got {alpha.ndim=}')
 
         distr = [_stats.dirichlet(_np.roll(alpha, i)).rvs()
                  for i in range(m_states)]
@@ -233,9 +232,8 @@ class TpmInitializer:
                 (np.ndarray)    Transition probability matrix of shape (m_states, m_states).
         """
         if not isinstance(diag, float):
-            raise TypeError(('Wrong type for param `diag`. '
-                             'Expected <float>, got {}.\n')
-                            .format(type(diag)))
+            raise TypeError('Wrong type for param `diag`. '
+                            f'Expected <float>, got {type(diag)}.')
 
         init_gamma = _np.empty((m_states, m_states))
         init_gamma.fill((1-diag) / (m_states-1))
@@ -263,14 +261,13 @@ class StartDistributionInitializer:
         alpha = _np.atleast_1d(alpha)
 
         if alpha.ndim != 1:
-            raise ValueError(('Wrong shape of param `alpha`. '
-                              'Expected 1, got {}\n')
-                             .format(alpha.ndim))
+            raise ValueError('Wrong shape of param `alpha`. Expected float or '
+                             f'array-like of shape {m_states}, got '
+                             f'{alpha.ndim=}')
 
         if alpha.size != m_states:
-            raise ValueError(('Wrong size of param `alpha`. '
-                              'Expected {}, got {}\n')
-                             .format(m_states, alpha.size))
+            raise ValueError('Wrong size of param `alpha`. Expected {m_states} '
+                             f', got {alpha.size=}')
 
         return floatarray(_stats.dirichlet(alpha).rvs())
 

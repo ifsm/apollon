@@ -30,9 +30,9 @@ def generate_outpath(in_path: PathType,
     """
     in_path = pathlib.Path(in_path)
     if suffix is None:
-        default_fname = '{}'.format(in_path.stem)
+        default_fname = f'{in_path.stem}'
     else:
-        default_fname = '{}.{}'.format(in_path.stem, suffix)
+        default_fname = f'{in_path.stem}.{suffix}'
 
     if out_path is None:
         out_path = pathlib.Path(default_fname)

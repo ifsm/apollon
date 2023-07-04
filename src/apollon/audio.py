@@ -81,8 +81,8 @@ class AudioFile:
         ax1.plot(self.data)
 
     def __str__(self) -> str:
-        return "<{}, {} kHz, {:.3} s>" \
-               .format(self._path.name, self.fps/1000, self.n_frames/self.fps)
+        return (f"<{self._path.name}, {self.fps/1000} kHz, "
+                f"{self.n_frames/self.fps:.3} s>")
 
     def __repr__(self) -> str:
         return self.__str__()

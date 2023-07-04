@@ -173,14 +173,15 @@ class _HyperParams:
         """
         if isinstance(_lambda, str):
             if _lambda not in ahu.StateDependentMeansInitializer.methods:
-                raise ValueError('Unrecognized initialization method `{}`'.format(_lambda))
+                raise ValueError(f'Unrecognized initialization method `{_lambda}`')
 
         elif isinstance(_lambda, _np.ndarray):
             _tools.assert_array(_lambda, 1, self.m_states, 0, name='init_lambda')
 
         else:
-            raise TypeError(('Unrecognized type of param ``init_lambda`` Expected ``str`` or '
-                             '``numpy.ndarray``, got {}.\n').format(type(_lambda)))
+            raise TypeError((f'Unrecognized type of param ``init_lambda``. '
+                             f'Expected ``str`` or ``numpy.ndarray``, got  '
+                             f'{type(_lambda)}.'))
         return _lambda
 
     @staticmethod
@@ -203,7 +204,7 @@ class _HyperParams:
         if isinstance(_gamma, str):
 
             if _gamma not in ahu.TpmInitializer.methods:
-                raise ValueError('Unrecognized initialization method `{}`'.format(_gamma))
+                raise ValueError(f'Unrecognized initialization method `{_gamma}`')
 
             if _gamma == 'dirichlet' and gamma_dp is None:
                 raise ValueError(('Hyper parameter `gamma_dp` must be set when using initializer '
@@ -216,8 +217,9 @@ class _HyperParams:
         elif isinstance(_gamma, _np.ndarray):
             ahu.assert_st_matrix(_gamma)
         else:
-            raise TypeError(('Unrecognized type of argument `init_gamma`. Expected `str` or '
-                             '`numpy.ndarray`, got {}.\n').format(type(_gamma)))
+            raise TypeError(('Unrecognized type of argument `init_gamma`. '
+                             'Expected `str` or `numpy.ndarray`, '
+                             f'got {type(_gamma)}.'))
         return _gamma
 
     @staticmethod
@@ -238,18 +240,20 @@ class _HyperParams:
         if isinstance(_delta, str):
 
             if _delta not in ahu.StartDistributionInitializer.methods:
-                raise ValueError('Unrecognized initialization method `{}`'.format(_delta))
+                raise ValueError(f'Unrecognized initialization method `{_delta}`')
 
             if _delta == 'dirichlet' and delta_dp is None:
-                raise ValueError(('Hyper parameter `delta_dp` must be set when using initializer '
-                                  '`dirichlet` for parameter `delta`.'))
+                raise ValueError(('Hyper parameter `delta_dp` must be set when '
+                                  'using initializer ' '`dirichlet` for '
+                                  'parameter `delta`.'))
 
         elif isinstance(_delta, _np.ndarray):
             ahu.assert_st_vector(_delta)
 
         else:
-            raise TypeError(('Unrecognized type of argument `init_delta`. Expected `str` or '
-                             '`numpy.ndarray`, got {}.\n').format(type(_delta)))
+            raise TypeError(('Unrecognized type of argument `init_delta`. '
+                             'Expected `str` or ' '`numpy.ndarray`, '
+                             f'got {type(_delta)}.'))
         return _delta
 
 
@@ -278,9 +282,9 @@ class _HyperParams:
         return str(list(self.__dict__.items()))
 
     def __repr__(self) -> str:
-        items = ('\t{}={!r}'.format(name, attr)
+        items = (f'\t{name}={attr!r}'
                  for name, attr in self.__dict__.items())
-        return '_HyerParameters(\n{})'.format(',\n'.join(items))
+        return f'_HyerParameters(\n{",".join(items)})'
 
 
 
@@ -375,7 +379,8 @@ class QualityMeasures:
         self.n_iter = n_iter
 
     def __str__(self) -> str:
-        return 'AIC = {}\nBIC = {}\nNLL = {}\nn_iter = {}'.format(*self.__dict__.values())
+        tmp = 'AIC = {}\nBIC = {}\nNLL = {}\nn_iter = {}'
+        return tmp.format(*self.__dict__.values())
 
     def __repr__(self) -> str:
         return self.__str__()
