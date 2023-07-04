@@ -290,10 +290,10 @@ class StftSegments(SpectralTransform):
         self._params: StftParams = StftParams(fps=fps, window=window,
                                               n_fft=n_fft, **seg_params.dict())
 
-    def transform(self, segments: Segments) -> Spectrogram:
+    def transform(self, data: Segments) -> Spectrogram:
         """Transform ``data`` to spectral domain"""
-        bins = fft(segments.data, self._params.window, self._params.n_fft)
-        return Spectrogram(self._params, bins, segments.params.n_perseg)
+        bins = fft(data.data, self._params.window, self._params.n_fft)
+        return Spectrogram(self._params, bins, data.params.n_perseg)
 
     @property
     def params(self) -> StftParams:

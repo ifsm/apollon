@@ -98,14 +98,11 @@ def _ndarray_hook(inp: dict[str, Any]) -> NDArray | dict[str, Any]:
 
 
 class ArrayEncoder(json.JSONEncoder):
-    # pylint: disable=E0202
-    # Issue: False positive for E0202 (method-hidden) #414
-    # https://github.com/PyCQA/pylint/issues/414
     """Encode np.ndarrays to JSON.
 
     Simply set the ``cls`` parameter of the dump method to this class.
     """
-    def default(self, inp: Any) -> Any:
+    def default(self, o: Any) -> Any:
         """Custon SON encoder for numpy arrays. Other types are passed
         on to ``JSONEncoder.default``.
 
@@ -115,6 +112,6 @@ class ArrayEncoder(json.JSONEncoder):
         Returns:
             JSON-serializable dictionary.
         """
-        if isinstance(inp, np.ndarray):
-            return encode_ndarray(inp)
-        return json.JSONEncoder.default(self, inp)
+        if isinstance(o, np.ndarray):
+            return encode_ndarray(o)
+        return json.JSONEncoder.default(self, o)
