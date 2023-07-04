@@ -1,9 +1,13 @@
+# pylint: disable = C0114, C0115, R0903
+
 from pydantic import BaseModel
+
 
 class SpectralTransformParams(BaseModel):
     fps: int
     window: str | None = None
     n_fft: int | None = None
+
 
 class DftParams(SpectralTransformParams):
     norm: bool = True

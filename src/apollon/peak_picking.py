@@ -1,8 +1,13 @@
+"""
+Detect local maxima in time series data.
+"""
 import numpy as np
+from . models import PeakPickingParams
 from . types import FloatArray
 
 
 class FilterPeakPicker:
+    """Detect local maxima in time series data"""
     def __init__(self, n_after: int = 10, n_before: int = 10,
                  alpha: float = .1, delta: float=.1) -> None:
         self.n_after = n_after
@@ -46,3 +51,12 @@ class FilterPeakPicker:
                 out.append(n)
 
         return np.array(out)
+
+    @property
+    def params(self) -> PeakPickingParams:
+        """Return initial parameters"""
+        return PeakPickingParams(
+                n_before = self.n_before,
+                n_after = self.n_after,
+                alpha = self.alpha,
+                delta = self.delta)

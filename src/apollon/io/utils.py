@@ -1,3 +1,6 @@
+"""
+Misc IO utilities
+"""
 from typing import Any, Generator
 from contextlib import contextmanager
 

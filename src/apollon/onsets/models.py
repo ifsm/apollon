@@ -1,4 +1,7 @@
+# pylint: disable = C0114, C0115, R0903
+
 from pydantic import BaseModel
+
 
 class OnsetDetectorParams(BaseModel):
     fps: int
