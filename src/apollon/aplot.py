@@ -1,7 +1,7 @@
 """
 General plotting routines
 """
-from typing import Any, Iterable, Tuple
+from typing import Any, Tuple
 
 from matplotlib.axes import Axes
 import matplotlib.pyplot as _plt

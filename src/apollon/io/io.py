@@ -4,7 +4,7 @@ General I/O functionallity
 
 import pathlib
 import pickle
-from typing import Any, Generator
+from typing import Any
 
 import numpy as np
 

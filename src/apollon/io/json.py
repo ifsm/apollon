@@ -4,11 +4,10 @@ General JSON IO
 
 import json
 import pathlib
-from typing import Any, Mapping
+from typing import Any
 
 import numpy as np
 
-from .. _defaults import SCHEMA_DIR_PATH
 from .. types import NDArray, PathType
 
 

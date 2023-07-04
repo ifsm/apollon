@@ -4,7 +4,6 @@ Onset detection algorithms
 
 from abc import ABC, abstractmethod
 
-from pydantic import BaseModel
 import numpy as np
 import pandas as pd
 import scipy.signal as _sps

@@ -6,7 +6,6 @@ import pathlib
 
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.typing as npt
 import soundfile as _sf
 
 from . signal import tools as _ast
