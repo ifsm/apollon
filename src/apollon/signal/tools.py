@@ -170,7 +170,7 @@ def minamp(sig: FloatArray) -> FloatArray:
     return val
 
 
-def noise(level: float, n_samples: int =9000) -> FloatArray:
+def white_noise(level: float, n_samples: int = 9000) -> FloatArray:
     """Generate withe noise.
 
     Args:
