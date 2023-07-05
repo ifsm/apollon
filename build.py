@@ -1,3 +1,4 @@
+from typing import Any
 from setuptools.extension import Extension
 import numpy as np
 
@@ -14,6 +15,5 @@ ext_som_dist = Extension('apollon.som._distance',
         include_dirs = ['include', np.get_include()])
 
 
-def build(setup_kwargs):
-
+def build(setup_kwargs: dict[str, Any]) -> None:
     setup_kwargs.update({"ext_modules": [ext_features, ext_som_dist] })
