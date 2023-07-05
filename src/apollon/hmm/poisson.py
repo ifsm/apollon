@@ -16,6 +16,7 @@ from apollon.io.utils import array_print_opt
 from apollon.types import FloatArray, IntArray
 from apollon import tools as _tools
 import apollon.hmm.utilities as ahu
+from apollon.hmm import models
 
 
 class PoissonHmm:
@@ -61,8 +62,8 @@ class PoissonHmm:
                                          g_dirichlet, d_dirichlet, fill_diag)
 
         self.init_params = _InitParams(data, self.hyper_params)
-        self.params: Params
-        self.quality: QualityMeasures
+        self.params: models.PoissonHmmParams
+        self.quality: models.PoissonHmmQualityMeasures
         self.success: bool
 
     def fit(self, data: IntArray) -> bool:
@@ -81,10 +82,8 @@ class PoissonHmm:
                           self.init_params.delta_, data)
 
         self.success = not res.err
-        self.params = Params(res.lambda_.astype(_np.float64),
-                             res.gamma_.astype(_np.float64),
-                             res.delta_.astype(_np.float64))
-        self.quality = QualityMeasures(res.aic, res.bic, res.llk, res.n_iter)
+        self.params = models.PoissonHmmParams.from_result(res)
+        self.quality = models.PoissonHmmQualityMeasures.from_result(res)
 
         if self.success is False:
             _warnings.warn('EM did not converge.', category=RuntimeWarning)
@@ -373,41 +372,6 @@ class _InitParams:
     def __str__(self) -> str:
         with array_print_opt(precision=4, suppress=True):
             out = 'Initial Lambda:\n{}\n\nInitial Gamma:\n{}\n\nInitial Delta:\n{}\n'
-            out = out.format(*self.__dict__.values())
-        return out
-
-    def __repr__(self) -> str:
-        return self.__str__()
-
-
-class QualityMeasures:
-    """
-    """
-    def __init__(self, aic: float, bic: float, nllk: float, n_iter: int) -> None:
-        self.aic = aic
-        self.bic = bic
-        self.nllk = nllk
-        self.n_iter = n_iter
-
-    def __str__(self) -> str:
-        tmp = 'AIC = {}\nBIC = {}\nNLL = {}\nn_iter = {}'
-        return tmp.format(*self.__dict__.values())
-
-    def __repr__(self) -> str:
-        return self.__str__()
-
-
-class Params:
-    """Easy access to estimated HMM parameters and quality measures.
-    """
-    def __init__(self, lambda_: FloatArray, gamma_: FloatArray, delta_: FloatArray) -> None:
-        self.lambda_ = lambda_
-        self.gamma_ = gamma_
-        self.delta_ = delta_
-
-    def __str__(self) -> str:
-        with array_print_opt(precision=4, suppress=True):
-            out = 'Lambda:\n{}\n\nGamma:\n{}\n\nDelta:\n{}\n'
             out = out.format(*self.__dict__.values())
         return out
 
