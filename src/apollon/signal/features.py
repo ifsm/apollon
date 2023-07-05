@@ -5,7 +5,7 @@ Audio feature extraction routines
 import numpy as _np
 from scipy.signal import hilbert as _hilbert
 
-from . import _features
+from . import _features     # pylint: disable = no-name-in-module
 from . import tools as _sigtools
 from .. import segment as _segment
 from .. types import FloatArray, floatarray, IntArray, NDArray
