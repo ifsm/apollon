@@ -39,20 +39,20 @@ class PoissonHmm:
         """Initialize PoissonHMM
 
         Args:
-            data           (np.ndarray of ints)    Data set.
-            m_states    (int)                   Number of states.
-            init_lambda (str or np.ndarray)     Method name or array of init values.
-            init_gamma  (str or np.ndarray)     Method name or array of init values.
-            init_delta  (str or np.ndarray)     Method name or array of init values.
+            data: Data set
+            m_states: Number of model states
+            init_lambda: Method name or array of init values
+            init_gamma: Method name or array of init values
+            init_delta: Method name or array of init values
 
-            gamma_dp    (iterable or None)  Dirichlet distribution params of len `m`.
-                                            Mandatory if `init_gamma` == 'dirichlet'.
+            gamma_dp: Dirichlet distribution params of len `m`.
+                      Mandatory if `init_gamma` == 'dirichlet'.
 
-            delta_dp    (iterable or None)  Dirichlet distribution params of len `m`.
-                                            Mandatory if `delta` == 'dirichlet'.
+            delta_dp: Dirichlet distribution params of len `m`
+                      Mandatory if `delta` == 'dirichlet'.
 
-            fill_diag   (float or None)     Value on main diagonal of tran sition prob matrix.
-                                            Mandatory if `init_gamma` == 'uniform'.
+            fill_diag: Value on main diagonal of transition probability matrix.
+                       Mandatory if `init_gamma` == 'uniform'.
         """
         self.training_date = _tools.time_stamp()
         self.verbose = verbose
@@ -69,10 +69,10 @@ class PoissonHmm:
         """Fit the initialized PoissonHMM to the input data set.
 
         Args:
-            data   (np.ndarray)    Input data set.
+            data: Input data
 
         Returns:
-            (int)   True on success else False.
+            `True` on success else `False`
         """
         assert_poisson_input_data(data)
 
@@ -92,7 +92,13 @@ class PoissonHmm:
 
 
     def score(self, data: IntArray) -> float:
-        """Compute the log-likelihood of `data` under this HMM."""
+        """Compute the log-likelihood of `data` under this HMM.
+
+        Args:
+            data: Input data
+
+        Returns:
+            Log-likelihood of the data under the model parameters."""
         raise NotImplementedError
 
     def to_dict(self) -> dict[str, Any]:
@@ -126,17 +132,23 @@ class _HyperParams:
                  init_delta: _at.ArrayOrStr,
                  gamma_dp: _at.IterOrNone = None,
                  delta_dp: _at.IterOrNone = None,
-                 fill_diag: float | None = None):
+                 fill_diag: float | None = None) -> None:
         """Check and save model hyper parameters.
 
         Args:
-            m_states        (int)
-            init_lambda     (str or ndarray)
-            init_gamma      (str or ndarray)
-            init_delta      (str or ndarray)
-            gamma_dp        (tuple)
-            delta_dp        (tuple)
-            fill_diag       (float)
+            m_states:    Number of model states
+            init_lambda: Method name or array of init values
+            init_gamma:  Method name or array of init values
+            init_delta:  Method name or array of init values
+
+            gamma_dp: Dirichlet distribution params of len `m`.
+                      Mandatory if `init_gamma` == 'dirichlet'.
+
+            delta_dp: Dirichlet distribution params of len `m`
+                      Mandatory if `delta` == 'dirichlet'.
+
+            fill_diag: Value on main diagonal of transition probability matrix.
+                       Mandatory if `init_gamma` == 'uniform'.
         """
 
         if isinstance(m_states, int) and m_states > 0:
@@ -162,10 +174,10 @@ class _HyperParams:
         """Assure that `_lambda` fits requirements for Poisson state-dependent means.
 
         Args:
-            _lambda (str or np.ndarray)    Object to test.
+            _lambda: Array of state dependent means
 
         Returns:
-            (np.ndarray)
+            Unchanged ``_lambda``, if all requirements are met.
 
         Raises:
             ValueError
@@ -179,9 +191,9 @@ class _HyperParams:
             _tools.assert_array(_lambda, 1, self.m_states, 0, name='init_lambda')
 
         else:
-            raise TypeError((f'Unrecognized type of param ``init_lambda``. '
+            raise TypeError(f'Unrecognized type of param ``init_lambda``. '
                              f'Expected ``str`` or ``numpy.ndarray``, got  '
-                             f'{type(_lambda)}.'))
+                             f'{type(_lambda)}.')
         return _lambda
 
     @staticmethod
@@ -190,12 +202,12 @@ class _HyperParams:
         """Assure that `_gamma` fits requirements for Poisson transition probability matirces.
 
         Args:
-            _gamma    (str or np.ndarray)    Object to test.
-            _gamma_dp (Iterable or None)     Dirichlet params.
-            _fill_val (float or None)        Fill value for main diagonal.
+            _gamma: Transition probability matrix
+            _gamma_dp: Dirichlet distribution parameters
+            _fill_val: Fill value for main diagonal
 
         Returns:
-            (np.ndarray)
+            ``_gamma unchanged, if all requirements are met.
 
         Raises:
             ValueError
@@ -207,19 +219,19 @@ class _HyperParams:
                 raise ValueError(f'Unrecognized initialization method `{_gamma}`')
 
             if _gamma == 'dirichlet' and gamma_dp is None:
-                raise ValueError(('Hyper parameter `gamma_dp` must be set when using initializer '
-                                  '`dirichlet` for parameter `gamma`.'))
+                raise ValueError('Hyper parameter `gamma_dp` must be set when using initializer '
+                                  '`dirichlet` for parameter `gamma`.')
 
             if _gamma == 'uniform' and diag_val is None:
-                raise ValueError(('Hyper parameter `fill_diag` must be set when using initializer '
-                                  '`uniform` for parameter `gamma`.'))
+                raise ValueError('Hyper parameter `fill_diag` must be set when using initializer '
+                                  '`uniform` for parameter `gamma`.')
 
         elif isinstance(_gamma, _np.ndarray):
             ahu.assert_st_matrix(_gamma)
         else:
-            raise TypeError(('Unrecognized type of argument `init_gamma`. '
-                             'Expected `str` or `numpy.ndarray`, '
-                             f'got {type(_gamma)}.'))
+            raise TypeError('Unrecognized type of argument `init_gamma`. '
+                            'Expected `str` or `numpy.ndarray`, '
+                            f'got {type(_gamma)}.')
         return _gamma
 
     @staticmethod
@@ -227,11 +239,11 @@ class _HyperParams:
         """Assure that `_delta` fits requirements for Poisson initial distributions.
 
         Args:
-            _delta   (str or np.ndarray)    Object to test.
-            delta_dp (Iterable)             Dirichlet params.
+            _delta: Array of start distribution
+            delta_dp: Dirichlet distribution params
 
         Returns:
-            (np.ndarray)
+            `_delta` unchanged, if all requirements are met.
 
         Raises:
             ValueError
@@ -243,17 +255,15 @@ class _HyperParams:
                 raise ValueError(f'Unrecognized initialization method `{_delta}`')
 
             if _delta == 'dirichlet' and delta_dp is None:
-                raise ValueError(('Hyper parameter `delta_dp` must be set when '
-                                  'using initializer ' '`dirichlet` for '
-                                  'parameter `delta`.'))
+                raise ValueError('Hyper parameter `delta_dp` must be set when '
+                                 'using initializer `dirichlet` for parameter `delta`.')
 
         elif isinstance(_delta, _np.ndarray):
             ahu.assert_st_vector(_delta)
 
         else:
-            raise TypeError(('Unrecognized type of argument `init_delta`. '
-                             'Expected `str` or ' '`numpy.ndarray`, '
-                             f'got {type(_delta)}.'))
+            raise TypeError('Unrecognized type of argument `init_delta`. '
+                            'Expected `str` or `numpy.ndarray`, got {type(_delta)}.')
         return _delta
 
 
@@ -264,7 +274,7 @@ class _HyperParams:
         len must equal to the given number of states.
 
         Args:
-            param      (Iterable)    Parameter to check.
+            param: Dirichlet distribution parameters
 
         Raises:
             ValueError
@@ -287,15 +297,16 @@ class _HyperParams:
         return f'_HyerParameters(\n{",".join(items)})'
 
 
-
-
 class _InitParams:
     """Initialize PoissonHmm parameters.
     """
     def __init__(self, data: IntArray, hy_params: _HyperParams) -> None:
-        """
-        """
+        """Create initial parameters.
 
+        Args:
+            data: Input data
+            hy_params: Hyper parameters
+        """
         assert_poisson_input_data(data)
         self.lambda_ = self._init_lambda(hy_params, data)
         self.gamma_ = self._init_gamma(hy_params)
@@ -408,7 +419,7 @@ def assert_poisson_input_data(data: IntArray) -> None:
     """Raise if data is not a array of integers.
 
     Args:
-        data (np.ndarray)    Data set.
+        data: Input array
 
     Raises:
         ValueError

@@ -70,13 +70,13 @@ def _new_axis(spines: str = 'nice', fig: _plt.Figure | None = None, sp_pos: Subp
     All ``kwargs`` are passed on to _plt.figure().
 
     Args:
-        spines:          Plot mode for spines. Either 'nice' or 'standard'.
-        fig:             Existing figure.
-        sp_pos:          Position of the axis in the figure.
-        axison:          Draw spines if True.
+        spines:     Plot mode for spines. Either 'nice' or 'standard'.
+        fig:        Existing figure.
+        sp_pos:     Position of the axis in the figure.
+        axison:     Draw spines if True.
 
     Returns:
-        Figure and axes.
+        Figure and axes
     """
 
     # pylint: disable=too-many-arguments

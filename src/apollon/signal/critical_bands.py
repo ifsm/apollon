@@ -13,7 +13,7 @@ def frq2cbr(frq: FloatArray) -> FloatArray:
     """Transform frquencies in Hz to critical band rates in Bark.
 
     Args:
-        frq    Frequency in Hz
+        frq: Frequency in Hz
 
     Returns:
         Critical band rate
@@ -28,7 +28,7 @@ def level(cbi: FloatArray) -> FloatArray:
     """Compute the critical band level L_G from critical band intensities I_G.
 
     Args:
-        cbi:    Critical band intensities
+        cbi: Critical band intensities
 
     Returns:
         Critical band levels
@@ -38,13 +38,13 @@ def level(cbi: FloatArray) -> FloatArray:
 
 
 def specific_loudness(cbr: FloatArray) -> FloatArray:
-    """Compute the specific loudness of a critical band rate spectra.
+    """Compute the specific loudness of a critical band rate spectrum.
 
     The specific loudness is the loudness per critical band rate. The spectra
     should be scaled in critical band levels.
 
     Args:
-        cbr:    Critical band rate spectrum
+        cbr: Critical band rate spectrum
 
     Returns:
         Specific loudness
@@ -59,7 +59,7 @@ def total_loudness(cbr: FloatArray) -> FloatArray:
     should be scaled to critical band levels.
 
     Args:
-        cbr_spctr:  Critical band rate spectra.
+        cbr_spctr: Critical band rate spectra.
 
     Returns:
         Total loudness

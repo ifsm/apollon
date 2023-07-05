@@ -104,7 +104,7 @@ def l1_norm(arr: FloatArray) -> float:
 
 
 def normalize(arr: FloatArray, mode: str = 'array') -> FloatArray:
-    """Normalize an arbitrary array_like.
+    """Normalize an arbitrary array-like object to unit interval.
 
     Args:
         arr:    Input signal
@@ -130,9 +130,14 @@ def normalize(arr: FloatArray, mode: str = 'array') -> FloatArray:
     raise ValueError('Unknown normalization mode')
 
 
-# TODO: This normalizes in [0, 1]; for audio we need [-1, 1]
 def _normalize(arr: FloatArray) -> FloatArray:
-    """Normalize array."""
+    """Normalize array to unit interval
+
+    Args:
+        arr: Input array
+
+    Returns:
+        New array with normalized data"""
     arr_min = arr.min()
     arr_max = arr.max()
     return floatarray((arr - arr_min) / (arr_max - arr_min))

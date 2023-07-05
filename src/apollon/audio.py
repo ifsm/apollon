@@ -64,12 +64,6 @@ class AudioFile:
         """Return (n_frames, n_channels)."""
         return self.n_frames, self.n_channels
 
-    """
-    @property
-    def source_id(self) -> SourceId:
-        """"""
-        return SourceId(self._path.name.split('.')[0], self.hash)
-    """
     def close(self) -> None:
         """Close the file."""
         self._file.close()
