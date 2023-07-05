@@ -1,3 +1,6 @@
+[![mypy](https://github.com/ifsm/apollon/actions/workflows/mypy.yml/badge.svg)](https://github.com/ifsm/apollon/actions/workflows/mypy.yml)
+[![pylint](https://github.com/ifsm/apollon/actions/workflows/pylint.yml/badge.svg)](https://github.com/ifsm/apollon/actions/workflows/pylint.yml)
+
 # Apollon
 Apollon is a Python framework for audio feature extraction and music similarity
 estimation. It includes subpackages for
