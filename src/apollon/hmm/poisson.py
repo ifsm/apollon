@@ -278,7 +278,7 @@ class _HyperParams:
         Raises:
             ValueError
         """
-        param = _np.asarray(param).astype(_np.float64)
+        param = _np.asarray(param).astype(_np.double)
 
         if param.size != self.m_states:
             raise ValueError('Size of dirichlet parameter must equal number of states.')

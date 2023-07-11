@@ -110,7 +110,7 @@ def correlogram(inp: FloatArray, wlen: int, n_delay: int,
     if inp.ndim != 2:
         raise ValueError('Input must be two-dimensional.')
 
-    out = _np.zeros((inp.shape[1], n_delay, inp.shape[0]-wlen-n_delay), dtype=_np.float64)
+    out = _np.zeros((inp.shape[1], n_delay, inp.shape[0]-wlen-n_delay), dtype=_np.double)
     for i, seg in enumerate(inp.T):
         out[i] = _features.correlogram(seg, wlen, n_delay)
     if total is True:
@@ -129,11 +129,11 @@ def energy(sig: FloatArray) -> FloatArray:
     """
     if not _np.isfinite(sig).all():
         raise ValueError('Input ``sig`` contains NaNs or infinite values.')
-    buff = _np.empty_like(sig, dtype=_np.float64)
+    buff = _np.empty_like(sig, dtype=_np.double)
     _np.abs(sig, out=buff)
     _np.square(buff, out=buff)
     total = _np.empty((1, buff.shape[1]))
-    return _np.sum(buff, axis=0, dtype=_np.float64, out=total, keepdims=True)
+    return _np.sum(buff, axis=0, dtype=_np.double, out=total, keepdims=True)
 
 
 def rms(sig: FloatArray) -> FloatArray:
@@ -145,8 +145,8 @@ def rms(sig: FloatArray) -> FloatArray:
     Returns:
         RMS of signal along first axis.
     """
-    buff = _np.empty_like(sig, dtype=_np.float64)
-    out = _np.empty((sig.shape[1], 1), dtype=_np.float64)
+    buff = _np.empty_like(sig, dtype=_np.double)
+    out = _np.empty((sig.shape[1], 1), dtype=_np.double)
     _np.abs(sig, out=buff)
     _np.square(buff, out=buff)
     _np.mean(buff, axis=0, keepdims=True, out=out)
@@ -176,7 +176,7 @@ def spectral_centroid(frqs: FloatArray, amps: FloatArray) -> FloatArray:
         where :math:`f_i` is the center frequency, and :math:`p(i)` the
         relative amplitude of the :math:`i` th DFT bin.
     """
-    out = _np.empty_like((1, amps.shape[1]), dtype=_np.float64)
+    out = _np.empty_like((1, amps.shape[1]), dtype=_np.double)
     return _np.sum(frqs*_power_distr(amps), axis=0, keepdims=True, out=out)
 
 
@@ -286,7 +286,7 @@ def spectral_flux(inp: FloatArray, delta: float = 1.0,
         th spectrum :math:`X` of a spectrogram :math:`\boldsymbol X`.
     """
     inp = _np.atleast_2d(inp).astype('float64')
-    out = _np.empty_like(inp, dtype=_np.float64)
+    out = _np.empty_like(inp, dtype=_np.double)
     _np.maximum(_np.gradient(inp, delta, axis=-1), 0, out=out)
     if total:
         return floatarray(out.sum(axis=0, keepdims=True))
@@ -394,7 +394,7 @@ def _power_distr(bins: FloatArray) -> FloatArray:
     Returns:
         NxM array of spectral densities.
     """
-    total_power = _np.empty((1, bins.shape[1]), dtype=_np.float64)
+    total_power = _np.empty((1, bins.shape[1]), dtype=_np.double)
     _np.sum(bins, axis=0, keepdims=True, out=total_power)
     total_power[total_power == 0] = 1
     return bins / total_power
@@ -415,7 +415,7 @@ def _roughnes_kernel(frq_res: float, frq_max: float) -> FloatArray:
     norm = frm * _np.exp(-1)
     base = _np.abs(_np.arange(-bin_idx, bin_idx+1)) * frq_res
 
-    out = _np.empty_like(base, dtype=_np.float64)
+    out = _np.empty_like(base, dtype=_np.double)
     _np.divide(base, norm, out=out)
     _np.multiply(out, _np.exp(-base/frm), out)
     return out

@@ -84,7 +84,7 @@ def lorenz_system(state: tuple[float, float, float],
     sigma, rho, beta = params
     xyz_dot = np.array([sigma * (y - x),
                         x * (rho - z) - y,
-                        x * y - beta * z], dtype=np.float64)
+                        x * y - beta * z], dtype=np.double)
     return xyz_dot
 
 
@@ -108,7 +108,7 @@ def lorenz_attractor(n_samples: int, params: tuple[float, float, float] = (10.0,
     if diff_t < 0:
         raise ValueError("``diff_t`` must be positive float")
 
-    xyz = np.empty((n_samples, 3), dtype=np.float64)
+    xyz = np.empty((n_samples, 3), dtype=np.double)
     xyz[0] = init_state
 
     for i in range(n_samples-1):

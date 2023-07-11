@@ -26,9 +26,9 @@ class PoissonHmmParams(BaseModel):
         Returns:
             PoissonHmmParams
         """
-        return cls(lambda_=obj.lambda_.astype(_np.float64),
-                   gamma_=obj.gamma_.astype(_np.float64),
-                   delta_=obj.delta_.astype(_np.float64))
+        return cls(lambda_=obj.lambda_.astype(_np.double),
+                   gamma_=obj.gamma_.astype(_np.double),
+                   delta_=obj.delta_.astype(_np.double))
 
 
 class PoissonHmmQualityMeasures(BaseModel):

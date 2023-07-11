@@ -12,7 +12,7 @@ Array = np.ndarray
 NDArray = np.ndarray[Any, Any]
 IntArray = np.ndarray[Any, np.dtype[np.int_]]
 Int16Array = np.ndarray[Any, np.dtype[np.int16]]
-FloatArray = np.ndarray[Any, np.dtype[np.float64]]
+FloatArray = np.ndarray[Any, np.dtype[np.double]]
 ComplexArray = np.ndarray[Any, np.dtype[np.complex128]]
 
 ArrayOrStr = Array | str
@@ -30,4 +30,4 @@ AdIndex = Tuple[List[int], List[int]]
 
 def floatarray(inp: Any) -> FloatArray:
     """Cast sequence type to float64 array"""
-    return np.asanyarray(inp, dtype=np.float64)
+    return np.asanyarray(inp, dtype=np.double)

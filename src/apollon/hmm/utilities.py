@@ -125,7 +125,7 @@ class StateDependentMeansInitializer:
             Returns:
                 Initial state-dependent means of shape (m_states, ).
         """
-        return _np.linspace(data.min(), data.max(), m_states, dtype=_np.float64)
+        return _np.linspace(data.min(), data.max(), m_states, dtype=_np.double)
 
 
     @staticmethod
@@ -148,7 +148,7 @@ class StateDependentMeansInitializer:
             return _np.percentile(data, [25, 75])
 
         if m_states == 1:
-            return _np.asarray(_np.atleast_1d(_np.median(data))).astype(_np.float64)
+            return _np.asarray(_np.atleast_1d(_np.median(data))).astype(_np.double)
 
         raise ValueError(f'Wrong input: {m_states=}. Expected 1 < m_states <= 100.')
 

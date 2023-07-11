@@ -153,7 +153,7 @@ def maxamp(sig: FloatArray) -> FloatArray:
     Returns:
         Maximal amplitude
     """
-    val: FloatArray = np.absolute(sig, dtype=np.float64).max(axis=0)
+    val: FloatArray = np.absolute(sig, dtype=np.double).max(axis=0)
     return val
 
 
@@ -166,7 +166,7 @@ def minamp(sig: FloatArray) -> FloatArray:
     Returns:
         Minimal amplitude
     """
-    val: FloatArray = np.absolute(sig, dtype=np.float64).min(axis=0)
+    val: FloatArray = np.absolute(sig, dtype=np.double).min(axis=0)
     return val
 
 
@@ -181,7 +181,7 @@ def white_noise(level: float, n_samples: int = 9000) -> FloatArray:
         White noise signal
     """
     return np.random.normal(0, level, n_samples)
-    # return stats.norm.rvs(0, level, size=n_samples, dtype=np.float64)
+    # return stats.norm.rvs(0, level, size=n_samples, dtype=np.double)
 
 
 def normalize(sig: FloatArray) -> FloatArray:
@@ -219,11 +219,11 @@ def sinusoid(frqs: Sequence[float] | float,
     Return:
         FloatArray of signals.
     """
-    frqs_: FloatArray = np.atleast_1d(frqs).astype(np.float64)
-    amps_: FloatArray = np.atleast_1d(amps).astype(np.float64)
+    frqs_: FloatArray = np.atleast_1d(frqs).astype(np.double)
+    amps_: FloatArray = np.atleast_1d(amps).astype(np.double)
 
     size = np.ceil(fps*length).astype(np.int64)
-    out = np.empty((size, len(frqs_)), dtype=np.float64)
+    out = np.empty((size, len(frqs_)), dtype=np.double)
     if frqs_.shape == amps_.shape or amps_.size == 1:
         txs = np.arange(fps*length)[:, None] / fps
         np.sin(2*np.pi*txs*frqs_, out=out)
@@ -266,8 +266,8 @@ def ampmod(frq_c: float, frq_m: float, m: float, amp_c: float = 0.5,
     Returns:
         Modulated signal
     """
-    txs = np.arange(fps*length, dtype=np.float64)[:, None] / fps
-    out = np.empty_like(txs, dtype=np.float64)
+    txs = np.arange(fps*length, dtype=np.double)[:, None] / fps
+    out = np.empty_like(txs, dtype=np.double)
     wts = 2 * np.pi * txs
     f_sb1 = frq_c - frq_m
     f_sb2 = frq_c + frq_m
