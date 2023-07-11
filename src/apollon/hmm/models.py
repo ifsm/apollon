@@ -5,11 +5,13 @@ from typing import Self
 from chainsaddiction.poishmm import PoisHmm
 import numpy as _np
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from apollon.types import FloatArray
 
 
 class PoissonHmmParams(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     lambda_: FloatArray
     gamma_: FloatArray
     delta_: FloatArray
