@@ -10,7 +10,6 @@ import numpy as np
 
 from .. types import NDArray, PathType
 from . json import ArrayEncoder
-from .. hmm.poisson import PoissonHmm
 
 def generate_outpath(in_path: PathType,
                      out_path: PathType | None,
@@ -44,33 +43,6 @@ def generate_outpath(in_path: PathType,
             msg = f'Error. Path "{out_path.parent!s}" does not exist.'
             raise ValueError(msg)
     return out_path
-
-
-class PoissonHmmEncoder(ArrayEncoder):
-    """JSON encoder for PoissonHmm.
-    """
-    def default(self, o: Any) -> Any:
-        """Custon default JSON encoder. Properly handles <class 'PoissonHMM'>.
-
-        Note: Falls back to ``ArrayEncoder`` for all types that do not implement
-        a ``to_dict()`` method.
-
-        Params:
-            o (any)  Object to encode.
-
-        Returns:
-            (dict)
-        """
-        if isinstance(o, PoissonHmm):
-            items = {}
-            for attr in o.__slots__:
-                try:
-                    items[attr] = getattr(o, attr).to_dict()
-                except AttributeError:
-                    items[attr] = getattr(o, attr)
-            return items
-        return ArrayEncoder.default(self, o)
-
 
 
 
