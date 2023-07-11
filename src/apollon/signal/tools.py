@@ -241,6 +241,44 @@ def sinusoid(frqs: Sequence[float] | float,
     return total
 
 
+def ampmod(frq_c: float, frq_m: float, m: float, amp_c: float = 0.5,
+           fps: int = 9000, length: float = 1.0) -> FloatArray:
+    r"""Generate amplitude modulated sinusoids
+
+    The modulation index `m` is defined by 
+
+    .. math::
+
+         m = \frac{a_{m}}{a_{c}} \,
+
+    and determines the influcence of the modulator on the carrier. For
+    incoherent demodultaion, `m` should range in [0, 1[, where `m`= 0 means no
+    modulation.
+
+    Args:
+        frq_c:  Carrier frequency
+        frq_m:  Modulator frequency
+        m:      Modulation index
+        amp_c:  Carrier amplitude
+        fps:    Sample rate
+        length: Length of the resulting signal in seconds
+
+    Returns:
+        Modulated signal
+    """
+    txs = np.arange(fps*length, dtype=np.float64)[:, None] / fps
+    out = np.empty_like(txs, dtype=np.float64)
+    wts = 2 * np.pi * txs
+    f_sb1 = frq_c - frq_m
+    f_sb2 = frq_c + frq_m
+
+    np.subtract(np.cos(f_sb1*wts), np.cos(f_sb2*wts), out=out)
+    np.multiply(out, m/2, out=out)
+    np.add(out, np.sin(frq_c*wts), out=out)
+    np.multiply(out, amp_c, out=out)
+    return out
+
+
 def amp(spl: Sequence[float] | float,
         ref: float = _defaults.SPL_REF) -> FloatArray:
     """Computes amplitudes form sound pressure level.
