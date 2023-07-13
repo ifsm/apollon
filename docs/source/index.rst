@@ -19,4 +19,6 @@ Overview
 
    download
    install
-   api/*
+   segments/index
+   onsets/index
+   features

@@ -15,10 +15,3 @@ segmentation algorithms that cover the most common use cases.
 .. autoclass:: apollon.segment.LazySegments
     :members:
 
-
-You can index Segments and LazySegments go access single data segments of the
-signal. Each segments is return as an instance of :class:`apollon.models.Segment`.
-
-
-.. autoclass:: apollon.models.Segment
-   :members:
