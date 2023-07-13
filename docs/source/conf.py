@@ -16,7 +16,6 @@ import sphinx_rtd_theme
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-sys.path.insert(0, os.path.abspath('./src/apollon/'))
 
 
 # -- Project information -----------------------------------------------------
@@ -72,13 +71,14 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 intersphinx_mapping = {
+    "python": ("https://docs.python.org/3/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "pandas": ("https://pandas.pydata.org/docs/", None),
 }
 
 autodoc_typehints = "signature"
-# -- Options for Napoleon ---------------------------------------------------
-#
+autodoc_member_order = "bysource"
+
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
 napoleon_include_init_with_doc = False
