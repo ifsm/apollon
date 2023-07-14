@@ -6,12 +6,8 @@ features from multiple sections of the same signal. Apollon provides several
 segmentation algorithms that cover the most common use cases.
 
 
-.. autoclass:: apollon.segment.Segmentation
-    :members:
+.. toctree::
+    :maxdepth: 2
 
-.. autoclass:: apollon.segment.Segments
-    :members:
-
-.. autoclass:: apollon.segment.LazySegments
-    :members:
-
+    ./algo
+    ./models
