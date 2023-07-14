@@ -127,7 +127,7 @@ class EntropyOnsetDetector(OnsetDetector):
         self.m_dims = m_dims
         self.bins = bins
         self.delay = delay
-        self.cutter = aseg.Segmentation(n_perseg, n_overlap)
+        self.cutter = aseg.ArraySegmentation(n_perseg, n_overlap)
 
         self._params: models.EntropyODParams  = models.EntropyODParams(fps=fps, m_dim=m_dims,
                                        delay=delay, bins=bins,

@@ -9,11 +9,12 @@ import matplotlib.pyplot as _plt
 import numpy as np
 import scipy.signal as _sps
 
+from apollon.segment import ArraySegmentation, Segments
+from apollon.segment.models import SegmentationParams
+
 from . models import DftParams, StftParams, SpectralTransformParams
-from .. segment import Segmentation, Segments
 from .. types import FloatArray, IntArray, ComplexArray
 from .. signal import features
-from .. models import SegmentationParams
 
 
 def fft(sig: FloatArray, window: str | None = None, n_fft: int | None = None,
@@ -261,8 +262,8 @@ class Stft(SpectralTransform):
         self._params: StftParams = StftParams(fps=fps, window=window, n_fft=n_fft,
                                     n_perseg=n_perseg, n_overlap=n_overlap,
                                     extend=extend, pad=pad)
-        self._cutter = Segmentation(self.params.n_perseg, self.params.n_overlap,
-                                    self.params.extend, self.params.pad)
+        self._cutter = ArraySegmentation(self.params.n_perseg, self.params.n_overlap,
+                                         self.params.extend, self.params.pad)
 
     def transform(self, data: FloatArray) -> Spectrogram:
         """Transform ``data`` to spectral domain"""
