@@ -3,6 +3,8 @@
 *.py[cod]
 __pychache__/
 
+generated
+
 .Python
 env/
 build/

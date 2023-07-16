@@ -34,7 +34,6 @@ master_doc = 'index'
 # -- General configuration ---------------------------------------------------
 source_suffix = {'.rst': 'restructuredtext'}
 language = 'en'
-nitpicky = True
 numfig = True
 pygments_style = 'sphinx'
 
@@ -45,6 +44,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
     'sphinx_rtd_theme']
 
@@ -75,6 +75,8 @@ intersphinx_mapping = {
     "numpy": ("https://numpy.org/doc/stable/", None),
     "pandas": ("https://pandas.pydata.org/docs/", None),
 }
+
+autosummary_generate = True
 
 autodoc_typehints = "signature"
 autodoc_member_order = "bysource"
