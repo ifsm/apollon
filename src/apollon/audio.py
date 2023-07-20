@@ -9,7 +9,7 @@ import numpy as np
 import soundfile as _sf
 
 from . signal import tools as _ast
-from . types import FloatArray, Int16Array, NDArray, PathType
+from . types import FloatArray, NDArray, PathType
 
 
 class AudioFile:
@@ -125,19 +125,6 @@ class AudioFile:
         self._file.read(n_frames, dtype=dtype, always_2d=True, fill_value=0,
                         out=out)
         return out
-
-
-def fti16(inp: FloatArray) -> Int16Array:
-    """Cast audio loaded as float to int16.
-
-    Args:
-        inp:    Input array of dtype float64.
-
-    Returns:
-        Array of dtype int16.
-    """
-    vals = np.clip(np.floor(inp*2**15), -2**15, 2**15-1)
-    return np.asarray(vals).astype('int16')
 
 
 def load_audio(path: PathType) -> AudioFile:

@@ -1,5 +1,6 @@
 """
-Generic Discrete Fourier Transforms for real input
+Spectral transforms
+====================
 """
 
 from abc import ABC, abstractmethod

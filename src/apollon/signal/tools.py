@@ -1,5 +1,6 @@
 """
 Signal processing tools
+========================
 """
 from collections.abc import Sequence
 from typing import Any
@@ -8,7 +9,7 @@ import numpy as np
 from scipy import stats
 
 from .. import _defaults
-from .. types import FloatArray, floatarray
+from .. types import FloatArray, Int16Array, floatarray
 
 
 def acf(inp: FloatArray) -> FloatArray:
@@ -245,14 +246,14 @@ def ampmod(frq_c: float, frq_m: float, m: float, amp_c: float = 0.5,
            fps: int = 9000, length: float = 1.0) -> FloatArray:
     r"""Generate amplitude modulated sinusoids
 
-    The modulation index `m` is defined by 
+    The modulation index `m` is defined by
 
     .. math::
 
          m = \frac{a_{m}}{a_{c}} \,
 
     and determines the influcence of the modulator on the carrier. For
-    incoherent demodultaion, `m` should range in [0, 1[, where `m`= 0 means no
+    incoherent demodultaion, `m` should range in [0, 1[, where `m` = 0 means no
     modulation.
 
     Args:
@@ -311,3 +312,16 @@ def zero_padding(sig: FloatArray, n_pad: int,
     container = np.zeros(sig.size+n_pad, dtype=dtype)
     container[:sig.size] = sig
     return container
+
+
+def fti16(inp: FloatArray) -> Int16Array:
+    """Cast audio loaded as float to int16.
+
+    Args:
+        inp:    Input array of dtype float64.
+
+    Returns:
+        Array of dtype int16.
+    """
+    vals = np.clip(np.floor(inp*2**15), -2**15, 2**15-1)
+    return np.asarray(vals).astype('int16')

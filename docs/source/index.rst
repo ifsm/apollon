@@ -9,16 +9,25 @@ Welcome to apollon
 analysis. It handles low-level audio feature extraction, their aggreagation
 using Hidden Markov models, and comparison by means of the self-organizing map.
 
+
 Overview
 ========
 
 .. toctree::
-   :hidden:
-   :maxdepth: 2
-   :glob:
+   :caption: Getting started
 
-   download
-   install
-   segments/index
-   onsets/index
-   features
+   getting-started/download
+   getting-started/install
+
+
+.. toctree::
+   :caption: Usage
+   :maxdepth: 1
+
+   reference/index
+
+
+.. toctree::
+   :caption: Development
+
+   development/index

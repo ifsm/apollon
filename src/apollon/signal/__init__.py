@@ -1,15 +1,8 @@
 """
-========================================
-Signal processing tools
-========================================
-
-Audio features
-========================================
-
-.. currentmodule:: apollon.signal.features
-
-.. autosummary::
-
-    cdim
-    spectral_centroid
+Signal processing
+=================
 """
+
+from . import features, spectral, tools
+
+__all__ = ("features", "spectral", "tools")

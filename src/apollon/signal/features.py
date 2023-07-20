@@ -1,5 +1,6 @@
 """
-Audio feature extraction routines
+Feature extraction routines
+============================
 """
 
 import numpy as _np
@@ -10,7 +11,6 @@ from . import tools as _sigtools
 from .. import segment as _segment
 from .. types import FloatArray, floatarray, IntArray, NDArray
 from . import critical_bands as _cb
-from .. audio import fti16
 from .. import _defaults
 
 
@@ -56,7 +56,7 @@ def cdim(inp: FloatArray, delay: int, m_dim: int, n_bins: int = 1000,
         if inp.dtype == 'int16':
             inp_ = inp.copy()
         else:
-            inp_ = fti16(inp)
+            inp_ = _sigtools.fti16(inp)
 
     elif mode == 'blass':
         raise NotImplementedError
