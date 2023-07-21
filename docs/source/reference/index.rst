@@ -7,3 +7,4 @@ API Reference
 
    apollon.signal
    apollon.segment
+   apollon.onsets
