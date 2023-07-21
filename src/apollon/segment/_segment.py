@@ -7,10 +7,9 @@ from typing import Generator
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
 
-from apollon.audio import AudioFile
 from apollon.types import FloatArray, NDArray
 from apollon.segment.models import SegmentationParams, Segment
-
+from apollon.audio import AudioFile
 
 class Segments:
     """Segement"""

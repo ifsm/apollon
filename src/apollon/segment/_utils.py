@@ -32,7 +32,7 @@ def by_samples(arr: FloatArray, n_perseg: int, hop_size: int = 0) -> FloatArray:
 
 
 def by_ms(arr: FloatArray, fps: int, ms_perseg: int, hop_size: int = 0) -> FloatArray:
-    """Segment the input into n segments of length ``ms_perseg`` and move the
+    r"""Segment the input into n segments of length ``ms_perseg`` and move the
     window ``hop_size`` milliseconds.
 
     This function automatically applies zero padding for inputs that cannot be
