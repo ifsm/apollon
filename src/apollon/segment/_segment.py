@@ -1,15 +1,17 @@
 """
 Time series segmentation utilities
 """
-
-from typing import Generator
+from __future__ import annotations
+from typing import Generator, TYPE_CHECKING
 
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
 
 from apollon.types import FloatArray, NDArray
 from apollon.segment.models import SegmentationParams, Segment
-from apollon.audio import AudioFile
+
+if TYPE_CHECKING:
+    from apollon.audio import AudioFile
 
 class Segments:
     """Segement"""
