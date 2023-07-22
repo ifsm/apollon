@@ -1,5 +1,16 @@
 """
-General plotting routines
+
+.. autosummary::
+   :toctree: generated/
+   :nosignatures:
+
+   outward_spines
+   center_spines
+   signal
+   fourplot
+   marginal_distr
+   onsets
+   onset_decoding
 """
 from typing import Any, Tuple
 
@@ -23,6 +34,9 @@ FigSize = tuple[float, float]
 SubplotPos = tuple[int, int, int] | None
 AxesArray = npt.NDArray[Axes]
 FigAxis = tuple[_plt.Figure, _plt.Axes]
+
+__all__ = ("outward_spines", "center_spines", "signal", "fourplot", "marginal_distr",
+           "onsets", "onset_decoding")
 
 
 def outward_spines(axs: Axes | AxesArray, offset: float = 10.0) -> None:

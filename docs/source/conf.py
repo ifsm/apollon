@@ -78,6 +78,7 @@ intersphinx_mapping = {
 
 autosummary_generate = True
 autosummary_ignore_module_all = False
+autosummary_imported_members = True
 
 autodoc_typehints = "signature"
 autodoc_member_order = "bysource"
