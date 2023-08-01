@@ -8,6 +8,7 @@ Audio feature extraction routines.
 
 import numpy as _np
 from scipy.signal import hilbert as _hilbert
+from scipy.signal import correlate
 from typing import Optional
 
 import _features
@@ -397,10 +398,34 @@ def loudness(frqs: _Array, bins: _Array) -> _Array:
 
 def roughness_helmholtz(d_frq: float, bins: _Array, frq_max: float,
                         total: bool = True) -> _Array:
+    """Estimate perceived audiotory roughness.
+
+    Args:
+        d_frq:      Spacing of FFT bins
+        bins:       Absolute values of FFT bins
+        frq_max:    Upper frequency threshold
+        total:      If ``True``, compute total roughness. Default ``True``.
+
+    Returns:
+        Auditory roughness as 2-D array.
+    """
     kernel = _roughnes_kernel(d_frq, frq_max)
     out = _np.empty((kernel.size, bins.shape[1]))
     for i, bin_slice in enumerate(bins.T):
-        out[:, i] = _np.correlate(bin_slice, kernel, mode='same')
+        bin_slice = bin_slice[:kernel.size]
+        bin_max = bin_slice.max()
+        if bin_max > 0:
+            bin_slice /= bin_max
+        bin_slice[bin_slice<0.1] = 0
+        rns = correlate(bin_slice, bin_slice)
+        rns = rns[rns.size//2:]
+        rns[0] = 0
+        rns_max = rns.max()
+        if rns_max > 0:
+            rns /= rns_max
+            out[:, i] = rns * kernel / sum(rns>0.2)
+        else:
+            out[:, i] = rns * kernel
 
     if total is True:
         out = out.sum(axis=0, keepdims=True)
@@ -437,17 +462,17 @@ def _power_distr(bins: _Array) -> _Array:
 
 
 def _roughnes_kernel(frq_res: float, frq_max: float) -> _Array:
-    """Comput the convolution kernel for roughness computation.
+    """Compute the weights of the convolution of roughness computation.
 
     Args:
-        frq_res:    Frequency resolution
+        frq_res:    Frequency resolution.
         frq_max:    Frequency bound.
 
     Returns:
         Weight for each frequency below ``frq_max``.
     """
-    frm = 33.5
+    frm = 33
     bin_idx = int(_np.round(frq_max/frq_res))
     norm = frm * _np.exp(-1)
-    base = _np.abs(_np.arange(-bin_idx, bin_idx+1)) * frq_res
+    base = _np.abs(_np.arange(bin_idx+1)) * frq_res
     return base / norm * _np.exp(-base/frm)
