@@ -47,7 +47,7 @@ def load_schema(schema_name: str) -> dict:
         schema = json.loads(schema)
         jsonschema.Draft7Validator.check_schema(schema)
         return schema
-    raise IOError(f'Schema ``{schema_path.name}`` not found.')
+    raise IOError(f'Schema ``{schema_path}`` not found.')
 
 
 def dump(obj: Any, path: PathType) -> None:
