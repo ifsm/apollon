@@ -15,7 +15,7 @@ The latest version of apollon is available on PyPI. Just open a terminal an run
 the following command to download and install apollon:
 
 ```
-pip install apollon 
+pip install apollon
 ```
 
 We currently provide wheels for macOS and Windows; GNU/Linux users have to
