@@ -1,6 +1,6 @@
 [project]
 name = "apollon"
-version = "0.1.5"
+version = "0.1.6"
 description = "Feature extraction frame work for content-based music analysis"
 authors = [ {name="Michael Blaß", email="mblass@posteo.net"} ]
 license = { file="LICENSE.txt" }
