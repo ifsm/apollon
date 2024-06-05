@@ -177,7 +177,7 @@ def spectral_centroid(frqs: FloatArray, amps: FloatArray) -> FloatArray:
         where :math:`f_i` is the center frequency, and :math:`p(i)` the
         relative amplitude of the :math:`i` th DFT bin.
     """
-    out = _np.empty_like((1, amps.shape[1]), dtype=_np.double)
+    out = _np.empty((1, amps.shape[1]), dtype=_np.double)
     return _np.sum(frqs*_power_distr(amps), axis=0, keepdims=True, out=out)
 
 
