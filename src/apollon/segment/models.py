@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from pydantic import BaseModel
-from apollon.types import NDArray
+from apollon.types import FloatArray
 
 
 class SegmentationParams(BaseModel):
@@ -28,4 +28,4 @@ class Segment:
     stop: int
     center: int
     n_frames: int
-    data: NDArray
+    data: FloatArray

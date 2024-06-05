@@ -14,7 +14,7 @@ from . audio import AudioFile
 from . import _defaults
 from . import tools as _tools
 from . onsets.detectors import OnsetDetector
-from . types import FloatArray, IntArray, NDArray
+from . types import Array, FloatArray, IntArray
 
 
 Limits = tuple[int, int] | None
@@ -142,7 +142,7 @@ def signal(values: FloatArray, fps: int | None = None, **kwargs: Any) -> FigAxis
 
 
 def fourplot(data: FloatArray, lag: int = 1
-             ) -> tuple[tuple[NDArray, NDArray], tuple[float, float, float]]:
+             ) -> tuple[tuple[Array, Array], tuple[float, float, float]]:
     """Plot time series, lag-plot, histogram, and probability plot.
 
     Args:

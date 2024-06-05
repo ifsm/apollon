@@ -8,7 +8,7 @@ import numpy as np
 from numpy.lib.stride_tricks import as_strided
 
 from apollon.audio import AudioFile
-from apollon.types import FloatArray, NDArray
+from apollon.types import Array, FloatArray
 from apollon.segment.models import SegmentationParams, Segment
 
 
@@ -302,7 +302,7 @@ class FileSegmentation:
         for i in range(self.n_segs):
             yield self.__getitem__(i)
 
-    def iter_data(self) -> Generator[NDArray, None, None]:
+    def iter_data(self) -> Generator[Array, None, None]:
         """Iterate over segment data"""
         for _ in range(self.n_segs):
             yield self._snd.read(self.n_perseg)

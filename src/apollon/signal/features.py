@@ -9,7 +9,7 @@ from scipy.signal import hilbert as _hilbert
 from . import _features     # pylint: disable = no-name-in-module
 from . import tools as _sigtools
 from .. import segment as _segment
-from .. types import FloatArray, floatarray, IntArray, NDArray
+from .. types import Array, FloatArray, floatarray, IntArray
 from . import critical_bands as _cb
 from .. audio import fti16
 from .. import _defaults
@@ -53,7 +53,7 @@ def cdim(inp: FloatArray, delay: int, m_dim: int, n_bins: int = 1000,
 
     if mode == 'bader':
         cdim_func = _features.cdim_bader
-        inp_: NDArray
+        inp_: Array
         if inp.dtype == 'int16':
             inp_ = inp.copy()
         else:

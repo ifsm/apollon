@@ -7,10 +7,10 @@ from numpy import linalg as _linalg
 from scipy import stats as _stats
 
 from apollon import tools as _tools
-from apollon.types import FloatArray, floatarray, IntArray, NDArray
+from apollon.types import Array, FloatArray, floatarray, IntArray
 
 
-def assert_poisson_input(data: NDArray) -> None:
+def assert_poisson_input(data: Array) -> None:
     """Check wether data is a one-dimensional array of integer values.
     Otherwise raise an exception.
 
@@ -31,7 +31,7 @@ def assert_poisson_input(data: NDArray) -> None:
         raise TypeError('Input vector must be array of type int64')
 
 
-def assert_st_matrix(arr: NDArray) -> None:
+def assert_st_matrix(arr: Array) -> None:
     """Raise if `arr` is not a valid two-dimensional
     stochastic matrix.
 
@@ -55,7 +55,7 @@ def assert_st_matrix(arr: NDArray) -> None:
                           'least one row does not equal 1.'))
 
 
-def assert_st_vector(vect: NDArray) -> None:
+def assert_st_vector(vect: Array) -> None:
     """Raise if `vect` is not a valid one-dimensional
     stochastic vector.
 
@@ -352,7 +352,7 @@ def get_off_diag(mat: FloatArray) -> FloatArray:
     return offitems
 
 
-def set_offdiag(mat: NDArray, vals: NDArray) -> NDArray:
+def set_offdiag(mat: Array, vals: Array) -> Array:
     """Set all off-diagonal elements of square array to
     elements of `values`.
 

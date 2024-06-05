@@ -9,7 +9,7 @@ import numpy as np
 import soundfile as _sf
 
 from . signal import tools as _ast
-from . types import FloatArray, Int16Array, NDArray, PathType
+from . types import Array, FloatArray, Int16Array, PathType
 
 
 class AudioFile:
@@ -86,7 +86,7 @@ class AudioFile:
 
     def read(self, n_frames: int | None = None, offset: int | None = None,
              norm: bool = False, mono: bool = True, dtype: str = 'float64'
-        ) -> NDArray:
+        ) -> Array:
         # pylint: disable=too-many-arguments
         """Read from audio file.
 
@@ -119,7 +119,7 @@ class AudioFile:
             data = _ast.normalize(data)
         return data
 
-    def _read(self, n_frames: int, dtype: str = 'float64') -> NDArray:
+    def _read(self, n_frames: int, dtype: str = 'float64') -> Array:
         ffs = self.n_frames if n_frames == -1 else n_frames
         out = np.empty((ffs, self.n_channels), dtype=dtype)
         self._file.read(n_frames, dtype=dtype, always_2d=True, fill_value=0,
