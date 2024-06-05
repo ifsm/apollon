@@ -15,7 +15,6 @@ FloatArray = np.ndarray[Any, np.dtype[np.double]]
 ComplexArray = np.ndarray[Any, np.dtype[np.complex128]]
 
 ArrayOrStr = Array | str
-IterOrNone = Iterable | None
 
 ParamsType = Dict[str, Any]
 PathType = pathlib.Path | str
