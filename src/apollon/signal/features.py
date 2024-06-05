@@ -5,6 +5,7 @@ from typing import Optional
 
 import numpy as _np
 from scipy.signal import hilbert as _hilbert
+from scipy.signal import correlate
 
 from . import _features     # pylint: disable = no-name-in-module
 from . import tools as _sigtools
