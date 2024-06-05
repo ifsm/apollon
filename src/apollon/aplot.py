@@ -1,13 +1,12 @@
 """
 General plotting routines
 """
-from typing import Any, Tuple
+from typing import Any, Tuple, Sequence
 
 import matplotlib as mpl
 import matplotlib.pyplot as _plt
 import matplotlib.cm as _cm
 import numpy as _np
-import numpy.typing as npt
 from scipy import stats as _stats
 
 from . audio import AudioFile
@@ -17,15 +16,15 @@ from . onsets.detectors import OnsetDetector
 from . types import Array, FloatArray, IntArray
 
 Figure = mpl.figure.Figure
-Axes = mpl.axes.Axes
+Axis = mpl.axes.Axes
+Axes = Axis | Sequence[Axis]
 Limits = tuple[int, int] | None
 FigSize = tuple[float, float]
 SubplotPos = tuple[int, int, int] | None
-AxesArray = npt.NDArray[Axes]
-FigAxis = tuple[Figure, Axes]
+FigAxis = tuple[Figure, Axis]
 
 
-def outward_spines(axs: Axes | AxesArray, offset: float = 10.0) -> None:
+def outward_spines(axs: Axes, offset: float = 10.0) -> None:
     """Display only left and bottom spine and displace them.
 
     Args:
@@ -37,7 +36,7 @@ def outward_spines(axs: Axes | AxesArray, offset: float = 10.0) -> None:
         so is the axis label, which is in turn forced out of the figure's
         bounds.
     """
-    for ax in _np.atleast_1d(axs).ravel():
+    for ax in _np.atleast_1d(axs).ravel():    # type: ignore
         ax.spines['left'].set_position(('outward', offset))
         ax.spines['bottom'].set_position(('outward', offset))
         ax.spines['top'].set_visible(False)
@@ -46,7 +45,7 @@ def outward_spines(axs: Axes | AxesArray, offset: float = 10.0) -> None:
         ax.yaxis.set_ticks_position('left')
 
 
-def center_spines(axs: Axes,
+def center_spines(axs: Axis,
                   intersect: Tuple[float, float] = (0.0, 0.0)) -> None:
     """Display axes in crosshair fashion.
 
@@ -54,7 +53,7 @@ def center_spines(axs: Axes,
         axs:        Axis or iterable of axes.
         intersect:  Coordinate of axes' intersection point.
     """
-    for ax in _np.atleast_1d(axs).ravel():
+    for ax in _np.atleast_1d(axs).ravel():    # type: ignore
         ax.spines['left'].set_position(('axes', intersect[0]))
         ax.spines['bottom'].set_position(('axes', intersect[1]))
         ax.spines['top'].set_visible(False)
@@ -136,7 +135,7 @@ def signal(values: FloatArray, fps: int | None = None, **kwargs: Any) -> FigAxis
         ax.set_xlabel('t [s]')
         ax.set_ylabel(r'x[$t$]')
 
-    ax.plot(domain, values, **_defaults.PP_SIGNAL)
+    ax.plot(domain, values, **_defaults.PP_SIGNAL)    # type: ignore
 
     return fig, ax
 
