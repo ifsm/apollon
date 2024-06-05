@@ -3,6 +3,7 @@ General plotting routines
 """
 from typing import Any, Tuple
 
+import matplotlib as mpl
 from matplotlib.axes import Axes
 import matplotlib.pyplot as _plt
 import matplotlib.cm as _cm
@@ -16,13 +17,12 @@ from . import tools as _tools
 from . onsets.detectors import OnsetDetector
 from . types import Array, FloatArray, IntArray
 
-
+Figure = mpl.figure.Figure
 Limits = tuple[int, int] | None
-MplFig = _plt.Figure | None
 FigSize = tuple[float, float]
 SubplotPos = tuple[int, int, int] | None
 AxesArray = npt.NDArray[Axes]
-FigAxis = tuple[_plt.Figure, _plt.Axes]
+FigAxis = tuple[Figure, _plt.Axes]
 
 
 def outward_spines(axs: Axes | AxesArray, offset: float = 10.0) -> None:
@@ -63,7 +63,7 @@ def center_spines(axs: Axes,
         ax.yaxis.set_ticks_position('left')
 
 
-def _new_axis(spines: str = 'nice', fig: _plt.Figure | None = None, sp_pos: SubplotPos = None,
+def _new_axis(spines: str = 'nice', fig: Figure | None = None, sp_pos: SubplotPos = None,
               axison: bool = True, **kwargs: Any) -> FigAxis:
     """Create a new figure with a single axis and fancy spines.
 
@@ -99,7 +99,7 @@ def _new_axis(spines: str = 'nice', fig: _plt.Figure | None = None, sp_pos: Subp
     return fig, ax
 
 
-def _new_axis_3d(fig: _plt.Figure | None = None, **kwargs: Any) -> FigAxis:
+def _new_axis_3d(fig: Figure | None = None, **kwargs: Any) -> FigAxis:
     """Create a 3d cartesian coordinate system.
 
     Args:
