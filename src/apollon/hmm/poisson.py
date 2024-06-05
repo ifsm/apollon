@@ -29,9 +29,9 @@ class PoissonHmm:
                  'verbose', 'version', 'training_date', 'success']
 
     def __init__(self, data: IntArray, m_states: int,
-                 init_lambda: _at.ArrayOrStr = 'quantile',
-                 init_gamma: _at.ArrayOrStr = 'uniform',
-                 init_delta: _at.ArrayOrStr = 'stationary',
+                 init_lambda: FloatArray | str = 'quantile',
+                 init_gamma: FloatArray | str = 'uniform',
+                 init_delta: FloatArray | str = 'stationary',
                  g_dirichlet: Sequence[float] | None = None,
                  d_dirichlet: Sequence[float] | None = None,
                  fill_diag: float = .8,
@@ -126,9 +126,9 @@ class _HyperParams:
 
     def __init__(self,
                  m_states: int,
-                 init_lambda: _at.ArrayOrStr,
-                 init_gamma: _at.ArrayOrStr,
-                 init_delta: _at.ArrayOrStr,
+                 init_lambda: FloatArray | str,
+                 init_gamma: FloatArray | str,
+                 init_delta: FloatArray | str,
                  gamma_dp: Sequence[float] | None = None,
                  delta_dp: Sequence[float] | None = None,
                  fill_diag: float | None = None) -> None:

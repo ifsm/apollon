@@ -14,8 +14,6 @@ Int16Array = np.ndarray[Any, np.dtype[np.int16]]
 FloatArray = np.ndarray[Any, np.dtype[np.double]]
 ComplexArray = np.ndarray[Any, np.dtype[np.complex128]]
 
-ArrayOrStr = Array | str
-
 ParamsType = Dict[str, Any]
 PathType = pathlib.Path | str
 PathGen = Generator[PathType, None, None]
