@@ -4,7 +4,6 @@ General plotting routines
 from typing import Any, Tuple
 
 import matplotlib as mpl
-from matplotlib.axes import Axes
 import matplotlib.pyplot as _plt
 import matplotlib.cm as _cm
 import numpy as _np
@@ -18,11 +17,12 @@ from . onsets.detectors import OnsetDetector
 from . types import Array, FloatArray, IntArray
 
 Figure = mpl.figure.Figure
+Axes = mpl.axes.Axes
 Limits = tuple[int, int] | None
 FigSize = tuple[float, float]
 SubplotPos = tuple[int, int, int] | None
 AxesArray = npt.NDArray[Axes]
-FigAxis = tuple[Figure, _plt.Axes]
+FigAxis = tuple[Figure, Axes]
 
 
 def outward_spines(axs: Axes | AxesArray, offset: float = 10.0) -> None:
