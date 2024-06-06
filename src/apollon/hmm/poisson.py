@@ -233,7 +233,8 @@ class _HyperParams:
         return _gamma
 
     @staticmethod
-    def _assert_delta(_delta: FloatArray | str, delta_dp: Sequence[float] | None) -> FloatArray | str:
+    def _assert_delta(_delta: FloatArray | str, delta_dp: Sequence[float] | None
+                      ) -> FloatArray | str:
         """Assure that `_delta` fits requirements for Poisson initial distributions.
 
         Args:
