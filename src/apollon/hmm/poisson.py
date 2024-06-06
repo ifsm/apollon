@@ -3,7 +3,7 @@ HMM with Poisson-distributed state dependent process
 """
 
 import typing as _typing
-from typing import Any
+from typing import Any, Sequence
 import warnings as _warnings
 
 import numpy as _np
@@ -29,11 +29,11 @@ class PoissonHmm:
                  'verbose', 'version', 'training_date', 'success']
 
     def __init__(self, data: IntArray, m_states: int,
-                 init_lambda: _at.ArrayOrStr = 'quantile',
-                 init_gamma: _at.ArrayOrStr = 'uniform',
-                 init_delta: _at.ArrayOrStr = 'stationary',
-                 g_dirichlet: _at.IterOrNone = None,
-                 d_dirichlet: _at.IterOrNone = None,
+                 init_lambda: FloatArray | str = 'quantile',
+                 init_gamma: FloatArray | str = 'uniform',
+                 init_delta: FloatArray | str = 'stationary',
+                 g_dirichlet: Sequence[float] | None = None,
+                 d_dirichlet: Sequence[float] | None = None,
                  fill_diag: float = .8,
                  verbose: bool = True):
 
@@ -126,11 +126,11 @@ class _HyperParams:
 
     def __init__(self,
                  m_states: int,
-                 init_lambda: _at.ArrayOrStr,
-                 init_gamma: _at.ArrayOrStr,
-                 init_delta: _at.ArrayOrStr,
-                 gamma_dp: _at.IterOrNone = None,
-                 delta_dp: _at.IterOrNone = None,
+                 init_lambda: FloatArray | str,
+                 init_gamma: FloatArray | str,
+                 init_delta: FloatArray | str,
+                 gamma_dp: Sequence[float] | None = None,
+                 delta_dp: Sequence[float] | None = None,
                  fill_diag: float | None = None) -> None:
         """Check and save model hyper parameters.
 
@@ -196,7 +196,7 @@ class _HyperParams:
         return _lambda
 
     @staticmethod
-    def _assert_gamma(_gamma: FloatArray | str, gamma_dp: _at.IterOrNone,
+    def _assert_gamma(_gamma: FloatArray | str, gamma_dp: Sequence[float] | None,
                       diag_val: float | None) -> FloatArray | str:
         """Assure that `_gamma` fits requirements for Poisson transition probability matirces.
 
@@ -234,7 +234,7 @@ class _HyperParams:
         return _gamma
 
     @staticmethod
-    def _assert_delta(_delta: FloatArray | str, delta_dp: _at.IterOrNone) -> FloatArray | str:
+    def _assert_delta(_delta: FloatArray | str, delta_dp: Sequence[float] | None) -> FloatArray | str:
         """Assure that `_delta` fits requirements for Poisson initial distributions.
 
         Args:

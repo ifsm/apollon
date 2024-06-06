@@ -12,34 +12,33 @@
    onsets
    onset_decoding
 """
-from typing import Any, Tuple
+from typing import Any, Tuple, Sequence
 
-from matplotlib.axes import Axes
+import matplotlib as mpl
 import matplotlib.pyplot as _plt
 import matplotlib.cm as _cm
 import numpy as _np
-import numpy.typing as npt
 from scipy import stats as _stats
 
 from . audio import AudioFile
 from . import _defaults
 from . import tools as _tools
 from . onsets.detectors import OnsetDetector
-from . types import FloatArray, IntArray, NDArray
+from . types import Array, FloatArray, IntArray
 
-
+Figure = mpl.figure.Figure
+Axis = mpl.axes.Axes
+Axes = Axis | Sequence[Axis]
 Limits = tuple[int, int] | None
-MplFig = _plt.Figure | None
 FigSize = tuple[float, float]
 SubplotPos = tuple[int, int, int] | None
-AxesArray = npt.NDArray[Axes]
-FigAxis = tuple[_plt.Figure, _plt.Axes]
+FigAxis = tuple[Figure, Axis]
 
 __all__ = ("outward_spines", "center_spines", "signal", "fourplot", "marginal_distr",
            "onsets", "onset_decoding")
 
 
-def outward_spines(axs: Axes | AxesArray, offset: float = 10.0) -> None:
+def outward_spines(axs: Axes, offset: float = 10.0) -> None:
     """Display only left and bottom spine and displace them.
 
     Args:
@@ -51,7 +50,7 @@ def outward_spines(axs: Axes | AxesArray, offset: float = 10.0) -> None:
         so is the axis label, which is in turn forced out of the figure's
         bounds.
     """
-    for ax in _np.atleast_1d(axs).ravel():
+    for ax in _np.atleast_1d(axs).ravel():    # type: ignore
         ax.spines['left'].set_position(('outward', offset))
         ax.spines['bottom'].set_position(('outward', offset))
         ax.spines['top'].set_visible(False)
@@ -60,7 +59,7 @@ def outward_spines(axs: Axes | AxesArray, offset: float = 10.0) -> None:
         ax.yaxis.set_ticks_position('left')
 
 
-def center_spines(axs: Axes,
+def center_spines(axs: Axis,
                   intersect: Tuple[float, float] = (0.0, 0.0)) -> None:
     """Display axes in crosshair fashion.
 
@@ -68,7 +67,7 @@ def center_spines(axs: Axes,
         axs:        Axis or iterable of axes.
         intersect:  Coordinate of axes' intersection point.
     """
-    for ax in _np.atleast_1d(axs).ravel():
+    for ax in _np.atleast_1d(axs).ravel():    # type: ignore
         ax.spines['left'].set_position(('axes', intersect[0]))
         ax.spines['bottom'].set_position(('axes', intersect[1]))
         ax.spines['top'].set_visible(False)
@@ -77,7 +76,7 @@ def center_spines(axs: Axes,
         ax.yaxis.set_ticks_position('left')
 
 
-def _new_axis(spines: str = 'nice', fig: _plt.Figure | None = None, sp_pos: SubplotPos = None,
+def _new_axis(spines: str = 'nice', fig: Figure | None = None, sp_pos: SubplotPos = None,
               axison: bool = True, **kwargs: Any) -> FigAxis:
     """Create a new figure with a single axis and fancy spines.
 
@@ -113,7 +112,7 @@ def _new_axis(spines: str = 'nice', fig: _plt.Figure | None = None, sp_pos: Subp
     return fig, ax
 
 
-def _new_axis_3d(fig: _plt.Figure | None = None, **kwargs: Any) -> FigAxis:
+def _new_axis_3d(fig: Figure | None = None, **kwargs: Any) -> FigAxis:
     """Create a 3d cartesian coordinate system.
 
     Args:
@@ -150,13 +149,13 @@ def signal(values: FloatArray, fps: int | None = None, **kwargs: Any) -> FigAxis
         ax.set_xlabel('t [s]')
         ax.set_ylabel(r'x[$t$]')
 
-    ax.plot(domain, values, **_defaults.PP_SIGNAL)
+    ax.plot(domain, values, **_defaults.PP_SIGNAL)    # type: ignore
 
     return fig, ax
 
 
 def fourplot(data: FloatArray, lag: int = 1
-             ) -> tuple[tuple[NDArray, NDArray], tuple[float, float, float]]:
+             ) -> tuple[tuple[Array, Array], tuple[float, float, float]]:
     """Plot time series, lag-plot, histogram, and probability plot.
 
     Args:

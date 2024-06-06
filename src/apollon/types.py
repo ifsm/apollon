@@ -8,15 +8,11 @@ from typing import (Any, Collection, Dict, Generator, Iterable, List,
 import numpy as np
 
 
-Array = np.ndarray
-NDArray = np.ndarray[Any, Any]
+Array = np.ndarray[Any, Any]
 IntArray = np.ndarray[Any, np.dtype[np.int_]]
 Int16Array = np.ndarray[Any, np.dtype[np.int16]]
 FloatArray = np.ndarray[Any, np.dtype[np.double]]
 ComplexArray = np.ndarray[Any, np.dtype[np.complex128]]
-
-ArrayOrStr = Array | str
-IterOrNone = Iterable | None
 
 ParamsType = Dict[str, Any]
 PathType = pathlib.Path | str

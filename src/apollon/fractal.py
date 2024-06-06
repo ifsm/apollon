@@ -6,10 +6,10 @@ import numpy as np
 from scipy import stats
 from scipy.spatial import distance
 
-from . types import FloatArray, floatarray, NDArray
+from . types import Array, FloatArray, floatarray
 
 
-def delay_embedding(inp: NDArray, delay: int, m_dim: int) -> NDArray:
+def delay_embedding(inp: Array, delay: int, m_dim: int) -> FloatArray:
     """Compute a delay embedding of the `inp`
 
     This method makes a hard cut at the upper bound of `inp` and
@@ -31,8 +31,8 @@ def delay_embedding(inp: NDArray, delay: int, m_dim: int) -> NDArray:
     return emb_vects
 
 
-def embedding_dists(inp: NDArray, delay: int, m_dim: int,
-                    metric: str = 'euclidean') -> NDArray:
+def embedding_dists(inp: Array, delay: int, m_dim: int,
+                    metric: str = 'euclidean') -> FloatArray:
     """Perfom a delay embedding and return the pairwaise distances
     of the delayed vectors
 
@@ -52,7 +52,7 @@ def embedding_dists(inp: NDArray, delay: int, m_dim: int,
     return floatarray(distance.pdist(emb_vects, metric))
 
 
-def embedding_entropy(emb: NDArray, n_bins: int) -> FloatArray:
+def embedding_entropy(emb: Array, n_bins: int) -> FloatArray:
     """Compute the information entropy from an embedding
 
     Args:

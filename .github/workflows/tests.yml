@@ -1,0 +1,20 @@
+name: tests
+
+on: [push]
+
+jobs:
+  run-unittests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: |
+            3.9
+            3.10
+            3.11
+      - run: python3 -m pip install --user pipx
+      - run: python3 -m pipx ensurepath
+      - run: pipx install tox
+      - run: tox r
+

@@ -2,14 +2,16 @@
 Feature extraction routines
 ============================
 """
+from typing import Optional
 
 import numpy as _np
 from scipy.signal import hilbert as _hilbert
+from scipy.signal import correlate
 
 from . import _features     # pylint: disable = no-name-in-module
 from . import tools as _sigtools
 from .. import segment as _segment
-from .. types import FloatArray, floatarray, IntArray, NDArray
+from .. types import Array, FloatArray, floatarray, IntArray
 from . import critical_bands as _cb
 from .. import _defaults
 
@@ -52,7 +54,7 @@ def cdim(inp: FloatArray, delay: int, m_dim: int, n_bins: int = 1000,
 
     if mode == 'bader':
         cdim_func = _features.cdim_bader
-        inp_: NDArray
+        inp_: Array
         if inp.dtype == 'int16':
             inp_ = inp.copy()
         else:
@@ -176,7 +178,7 @@ def spectral_centroid(frqs: FloatArray, amps: FloatArray) -> FloatArray:
         where :math:`f_i` is the center frequency, and :math:`p(i)` the
         relative amplitude of the :math:`i` th DFT bin.
     """
-    out = _np.empty_like((1, amps.shape[1]), dtype=_np.double)
+    out = _np.empty((1, amps.shape[1]), dtype=_np.double)
     return _np.sum(frqs*_power_distr(amps), axis=0, keepdims=True, out=out)
 
 
@@ -363,7 +365,20 @@ def roughness_helmholtz(d_frq: float, bins: FloatArray, frq_max: float,
     kernel = _roughnes_kernel(d_frq, frq_max)
     out = _np.empty((kernel.size, bins.shape[1]))
     for i, bin_slice in enumerate(bins.T):
-        out[:, i] = _np.correlate(bin_slice, kernel, mode='same')
+        bin_slice = bin_slice[:kernel.size]
+        bin_max = bin_slice.max()
+        if bin_max > 0:
+            bin_slice /= bin_max
+        bin_slice[bin_slice<0.1] = 0
+        rns = correlate(bin_slice, bin_slice)
+        rns = rns[rns.size//2:]
+        rns[0] = 0
+        rns_max = rns.max()
+        if rns_max > 0:
+            rns /= rns_max
+            out[:, i] = rns * kernel / sum(rns>0.2)
+        else:
+            out[:, i] = rns * kernel
 
     if total is True:
         out = out.sum(axis=0, keepdims=True)
@@ -404,7 +419,7 @@ def _roughnes_kernel(frq_res: float, frq_max: float) -> FloatArray:
     """Comput the convolution kernel for roughness computation.
 
     Args:
-        frq_res:    Frequency resolution
+        frq_res:    Frequency resolution.
         frq_max:    Frequency bound.
 
     Returns:

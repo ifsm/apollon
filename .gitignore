@@ -37,6 +37,7 @@ nosetests.xml
 coverage.xml
 *,cover
 .hypothesis/
+.dmypy.json
 
 docs/build/
 docs/source/build/

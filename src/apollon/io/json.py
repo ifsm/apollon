@@ -8,7 +8,7 @@ from typing import Any
 
 import numpy as np
 
-from .. types import NDArray, PathType
+from .. types import Array, PathType
 
 
 def dump(obj: Any, path: PathType) -> None:
@@ -60,7 +60,7 @@ def validate_ndarray(obj: dict[str, Any]) -> bool:
     )
 
 
-def decode_ndarray(instance: dict[str, Any]) -> NDArray:
+def decode_ndarray(instance: dict[str, Any]) -> Array:
     """Decode numerical numpy arrays from a JSON data stream.
 
     Args:
@@ -74,7 +74,7 @@ def decode_ndarray(instance: dict[str, Any]) -> NDArray:
     raise TypeError("xx")
 
 
-def encode_ndarray(arr: NDArray) -> dict[str, Any]:
+def encode_ndarray(arr: Array) -> dict[str, Any]:
     """Transform an numpy array to a JSON-serializable dict.
 
     Array must have a numerical dtype. Datetime objects are currently
@@ -90,7 +90,7 @@ def encode_ndarray(arr: NDArray) -> dict[str, Any]:
             'data': arr.tolist()}
 
 
-def _ndarray_hook(inp: dict[str, Any]) -> NDArray | dict[str, Any]:
+def _ndarray_hook(inp: dict[str, Any]) -> Array | dict[str, Any]:
     try:
         return decode_ndarray(inp)
     except TypeError:
