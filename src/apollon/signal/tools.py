@@ -242,24 +242,24 @@ def sinusoid(frqs: Sequence[float] | float,
     return total
 
 
-def ampmod(frq_c: float, frq_m: float, m: float, amp_c: float = 0.5,
+def ampmod(frq_c: float, frq_m: float, mod: float, amp_c: float = 0.5,
            fps: int = 9000, length: float = 1.0) -> FloatArray:
     r"""Generate amplitude modulated sinusoids
 
-    The modulation index `m` is defined by
+    The modulation index `mod` is defined by
 
     .. math::
 
          m = \frac{a_{m}}{a_{c}} \,
 
     and determines the influcence of the modulator on the carrier. For
-    incoherent demodultaion, `m` should range in [0, 1[, where `m` = 0 means no
+    incoherent demodultaion, `mod` should range in [0, 1[, where `mod` = 0 means no
     modulation.
 
     Args:
         frq_c:  Carrier frequency
         frq_m:  Modulator frequency
-        m:      Modulation index
+        mod:    Modulation index
         amp_c:  Carrier amplitude
         fps:    Sample rate
         length: Length of the resulting signal in seconds
@@ -274,7 +274,7 @@ def ampmod(frq_c: float, frq_m: float, m: float, amp_c: float = 0.5,
     f_sb2 = frq_c + frq_m
 
     np.subtract(np.cos(f_sb1*wts), np.cos(f_sb2*wts), out=out)
-    np.multiply(out, m/2, out=out)
+    np.multiply(out, mod/2, out=out)
     np.add(out, np.sin(frq_c*wts), out=out)
     np.multiply(out, amp_c, out=out)
     return out
