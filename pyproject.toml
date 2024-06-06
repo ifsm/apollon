@@ -78,4 +78,8 @@ good-names = ["_", "i", "j", "n", "ax"]
 max-attributes = 8
 
 [tool.pylint.'MESSAGES CONTROL']
-extension-pkg-allow-list = ["pydantic", "chainsaddiction"]
+extension-pkg-allow-list = [
+	"pydantic",
+	"chainsaddiction",
+	"apollon.signal._features",
+	"apollon.som._distance"]
