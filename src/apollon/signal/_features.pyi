@@ -1,4 +1,4 @@
-from apollon.types import Array, FloatArray
+from apollon.typing import Array, FloatArray
 
 def correlogram(inp: Array, wlen: int, delay_max: int) -> FloatArray:
     ...

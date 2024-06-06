@@ -7,7 +7,7 @@ from typing import Any, Tuple, Callable
 
 import numpy as np
 
-from . types import FloatArray, floatarray
+from . typing import FloatArray, floatarray
 
 
 def pca(data: FloatArray, n_comps: int = 2) -> Tuple[FloatArray, FloatArray,

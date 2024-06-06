@@ -3,7 +3,7 @@ Simple filter implementations
 """
 import scipy.signal as _scs
 
-from .. types import FloatArray, floatarray
+from .. typing import FloatArray, floatarray
 
 
 def coef_bw_bandpass(low: int, high: int, fps: int, order: int = 4

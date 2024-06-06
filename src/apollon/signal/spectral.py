@@ -14,7 +14,7 @@ from apollon.segment import ArraySegmentation, Segments
 from apollon.segment.models import SegmentationParams
 
 from . models import DftParams, StftParams, SpectralTransformParams
-from .. types import FloatArray, IntArray, ComplexArray
+from .. typing import FloatArray, IntArray, ComplexArray
 from .. signal import features
 
 

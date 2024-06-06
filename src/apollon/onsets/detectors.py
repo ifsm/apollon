@@ -15,7 +15,7 @@ from .. signal import tools as _ast
 from .. signal.spectral import Stft
 from .. import fractal as _fractal
 from .. import segment as aseg
-from .. types import IntArray, FloatArray, PathType
+from .. typing import IntArray, FloatArray, PathType
 from . import models
 from .. models import PeakPickingParams
 

@@ -9,7 +9,7 @@ import numpy as np
 from scipy import stats
 
 from .. import _defaults
-from .. types import FloatArray, Int16Array, floatarray
+from .. typing import FloatArray, Int16Array, floatarray
 
 
 def acf(inp: FloatArray) -> FloatArray:

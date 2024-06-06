@@ -6,7 +6,7 @@ import numpy as np
 from scipy import stats
 from scipy.spatial import distance
 
-from . types import Array, FloatArray, floatarray
+from . typing import Array, FloatArray, floatarray
 
 
 def delay_embedding(inp: Array, delay: int, m_dim: int) -> FloatArray:

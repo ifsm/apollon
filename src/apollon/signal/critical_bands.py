@@ -5,7 +5,7 @@ Critical band helpers
 import numpy as _np
 from scipy.signal.windows import get_window as _get_window
 
-from .. types import FloatArray, IntArray, floatarray
+from .. typing import FloatArray, IntArray, floatarray
 from .. import tools as _tools
 
 

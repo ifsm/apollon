@@ -7,7 +7,7 @@ from typing import Generator, TYPE_CHECKING
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
 
-from apollon.types import Array, FloatArray
+from apollon.typing import Array, FloatArray
 from apollon.segment.models import SegmentationParams, Segment
 
 if TYPE_CHECKING:

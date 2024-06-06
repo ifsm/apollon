@@ -3,7 +3,7 @@ Evaluation helpers
 """
 
 import mir_eval as _me
-from apollon.types import FloatArray
+from apollon.typing import FloatArray
 
 
 def evaluate_onsets(targets: FloatArray,

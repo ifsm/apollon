@@ -11,7 +11,7 @@ from scipy.signal import correlate
 from . import _features     # pylint: disable = no-name-in-module
 from . import tools as _sigtools
 from .. import segment as _segment
-from .. types import Array, FloatArray, floatarray, IntArray
+from .. typing import Array, FloatArray, floatarray, IntArray
 from . import critical_bands as _cb
 from .. import _defaults
 

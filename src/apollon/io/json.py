@@ -8,7 +8,7 @@ from typing import Any
 
 import numpy as np
 
-from .. types import Array, PathType
+from .. typing import Array, PathType
 
 
 def dump(obj: Any, path: PathType) -> None:

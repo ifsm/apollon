@@ -24,7 +24,7 @@ from . audio import AudioFile
 from . import _defaults
 from . import tools as _tools
 from . onsets.detectors import OnsetDetector
-from . types import Array, FloatArray, IntArray
+from . typing import Array, FloatArray, IntArray
 
 Figure = mpl.figure.Figure
 Axis = mpl.axes.Axes

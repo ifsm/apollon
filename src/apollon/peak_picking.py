@@ -3,7 +3,7 @@ Detect local maxima in time series data.
 """
 import numpy as np
 from . models import PeakPickingParams
-from . types import FloatArray
+from . typing import FloatArray
 
 
 class FilterPeakPicker:

@@ -6,7 +6,7 @@ from chainsaddiction.poishmm import PoisHmm
 import numpy as _np
 
 from pydantic import BaseModel, ConfigDict
-from apollon.types import FloatArray
+from apollon.typing import FloatArray
 
 
 class PoissonHmmParams(BaseModel):

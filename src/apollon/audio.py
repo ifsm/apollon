@@ -9,7 +9,7 @@ import numpy as np
 import soundfile as _sf
 
 from . signal import tools as _ast
-from . types import Array, FloatArray, Int16Array, PathType
+from . typing import Array, FloatArray, Int16Array, PathType
 
 
 class AudioFile:

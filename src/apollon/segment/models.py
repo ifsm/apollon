@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from pydantic import BaseModel
-from apollon.types import FloatArray
+from apollon.typing import FloatArray
 
 
 class SegmentationParams(BaseModel):

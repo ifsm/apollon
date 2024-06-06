@@ -7,7 +7,7 @@ from numpy import linalg as _linalg
 from scipy import stats as _stats
 
 from apollon import tools as _tools
-from apollon.types import Array, FloatArray, floatarray, IntArray
+from apollon.typing import Array, FloatArray, floatarray, IntArray
 
 
 def assert_poisson_input(data: Array) -> None:

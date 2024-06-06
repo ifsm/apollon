@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from apollon.types import FloatArray, IntArray
+from apollon.typing import FloatArray, IntArray
 from apollon.signal.tools import zero_padding
 
 
