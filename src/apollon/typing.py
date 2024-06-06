@@ -3,7 +3,7 @@ Type aliases
 """
 
 import pathlib
-from typing import (Any, Collection, Dict, Generator, Iterable, List,
+from typing import (Any, Collection, Dict, Generator, List,
                     Tuple)
 import numpy as np
 

@@ -9,7 +9,7 @@ from typing import Any
 import numpy as np
 
 from .. typing import Array, PathType
-from . json import ArrayEncoder
+
 
 def generate_outpath(in_path: PathType,
                      out_path: PathType | None,
