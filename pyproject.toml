@@ -73,6 +73,7 @@ ignore_missing_imports = true
 
 [tool.pylint.basic]
 good-names = ["_", "i", "j", "n", "ax"]
+max-args = 6
 
 [tool.pylint.design]
 max-attributes = 8
