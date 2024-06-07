@@ -1,6 +1,6 @@
 [![mypy](https://github.com/ifsm/apollon/actions/workflows/mypy.yml/badge.svg)](https://github.com/ifsm/apollon/actions/workflows/mypy.yml)
 [![pylint](https://github.com/ifsm/apollon/actions/workflows/pylint.yml/badge.svg)](https://github.com/ifsm/apollon/actions/workflows/pylint.yml)
-
+[![tests](https://github.com/ifsm/apollon/actions/workflows/tests.yml/badge.svg)](https://github.com/ifsm/apollon/actions/workflows/tests.yml)
 # Apollon
 Apollon is a Python framework for audio feature extraction and music similarity
 estimation. It includes subpackages for

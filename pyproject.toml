@@ -71,6 +71,9 @@ ignore_missing_imports = true
 module = "mir_eval"
 ignore_missing_imports = true
 
+[tool.pylint.main]
+ignore-patterns = ["^\\.#", "^.*.pyi"]
+
 [tool.pylint.basic]
 good-names = ["_", "i", "j", "n", "ax"]
 max-args = 6

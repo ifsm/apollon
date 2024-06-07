@@ -1,20 +1,20 @@
 name: tests
-
 on: [push]
-
 jobs:
   run-unittests:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - name: Set up Python $${{ matrix.python-version }}
+        uses: actions/setup-python@v5
         with:
-          python-version: |
-            3.9
-            3.10
-            3.11
-      - run: python3 -m pip install --user pipx
-      - run: python3 -m pipx ensurepath
-      - run: pipx install tox
-      - run: tox r
-
+          python-version: ${{ matrix.python-version }}
+      - name: Set up Poetry
+        uses: snok/install-poetry@v1
+      - name: Install project
+        run: poetry install --with=development
+      - name: Testing ...
+        run: poetry run -- python -m unittest
