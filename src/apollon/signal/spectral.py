@@ -106,7 +106,7 @@ class TransformResult(ABC):
     @property
     def centroid(self) -> FloatArray:
         """Compute spectral centroid"""
-        return features.spectral_centroid(self.frqs, self.abs)
+        return features.spectral_centroid(self.frqs, self.power)
 
     @property
     def _n_fft(self) -> int:
