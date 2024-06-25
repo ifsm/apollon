@@ -32,6 +32,7 @@ pylint = "^3.2.2"
 mypy = "^1.10.0"
 hypothesis = "^6.61.0"
 pandas-stubs = "^2.0.1.230501"
+ruff = "^0.4.10"
 
 
 [tool.poetry.group.notebook]
