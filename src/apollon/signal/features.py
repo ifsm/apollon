@@ -147,7 +147,7 @@ def rms(sig: FloatArray) -> FloatArray:
         RMS of signal along first axis.
     """
     buff = _np.empty_like(sig, dtype=_np.double)
-    out = _np.empty((sig.shape[1], 1), dtype=_np.double)
+    out = _np.empty((1, sig.shape[1]), dtype=_np.double)
     _np.abs(sig, out=buff)
     _np.square(buff, out=buff)
     _np.mean(buff, axis=0, keepdims=True, out=out)
