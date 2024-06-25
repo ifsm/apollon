@@ -3,13 +3,13 @@ import unittest
 
 import numpy as np
 
-from hypothesis import given, assume
+from hypothesis import given
 from hypothesis import strategies as st
 import hypothesis.extra.numpy as htn
 
-from apollon.types import Array, FloatArray
+from apollon.typing import FloatArray
 from apollon.signal import features
-from apollon.signal.spectral import Dft
+from apollon.signal.spectral import Dft, Stft
 from apollon.signal.tools import sinusoid
 from apollon._defaults import SPL_REF
 
@@ -108,6 +108,23 @@ class TestSpectralSpread(unittest.TestCase):
        sps_wc = features.spectral_spread(sxx.frqs, sxx.power, spc)
        self.assertEqual(sps.item(), sps_wc.item())
        self.assertLess(sps.item(), 1.0)
+
+
+
+class TestRoughness(unittest.TestCase):
+    def setUp(self):
+        self.fps = 44100
+        self.sig = sinusoid(100, length=2)
+
+    def test_single_array(self):
+        dft = Dft(fps=self.fps, window=None)
+        sxx = dft.transform(self.sig)
+        features.roughness_helmholtz(sxx.d_frq, sxx.abs, frq_max=1000)
+
+    def test_segmented_array(self):
+        stft = Stft(fps=self.fps, n_perseg=2**8, n_overlap=2**7)
+        sxx = stft.transform(self.sig)
+        features.roughness_helmholtz(sxx.d_frq, sxx.abs, frq_max=1000, total=False)
 
 
 if __name__ == '__main__':
