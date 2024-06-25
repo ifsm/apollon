@@ -17,13 +17,13 @@ documentation = "https://apollon.readthedocs.io"
 
 [tool.poetry.dependencies]
 python = "^3.11.0"
-numpy = "^1.23.5"
+numpy = "^2.0.0"
 scipy = "^1.9.3"
 pandas = "^2.2.2"
 soundfile = "^0.12.1"
 matplotlib = "^3.6.2"
 pydantic = "^2.0.2"
-awesom = "^0.1.4"
+awesom = "^0.1.5"
 chainsaddiction = "^0.2.4"
 mir-eval = "^0.7"
 
@@ -32,6 +32,7 @@ pylint = "^3.2.2"
 mypy = "^1.10.0"
 hypothesis = "^6.61.0"
 pandas-stubs = "^2.0.1.230501"
+ruff = "^0.4.10"
 
 
 [tool.poetry.group.notebook]
@@ -87,3 +88,6 @@ extension-pkg-allow-list = [
 	"chainsaddiction",
 	"apollon.signal._features",
 	"apollon.som._distance"]
+
+[tool.ruff.lint]
+select = ["NPY201"]
