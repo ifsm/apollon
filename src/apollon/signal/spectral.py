@@ -121,7 +121,7 @@ class TransformResult(ABC):
         return np.absolute(self._bins)
 
     def __getitem__(self, key: int) -> ComplexArray:
-        return np.asarray(self._bins[key]).astype(np.complex_)
+        return np.asarray(self._bins[key]).astype(np.complex128)
 
     def __len__(self) -> int:
         return self._bins.shape[0]
