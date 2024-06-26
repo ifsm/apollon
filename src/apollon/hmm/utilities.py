@@ -347,7 +347,7 @@ def get_off_diag(mat: FloatArray) -> FloatArray:
         raise ValueError('Matrix is not square.')
 
     mask = _np.eye(mat.shape[0], dtype=bool)
-    offitems = mat[~mask]
+    offitems: FloatArray = mat[~mask]
 
     return offitems
 
