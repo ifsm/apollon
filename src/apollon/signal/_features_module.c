@@ -1,5 +1,5 @@
 #define NPY_NO_DEPRECATED_API NPY_1_8_API_VERSION
-#define PY_ARRAY_UNIQUE_SYMBOL comsar_NP_ARRAY_API
+#define PY_ARRAY_UNIQUE_SYMBOL APOLLON_NP_ARRAY_API
 
 #include <Python.h>
 #include <numpy/arrayobject.h>
