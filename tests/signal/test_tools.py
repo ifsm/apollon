@@ -4,7 +4,7 @@ from functools import partial
 import unittest
 import numpy as np
 from hypothesis import given
-from hypothesis.strategies import composite, floats, DrawFn
+from hypothesis.strategies import composite, floats, integers, DrawFn
 
 from apollon._defaults import SPL_REF
 from apollon.signal import features
@@ -57,6 +57,14 @@ class TestAmpMod(unittest.TestCase):
         self.assertIsInstance(sig, np.ndarray)
         self.assertEqual(sig.dtype, np.float64)
         self.assertLessEqual(abs(sig).max(), 1)
+
+
+class TestMelHzConverte(unittest.TestCase):
+    @given(integers(min_value=0, max_value=1000000))
+    def test(self, frq: int) -> None:
+        res = tools.mel_to_hz(tools.hz_to_mel(frq))
+        self.assertIsInstance(res, np.ndarray)
+        self.assertTrue(np.isclose(res, frq))
 
 
 if __name__ == '__main__':
