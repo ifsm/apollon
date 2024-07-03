@@ -79,7 +79,7 @@ def c_weighting(frqs: FloatArray) -> FloatArray:
     return np.divide(aaa*sqf, (sqf+aaa)*(sqf+bbb))
 
 
-def freq2mel(frqs: float | FloatArray) -> FloatArray:
+def hz_to_mel(frqs: float | FloatArray) -> FloatArray:
     """Transforms Hz to Mel-Frequencies.
 
     Args:
@@ -128,7 +128,7 @@ def limit(inp: FloatArray, ldb: float | None = None,
     return np.minimum(low, uth)
 
 
-def mel2freq(zfrq: float | FloatArray) -> FloatArray:
+def mel_to_hz(zfrq: float | FloatArray) -> FloatArray:
     """Transforms Mel-Frequencies to Hzfrq.
 
     Args:
