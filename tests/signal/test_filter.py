@@ -29,7 +29,7 @@ class TestTriangFilterBank(TestCase):
     def test_triang_filter_bank(self, spec: tuple[float, float, int, int, int]) -> None:
         low, high, n_filters, fps, size = spec
         if low < high:
-            if high > fps//2:
+            if high > fps // 2:
                 with self.assertRaises(ValueError):
                     fb = triang_filter_bank(low, high, n_filters, fps, size)
             else:
