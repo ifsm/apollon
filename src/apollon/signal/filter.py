@@ -88,29 +88,30 @@ def mel_space(start: float, stop: float, num: int, endpoint: bool = True) -> Flo
 
 
 def bin_from_frq(fps: int, size: int, frqs: float | FloatArray) -> FloatArray:
-    """Compute the index of the FFT bin with closest center frequency to ``frqs``.
+    """Compute the index of the nearest FFT bin.
 
-    This function computes the bin index regarding a real FFT.
+    This function computes the bin index with the closest center frequency for each element
+    in ``frqs'', given a real FFT.
 
     Args:
         fps: Sample rate
-        n_fft: FFT length
+        size: FFT length
         frqs: Frequencies in Hz
 
     Returns:
-        Index of nearest FFT bin.
+        1-d array containing bin index for each element in ``frqs''
     """
-    out = np.empty_like(frqs, dtype=int)
+    out: FloatArray = np.atleast_1d(np.empty_like(frqs, dtype=int))
     np.rint(frqs*size/fps, casting="unsafe", out=out)
     return out
 
 
-def triang(fps: int, n_fft: int, frqs: FloatArray,
+def triang(fps: int, size: int, frqs: FloatArray,
            amps: tuple[float, float, float] = (0.0, 1.0, 0.0)
            ) -> FloatArray:
     """Compute a triangular filter.
 
-    Compute a triangular filter of size ``n_fft'' from an array of frequencies
+    Compute a triangular filter of size ``size'' from an array of frequencies
     ``frqs''.  The frequency array must be of shape (n, 3), where each row
     corresponds to a filter and the columns are interpreted as the lower
     cut-off, center, and upper cut-off frequencies.
@@ -123,7 +124,7 @@ def triang(fps: int, n_fft: int, frqs: FloatArray,
 
     Args:
         fps:    Sampling rate
-        n_fft:   Length of the filter
+        size:   Length of the filter
         frqs:   Constituting freqencies
         amps:   Amplitude of the filter at the constituting frequencies
 
