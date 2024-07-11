@@ -131,13 +131,13 @@ def triang(fps: int, size: int, frqs: FloatArray,
     Returns:
         Array of triangular filters with shape (frqs.shape[0], size).
     """
-    if n_fft < 4:
-        raise ValueError("``n_fft'' is less than 3")
-
+    out_shape = (size+1)//2 if size % 2 else size//2+1
     filters = []
-    for low, ctr, high in bin_from_frq(fps, n_fft, frqs):
-        out = np.zeros((n_fft+1)//2 if n_fft % 2 else n_fft//2+1)
+    for low, ctr, high in bin_from_frq(fps, size, frqs):
+        out = np.zeros(out_shape)
         roi = np.arange(low, high+1, dtype=int)
+        if np.any(roi >= out_shape):
+            raise ValueError("Frquency out of range given params")
         out[roi] = np.interp(roi, (low, ctr, high), amps)
         filters.append(out)
     return np.vstack(filters)
