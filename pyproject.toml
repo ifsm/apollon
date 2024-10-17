@@ -9,8 +9,6 @@ keywords = ["music", "analysis", "feature extraction"]
 classifiers = [
 	"License :: OSI Approved :: BSD License",
 	"Programming Language :: Python :: 3",
-	"Programming Language :: Python :: 3.7",
-	"Programming Language :: Python :: 3.8",
 	"Programming Language :: Python :: 3.9",
 	"Programming Language :: Python :: 3.10",
 	"Programming Language :: Python :: 3.11",
@@ -22,7 +20,7 @@ classifiers = [
 	"Intended Audience :: Information Technology",
 	"License :: OSI Approved :: BSD License",
 ]
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 dependencies = [
 	"numpy >= 1.20",
 	"jsonschema >= 3.2.0",

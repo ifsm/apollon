@@ -34,7 +34,7 @@ jobs:
   build-macos:
     strategy:
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.9", "3.10", "3.11"]
     runs-on: macos-latest
     steps:
       - name: Checkout repo
@@ -63,7 +63,7 @@ jobs:
   build-windows:
     strategy:
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.9", "3.10", "3.11"]
     runs-on: windows-latest
     steps:
       - name: Checkout repo
