@@ -5,7 +5,7 @@ on:
     types: [published]
 
 jobs:
-  build-linux:
+  build-source-dist:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -14,7 +14,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
+          python-version: "3.13"
 
       - name: Install dependencies
         run: |
@@ -34,7 +34,7 @@ jobs:
   build-macos:
     strategy:
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     runs-on: macos-latest
     steps:
       - name: Checkout repo
@@ -63,7 +63,7 @@ jobs:
   build-windows:
     strategy:
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     runs-on: windows-latest
     steps:
       - name: Checkout repo
@@ -90,7 +90,7 @@ jobs:
 
   pypi-publish:
     name: Upload releases to PyPI
-    needs: [build-windows, build-macos, build-linux]
+    needs: [build-windows, build-macos, build-source-dist]
     runs-on: ubuntu-latest
     environment:
       name: pypi
