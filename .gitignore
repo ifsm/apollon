@@ -44,3 +44,9 @@ docs/source/build/
 
 .ipynb_checkpoints
 .python-version
+
+Dockerfile
+.dockerignore
+.venv
+run.zsh
+
