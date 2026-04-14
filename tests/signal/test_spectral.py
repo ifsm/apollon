@@ -98,7 +98,7 @@ class TestSpectrum(unittest.TestCase):
     real_floats = floats(0, 1, allow_nan=False, allow_infinity=False)
     arr_2d_shapes = array_shapes(min_dims=2, max_dims=2,
                                min_side=1, max_side=100)
-    float_2d_arrays = arrays(np.float, arr_2d_shapes,
+    float_2d_arrays = arrays(float, arr_2d_shapes,
                              elements=real_floats)
 
     @given(float_2d_arrays)
