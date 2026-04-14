@@ -1,10 +1,9 @@
 """
 Simple filter implementations
 """
-from typing import Literal, Self, Sequence
+from typing import Literal
 
 import numpy as np
-from pydantic import BaseModel, model_validator
 import scipy.signal as _scs
 
 from .. typing import FloatArray, floatarray
@@ -77,12 +76,24 @@ def triang_filter_bank(low: float, high: float, n_filters: int, fps: int, size: 
     if high > fps//2:
         raise ValueError("Upper cut-off frequency greater or equal Nyquist")
 
-    frq_space = mel_space(low, high, n_filters+2, endpoint=True)
-    filter_frqs = np.lib.stride_tricks.sliding_window_view(frq_space.ravel(), 3)
+    if domain == "mel":
+        frq_space = mel_space(low, high, n_filters+2, endpoint=True)
+    filter_frqs = np.lib.stride_tricks.sliding_window_view(frq_space.ravel(), 3) # pylint: disable=[E0606]
     return triang(fps, size, filter_frqs)
 
 
 def mel_space(start: float, stop: float, num: int, endpoint: bool = True) -> FloatArray:
+    """Compute evenly spaced values in Mel space.
+
+    Args:
+        start:      Starting value of the sequence.
+        stop:       The end value of the sequence.
+        num:        Number of values to generate.
+        endpoint:   If ``True``, include ``stop``. Default ``True``.
+
+    Returns:
+        Array of linearly spaced Mel values.
+    """
     space = np.linspace(hz_to_mel(start), hz_to_mel(stop), num, endpoint=endpoint)
     return mel_to_hz(space)
 
@@ -140,15 +151,3 @@ def triang(fps: int, n_fft: int, frqs: FloatArray,
         out[roi] = np.interp(roi, (low, ctr, high), amps)
         filters.append(out)
     return np.vstack(filters)
-
-
-class TriangFilterSpec(BaseModel):
-    low: float
-    high: float
-    n_filters: int
-
-    @model_validator(mode="after")
-    def check_low_lt_high(self) -> Self:
-        if self.low >= self.high:
-            raise ValueError("low freq must be less then high")
-        return self
