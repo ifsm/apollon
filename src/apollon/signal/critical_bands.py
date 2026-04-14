@@ -79,13 +79,15 @@ def filter_bank(frqs: FloatArray) -> FloatArray:
     Returns:
         Bark scaled filter bank
     """
-    n_bands = 24
     z_frq = frq2cbr(frqs)
-    fbank = _np.zeros((n_bands, z_frq.size))
+    bands = z_frq.astype(int)
+    unique_bands = _np.unique(bands)
+    fbank = _np.zeros((unique_bands.size, z_frq.size))
 
-    for bnd in range(n_bands):
-        idx = _np.logical_and(bnd <= z_frq, z_frq < bnd+1)
-        fbank[bnd, idx] = _get_window('triang', idx.sum(), False)
+    for i, bnd in enumerate(unique_bands):
+        idx, = _np.nonzero(bands==bnd)
+        fbank[i, idx] = _get_window('triang', idx.size, False)
+
     return fbank
 
 
