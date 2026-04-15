@@ -120,5 +120,5 @@ def sharpness(cbr_spctrm: FloatArray) -> FloatArray:
     loud_specific = _np.maximum(specific_loudness(cbr_spctrm), _np.finfo('float64').eps)
     loud_total = loud_specific.sum(keepdims=True)
 
-    cbrs = _np.arange(1, 25, dtype=_np.int64)
+    cbrs = _np.arange(1, cbr_spctrm.shape[0]+1, dtype=_np.int64)
     return floatarray(((cbrs * weight_factor(cbrs)) @ cbr_spctrm) / loud_total)
