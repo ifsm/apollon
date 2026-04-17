@@ -4,7 +4,7 @@ Spectral transforms
 """
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, cast
 
 import matplotlib.pyplot as _plt
 import numpy as np
@@ -82,8 +82,8 @@ class TransformResult(ABC):
     @property
     def frqs(self) -> FloatArray:
         """Frequency axis"""
-        return np.fft.rfftfreq(self._n_fft,
-                               1.0/self._params.fps).reshape(-1, 1)
+        return cast(FloatArray, np.fft.rfftfreq(self._n_fft,
+                               1.0/self._params.fps).reshape(-1, 1))
 
     @property
     @abstractmethod
@@ -124,7 +124,7 @@ class TransformResult(ABC):
         return np.asarray(self._bins[key]).astype(np.complex128)
 
     def __len__(self) -> int:
-        return self._bins.shape[0]
+        return int(self._bins.shape[0])
 
 
 class Spectrum(TransformResult):
@@ -176,7 +176,7 @@ class Spectrogram(TransformResult):
     @property
     def n_segments(self) -> int:
         """Return number of segments"""
-        return self._bins.shape[1]
+        return int(self._bins.shape[1])
 
     @property
     def index(self) -> IntArray:

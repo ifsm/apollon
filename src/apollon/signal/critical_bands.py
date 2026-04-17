@@ -1,6 +1,7 @@
 """
 Critical band helpers
 """
+from typing import cast
 
 import numpy as _np
 from scipy.signal.windows import get_window as _get_window
@@ -104,7 +105,7 @@ def weight_factor(cbr: IntArray) -> FloatArray:
     """
     base = _np.ones_like(cbr, dtype='float64')
     slope = 0.066 * _np.exp(0.171 * _np.atleast_1d(cbr))
-    return _np.maximum(base, slope)
+    return cast(FloatArray, _np.maximum(base, slope))
 
 
 def sharpness(cbr_spctrm: FloatArray) -> FloatArray:
@@ -117,7 +118,7 @@ def sharpness(cbr_spctrm: FloatArray) -> FloatArray:
     Returns:
         Sharpness for each time instant of the ``cbr_spctrm``.
     """
-    loud_specific = _np.maximum(specific_loudness(cbr_spctrm), _np.finfo('float64').eps)
+    loud_specific = _np.maximum(specific_loudness(cbr_spctrm), _np.finfo('float64').eps) # pylint: disable=E1101
     loud_total = loud_specific.sum(keepdims=True)
 
     cbrs = _np.arange(1, cbr_spctrm.shape[0]+1, dtype=_np.int64)

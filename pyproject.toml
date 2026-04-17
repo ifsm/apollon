@@ -76,10 +76,11 @@ ignore-patterns = ["^\\.#", "^.*.pyi"]
 
 [tool.pylint.basic]
 good-names = ["_", "i", "j", "n", "ax"]
-max-args = 6
+max-args = 8
 
 [tool.pylint.design]
 max-attributes = 8
+max-positional-arguments = 10
 
 [tool.pylint.'MESSAGES CONTROL']
 extension-pkg-allow-list = [

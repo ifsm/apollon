@@ -32,7 +32,7 @@ class Segments:
     @property
     def n_segs(self) -> int:
         """Return number of segments"""
-        return self._segs.shape[1]
+        return int(self._segs.shape[1])
 
     @property
     def n_perseg(self) -> int:

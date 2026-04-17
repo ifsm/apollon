@@ -60,7 +60,7 @@ class OnsetDetector(ABC):
 
     @abstractmethod
     def _compute_odf(self, inp: FloatArray) -> pd.DataFrame:
-        return NotImplemented
+        pass
 
     def detect(self, inp: FloatArray) -> None:
         """Detect onsets."""

@@ -1,6 +1,8 @@
 """
 HMM utility functions
 """
+from typing import cast
+
 import numpy as _np
 from numpy.typing import ArrayLike
 from numpy import linalg as _linalg
@@ -328,7 +330,7 @@ def stationary_distr(tpm: FloatArray) -> FloatArray:
     """
     assert_st_matrix(tpm)
     m_states = tpm.shape[0]
-    return _linalg.solve((_np.eye(m_states) - tpm + 1).T, _np.ones(m_states))
+    return cast(FloatArray, _linalg.solve((_np.eye(m_states) - tpm + 1).T, _np.ones(m_states)))
 
 
 def get_off_diag(mat: FloatArray) -> FloatArray:
