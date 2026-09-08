@@ -15,6 +15,7 @@ import hypothesis.extra.numpy as htn
 import apollon.io._json as jsonio
 import apollon.io._numpy as numpyio
 import apollon.io._pickle as pickleio
+import apollon.io.utils as ioutils
 
 
 picklable = st.recursive(
@@ -24,6 +25,8 @@ picklable = st.recursive(
                        | st.dictionaries(st.text(), children)),
     max_leaves=10,
 )
+
+safe_filename_component = st.from_regex(r'[A-Za-z0-9_]{1,12}', fullmatch=True)
 
 
 class TestEncodeNdarray(unittest.TestCase):
@@ -126,6 +129,63 @@ class TestDumpLoadPickle(unittest.TestCase):
         self.assertEqual(arr.dtype.kind, restored.dtype.kind)
         self.assertEqual(arr.dtype.itemsize, restored.dtype.itemsize)
         self.assertTrue(np.array_equal(arr, restored, equal_nan=True))
+
+
+class TestRepath(unittest.TestCase):
+    def test_keeps_name_when_ext_is_none(self):
+        result = ioutils.repath(Path('a/b/file.txt'), Path('out'))
+        self.assertEqual(result, Path('out/file.txt'))
+
+    def test_replaces_extension_with_leading_dot(self):
+        result = ioutils.repath(Path('a/b/file.txt'), Path('out'), ext='.csv')
+        self.assertEqual(result, Path('out/file.csv'))
+
+    def test_adds_missing_leading_dot(self):
+        result = ioutils.repath(Path('a/b/file.txt'), Path('out'), ext='csv')
+        self.assertEqual(result, Path('out/file.csv'))
+
+    @given(safe_filename_component, safe_filename_component,
+           safe_filename_component)
+    def test_extension_property(self, stem, orig_ext, new_ext):
+        current_path = Path(f'{stem}.{orig_ext}')
+        result = ioutils.repath(current_path, Path('out'), ext=new_ext)
+        self.assertEqual(result, Path('out') / f'{stem}.{new_ext}')
+
+
+class TestGenerateOutpath(unittest.TestCase):
+    def test_default_uses_stem_of_in_path(self):
+        result = ioutils.generate_outpath('some/input.wav', None)
+        self.assertEqual(result, Path('input'))
+
+    def test_default_with_suffix(self):
+        result = ioutils.generate_outpath('some/input.wav', None,
+                                           suffix='json')
+        self.assertEqual(result, Path('input.json'))
+
+    def test_out_path_directory_appends_default_filename(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = ioutils.generate_outpath('some/input.wav', tmpdir,
+                                               suffix='json')
+        self.assertEqual(result, Path(tmpdir) / 'input.json')
+
+    def test_out_path_file_kept_as_is(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir) / 'custom.out'
+            result = ioutils.generate_outpath('some/input.wav', target)
+        self.assertEqual(result, target)
+
+    def test_raises_when_target_file_parent_missing(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            missing = Path(tmpdir) / 'missing_subdir' / 'out.json'
+            with self.assertRaises(ValueError):
+                ioutils.generate_outpath('some/input.wav', missing)
+
+    def test_raises_when_target_directory_missing(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            missing = Path(tmpdir) / 'missing_subdir'
+            with self.assertRaises(ValueError):
+                ioutils.generate_outpath('some/input.wav', missing,
+                                          suffix='json')
 
 
 if __name__ == '__main__':
