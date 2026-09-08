@@ -3,12 +3,8 @@ General I/O functionallity
 """
 
 import pathlib
-import pickle
-from typing import Any
 
-import numpy as np
-
-from .. typing import Array, PathType
+from .. typing import PathType
 
 
 def generate_outpath(in_path: PathType,
@@ -45,22 +41,6 @@ def generate_outpath(in_path: PathType,
     return out_path
 
 
-
-def load_from_pickle(path: PathType) -> Any:
-    """Load a pickled file
-
-    Args:
-        path:  Path to file.
-
-    Returns:
-        Unpickled object
-    """
-    path = pathlib.Path(path)
-    with path.open('rb') as file:
-        data = pickle.load(file)
-    return data
-
-
 def repath(current_path: PathType, new_path: PathType,
            ext: str | None = None) -> PathType:
     """Change the path and keep the file name
@@ -83,42 +63,3 @@ def repath(current_path: PathType, new_path: PathType,
         ext = ext if ext.startswith('.') else '.' + ext
         new_path = new_path.joinpath(current_path.stem + ext)
     return new_path
-
-
-def save_to_pickle(data: Any, path: PathType) -> None:
-    """Pickles data to path.
-
-    Args:
-        data:  Pickleable object.
-        path:  Path to save the file.
-    """
-    path = pathlib.Path(path)
-    with path.open('wb') as file:
-        pickle.dump(data, file)
-
-
-def save_to_npy(data: Array, path: PathType) -> None:
-    """Save an array to numpy binary format without using pickle.
-
-    Args:
-        data:  Numpy array.
-        path:  Path to save the file.
-    """
-    path = pathlib.Path(path)
-    with path.open('wb') as file:
-        np.save(file, data, allow_pickle=False)
-
-
-def load_from_npy(path: PathType) -> Array:
-    """Load data from numpy's binary format.
-
-    Args:
-        path:  File path.
-
-    Returns:
-        Data as numpy array.
-    """
-    path = pathlib.Path(path)
-    with path.open('rb') as file:
-        data = np.load(file, allow_pickle=False)
-    return np.asarray(data)

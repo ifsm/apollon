@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import scipy.signal as _sps
 
-from .. io import io
+from .. import io
 from .. peak_picking import FilterPeakPicker
 from .. signal import features
 from .. signal import tools as _ast
@@ -89,7 +89,7 @@ class OnsetDetector(ABC):
         Args:
             path: Path to save location
         """
-        io.save_to_pickle(self, path)
+        io.dump_pickle(self, path)
 
     def plot(self, mode: str ='time') -> None:
         """Plot ODF against time or index

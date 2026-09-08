@@ -1,4 +1,10 @@
 # pylint: disable = C0114
 from ._json import dump_json, load_json
+from ._numpy import dump_numpy, load_numpy
+from ._pickle import dump_pickle, load_pickle
 
-__all__ = ['dump_json', 'load_json']
+__all__ = [
+    'dump_json', 'load_json',
+    'dump_numpy', 'load_numpy',
+    'dump_pickle', 'load_pickle',
+]
