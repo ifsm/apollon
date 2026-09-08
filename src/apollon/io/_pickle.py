@@ -12,6 +12,10 @@ from .. typing import PathType
 def load_pickle(path: PathType) -> Any:
     """Load a pickled file
 
+    Warning:
+        Only unpickle files from trusted sources. Unpickling can execute
+        arbitrary code.
+
     Args:
         path:  Path to file.
 
