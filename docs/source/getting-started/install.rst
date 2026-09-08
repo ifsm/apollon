@@ -18,6 +18,10 @@ apollon from Pypi. Simply run the following command from your terminal:
 
    python3 -m pip install apollon
 
+.. note::
+   Hidden Markov Model support depends on the optional ``chainsaddiction``
+   package. Install it with ``python3 -m pip install apollon[hmm]``.
+
 
 Build from source
 =======================================
