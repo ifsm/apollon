@@ -24,8 +24,11 @@ soundfile = "^0.12.1"
 matplotlib = "^3.6.2"
 pydantic = "^2.0.2"
 awesom = "^0.1.5"
-chainsaddiction = "^0.2.4"
+chainsaddiction = {version = "^0.2.4", optional = true}
 mir-eval = "^0.7"
+
+[tool.poetry.extras]
+hmm = ["chainsaddiction"]
 
 [tool.poetry.group.development.dependencies]
 pylint = "^3.2.2"
