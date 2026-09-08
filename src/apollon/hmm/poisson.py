@@ -11,7 +11,7 @@ import numpy as _np
 from chainsaddiction import poishmm
 
 import apollon
-from apollon.io.utils import array_print_opt
+from apollon.io import array_print_opt
 from apollon.typing import FloatArray, IntArray
 from apollon import tools as _tools
 import apollon.hmm.utilities as ahu
