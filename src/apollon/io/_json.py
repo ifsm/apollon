@@ -32,7 +32,7 @@ def load_json(path: PathType) -> Any:
         path: Path to file.
 
     Returns:
-        JSON file as FeatureSpace.
+        Decoded JSON content, with any encoded numpy arrays restored.
     """
     path = pathlib.Path(path)
     with path.open('r', encoding='utf-8') as fobj:
