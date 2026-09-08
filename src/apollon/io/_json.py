@@ -71,7 +71,13 @@ def decode_ndarray(instance: dict[str, Any]) -> Array:
             ``ndarray.schema.json``.
     """
     if validate_ndarray(instance):
-        return np.array(instance['data'], dtype=instance['__dtype__'])
+        dtype = instance['__dtype__']
+        if np.dtype(dtype).kind == 'c':
+            out = np.empty(np.shape(instance['data']['real']), dtype=dtype)
+            out.real = instance['data']['real']
+            out.imag = instance['data']['imag']
+            return out
+        return np.array(instance['data'], dtype=dtype)
     raise TypeError(
         f"{instance!r} is not a valid ndarray instance: missing or "
         "invalid '__ndarray__', '__dtype__', or 'data' field"
@@ -81,8 +87,8 @@ def decode_ndarray(instance: dict[str, Any]) -> Array:
 def encode_ndarray(arr: Array) -> dict[str, Any]:
     """Transform an numpy array to a JSON-serializable dict.
 
-    Array must have a numerical dtype. Datetime objects are currently
-    not supported.
+    Array must have a numerical dtype, including complex. Datetime
+    objects are currently not supported.
 
     Args:
         arr:  Numpy ndarray.
@@ -90,8 +96,11 @@ def encode_ndarray(arr: Array) -> dict[str, Any]:
     Returns:
         JSON-serializable dict adhering ``ndarray.schema.json``.
     """
-    return {'__ndarray__': True, '__dtype__': arr.dtype.str,
-            'data': arr.tolist()}
+    if np.iscomplexobj(arr):
+        data: Any = {'real': arr.real.tolist(), 'imag': arr.imag.tolist()}
+    else:
+        data = arr.tolist()
+    return {'__ndarray__': True, '__dtype__': arr.dtype.str, 'data': data}
 
 
 def _ndarray_hook(inp: dict[str, Any]) -> Array | dict[str, Any]:
