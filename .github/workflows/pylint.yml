@@ -15,6 +15,6 @@ jobs:
       - name: Set up Poetry
         uses: snok/install-poetry@v1
       - name: Install project
-        run: poetry install --with=development
+        run: poetry install --with=development --extras hmm
       - name: Linting ...
         run: poetry run -- pylint --persistent n --jobs 0 src/apollon
