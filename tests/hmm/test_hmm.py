@@ -6,7 +6,10 @@ import numpy as np
 from scipy.stats import poisson
 import unittest
 
-from apollon.hmm.poisson import PoissonHmm
+try:
+    from apollon.hmm.poisson import PoissonHmm
+except ImportError as err:
+    raise unittest.SkipTest(str(err)) from err
 
 
 class TestHMM_utilities(unittest.TestCase):
