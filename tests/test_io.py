@@ -10,7 +10,7 @@ import numpy as np
 from hypothesis import given
 import hypothesis.extra.numpy as htn
 
-import apollon.io.json as jsonio
+import apollon.io._json as jsonio
 
 
 class TestEncodeNdarray(unittest.TestCase):

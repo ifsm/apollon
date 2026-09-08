@@ -11,7 +11,7 @@ import numpy as np
 from .. typing import Array, PathType
 
 
-def dump(obj: Any, path: PathType) -> None:
+def dump_json(obj: Any, path: PathType) -> None:
     """Write ``obj`` to JSON file.
 
     This function can handel numpy arrays.
@@ -28,7 +28,7 @@ def dump(obj: Any, path: PathType) -> None:
         json.dump(obj, json_file, cls=ArrayEncoder)
 
 
-def load(path: PathType) -> Any:
+def load_json(path: PathType) -> Any:
     """Load JSON file.
 
     Args:
