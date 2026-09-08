@@ -34,6 +34,10 @@ class TestDecodeNdarray(unittest.TestCase):
         self.assertTrue(np.allclose(arr, restored,
             rtol=0, atol=0, equal_nan=True))
 
+    def test_invalid_instance_raises_type_error(self):
+        with self.assertRaises(TypeError):
+            jsonio.decode_ndarray({})
+
 
 if __name__ == '__main__':
     unittest.main()

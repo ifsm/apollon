@@ -14,10 +14,7 @@ from .. typing import Array, PathType
 def dump_json(obj: Any, path: PathType) -> None:
     """Write ``obj`` to JSON file.
 
-    This function can handel numpy arrays.
-
-    If ``path`` is None, this fucntion writes to stdout.  Otherwise, encoded
-    object is written to ``path``.
+    This function can handle numpy arrays.
 
     Args:
         obj:   Object to be encoded.
@@ -68,10 +65,17 @@ def decode_ndarray(instance: dict[str, Any]) -> Array:
 
     Returns:
         Numpy array.
+
+    Raises:
+        TypeError: If ``instance`` is not a valid instance of
+            ``ndarray.schema.json``.
     """
     if validate_ndarray(instance):
         return np.array(instance['data'], dtype=instance['__dtype__'])
-    raise TypeError("xx")
+    raise TypeError(
+        f"{instance!r} is not a valid ndarray instance: missing or "
+        "invalid '__ndarray__', '__dtype__', or 'data' field"
+    )
 
 
 def encode_ndarray(arr: Array) -> dict[str, Any]:
@@ -103,11 +107,11 @@ class ArrayEncoder(json.JSONEncoder):
     Simply set the ``cls`` parameter of the dump method to this class.
     """
     def default(self, o: Any) -> Any:
-        """Custon SON encoder for numpy arrays. Other types are passed
+        """Custom JSON encoder for numpy arrays. Other types are passed
         on to ``JSONEncoder.default``.
 
         Args:
-            inp:  Object to encode.
+            o:  Object to encode.
 
         Returns:
             JSON-serializable dictionary.
