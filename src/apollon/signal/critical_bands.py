@@ -79,6 +79,10 @@ def filter_bank(frqs: FloatArray) -> FloatArray:
     rather than being omitted, so the row count and row-to-band mapping
     don't depend on how densely ``frqs`` happens to sample the Bark scale.
 
+    Each band's triangular window is rescaled to sum to exactly the number
+    of bins it contains, so a band's total gain on a flat spectrum scales
+    with its bin count rather than fluctuating with the bin count's parity.
+
     Args:
         frqs:   Frequency axis in Hz
 
@@ -93,7 +97,8 @@ def filter_bank(frqs: FloatArray) -> FloatArray:
     for bnd in range(n_bands):
         idx, = _np.nonzero(bands==bnd)
         if idx.size:
-            fbank[bnd, idx] = _get_window('triang', idx.size, False)
+            window = _get_window('triang', idx.size, False)
+            fbank[bnd, idx] = window * (idx.size / window.sum())
 
     return fbank
 

@@ -29,7 +29,10 @@ class TestFilterBank(unittest.TestCase):
         fbank = filter_bank(frqs)
 
         self.assertTrue(np.all(fbank >= 0))
-        self.assertTrue(np.all(fbank <= 1))
+        # Each band's window is rescaled so its *sum* equals its bin count,
+        # not so its *peak* stays at 1 -- the peak approaches (but stays
+        # below) 2 as a band's bin count grows.
+        self.assertTrue(np.all(fbank <= 2))
 
         non_zero_counts = np.sum(fbank > 0, axis=0)
         self.assertTrue(np.all(non_zero_counts <= 1))
