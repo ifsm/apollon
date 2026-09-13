@@ -74,6 +74,11 @@ def filter_bank(frqs: FloatArray) -> FloatArray:
     Each filter is triangular, which lower and upper cuttoff frequencies
     set to lower and upper bound of the given critical band rate.
 
+    Row ``i`` of the returned filter bank always corresponds to Bark band
+    ``i``. A band with no frequency bin in ``frqs`` gets an all-zero row
+    rather than being omitted, so the row count and row-to-band mapping
+    don't depend on how densely ``frqs`` happens to sample the Bark scale.
+
     Args:
         frqs:   Frequency axis in Hz
 
@@ -82,12 +87,13 @@ def filter_bank(frqs: FloatArray) -> FloatArray:
     """
     z_frq = frq2cbr(frqs)
     bands = z_frq.astype(int)
-    unique_bands = _np.unique(bands)
-    fbank = _np.zeros((unique_bands.size, z_frq.size))
+    n_bands = int(bands.max()) + 1 if bands.size else 0
+    fbank = _np.zeros((n_bands, z_frq.size))
 
-    for i, bnd in enumerate(unique_bands):
+    for bnd in range(n_bands):
         idx, = _np.nonzero(bands==bnd)
-        fbank[i, idx] = _get_window('triang', idx.size, False)
+        if idx.size:
+            fbank[bnd, idx] = _get_window('triang', idx.size, False)
 
     return fbank
 
