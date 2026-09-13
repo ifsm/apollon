@@ -6,7 +6,7 @@ from typing import cast
 import numpy as _np
 from scipy.signal.windows import get_window as _get_window
 
-from .. typing import FloatArray, IntArray, floatarray
+from .. typing import FloatArray, floatarray
 from .. import tools as _tools
 
 
@@ -103,13 +103,13 @@ def filter_bank(frqs: FloatArray) -> FloatArray:
     return fbank
 
 
-def weight_factor(cbr: IntArray) -> FloatArray:
+def weight_factor(cbr: FloatArray) -> FloatArray:
     """Return weighting factor per critical band rate for sharpness calculation.
 
     This is an improved version of Peeters (2004), section 8.1.3.
 
     Args:
-        cbr: Critical band rate
+        cbr: Critical band rate in Bark
 
     Returns:
         Weighting factor
@@ -123,6 +123,13 @@ def sharpness(cbr_spctrm: FloatArray) -> FloatArray:
     """Calculate a measure for the perception of auditory sharpness from a spectrogram
     of critical band levels.
 
+    Row ``i`` of ``cbr_spctrm`` is taken to be Bark band ``i``, whose
+    representative critical band rate is the band centre ``i + 0.5``. Specific
+    loudness weights both the numerator and the denominator, so the result is a
+    weighted mean of the critical band rate and hence independent of the overall
+    level and of the number of time instants. The ``0.11`` scaling constant of
+    the Peeters/DIN 45692 sharpness formulation is applied.
+
     Args:
         cbr_spctrm: Critical band rate Spectrogram
 
@@ -130,7 +137,7 @@ def sharpness(cbr_spctrm: FloatArray) -> FloatArray:
         Sharpness for each time instant of the ``cbr_spctrm``.
     """
     loud_specific = _np.maximum(specific_loudness(cbr_spctrm), _np.finfo('float64').eps) # pylint: disable=E1101
-    loud_total = loud_specific.sum(keepdims=True)
+    loud_total = loud_specific.sum(axis=0)
 
-    cbrs = _np.arange(1, cbr_spctrm.shape[0]+1, dtype=_np.int64)
-    return floatarray(((cbrs * weight_factor(cbrs)) @ cbr_spctrm) / loud_total)
+    cbrs = _np.arange(cbr_spctrm.shape[0], dtype='float64') + 0.5
+    return floatarray(0.11 * ((cbrs * weight_factor(cbrs)) @ loud_specific) / loud_total)
