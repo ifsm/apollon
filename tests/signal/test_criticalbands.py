@@ -54,6 +54,22 @@ class TestFilterBank(unittest.TestCase):
         if f > 0:
             self.assertGreaterEqual(fbank.shape[0], 1)
 
+    def test_negative_frequency_raises(self):
+        """A negative frequency must be rejected rather than silently
+        dropped from every band."""
+        with self.assertRaises(ValueError):
+            filter_bank(np.array([-100.0, 1000.0]))
+
+
+class TestFrq2cbr(unittest.TestCase):
+
+    def test_negative_frequency_raises(self):
+        """frq2cbr has no defined output for negative frequencies -- it
+        must reject them rather than silently returning a nonsensical
+        negative Bark rate."""
+        with self.assertRaises(ValueError):
+            frq2cbr(np.array([-1.0]))
+
 
 class TestSharpness(unittest.TestCase):
 
