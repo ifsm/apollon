@@ -10,7 +10,7 @@ from scipy.signal import correlate
 from . import _features     # pylint: disable = no-name-in-module
 from . import tools as _sigtools
 from .. import segment as _segment
-from .. typing import Array, FloatArray, floatarray, IntArray
+from .. typing import Array, ComplexArray, FloatArray, floatarray, IntArray
 from . import critical_bands as _cb
 from .. import _defaults
 
@@ -334,17 +334,18 @@ def log_attack_time(inp: FloatArray, fps: int, ons_idx: IntArray,
     return floatarray(_np.log(attack_time))
 
 
-def loudness(frqs: FloatArray, bins: FloatArray) -> FloatArray:
+def loudness(frqs: FloatArray, bins: ComplexArray) -> FloatArray:
     """Calculate a measure for the perceived loudness from a spectrogram.
 
     Args:
         frqs:   Frquency axis.
-        bins:   Magnitude spectrogram.
+        bins:   Raw DFT bins.
 
     Returns:
         Estimate of the total loudness.
     """
-    cbrs = _cb.filter_bank(frqs) @ bins
+    power = _np.square(_np.abs(bins))
+    cbrs = _cb.filter_bank(frqs.squeeze()) @ power
     return _cb.total_loudness(cbrs)
 
 
@@ -384,18 +385,19 @@ def roughness_helmholtz(d_frq: float, bins: FloatArray, frq_max: float,
     return out
 
 
-def sharpness(frqs: FloatArray, bins: FloatArray) -> FloatArray:
+def sharpness(frqs: FloatArray, bins: ComplexArray) -> FloatArray:
     """Calculate a measure for the perception of auditory sharpness from a
     spectrogram.
 
     Args:
         frqs:    Frequencies.
-        bins:    DFT magnitudes.
+        bins:    Raw DFT bins.
 
     Returns:
         Sharpness.
     """
-    cbrs = _cb.filter_bank(frqs.squeeze()) @ bins
+    power = _np.square(_np.abs(bins))
+    cbrs = _cb.filter_bank(frqs.squeeze()) @ power
     return _cb.sharpness(cbrs)
 
 

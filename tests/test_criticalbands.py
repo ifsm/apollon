@@ -4,8 +4,9 @@ import numpy as np
 from hypothesis import given, strategies as st
 from hypothesis.extra.numpy import arrays
 
-from apollon.signal.critical_bands import (filter_bank, frq2cbr, sharpness,
-                                           weight_factor)
+from apollon.signal.critical_bands import (filter_bank, frq2cbr, level,
+                                           sharpness, specific_loudness,
+                                           total_loudness, weight_factor)
 
 
 class TestFilterBank(unittest.TestCase):
@@ -107,3 +108,32 @@ class TestSharpness(unittest.TestCase):
         """The exponential weighting switches on above roughly 16 Bark."""
         self.assertEqual(weight_factor(np.array([15.5]))[0], 1.0)
         self.assertGreater(weight_factor(np.array([16.5]))[0], 1.0)
+
+
+class TestSpecificLoudness(unittest.TestCase):
+
+    # Mirrors the ``ref`` constant hard-coded inside ``level()``.
+    ref = 10e-12
+
+    def test_level_zero_at_reference(self):
+        """The reference intensity maps to a 0 dB critical band level."""
+        self.assertAlmostEqual(level(np.array([self.ref]))[0], 0.0)
+
+    def test_ten_db_step_constant_ratio(self):
+        """A constant dB step yields a constant loudness ratio at any level."""
+        bases = self.ref * np.array([1e0, 1e2, 1e4, 1e6])
+        ratios = specific_loudness(bases*10) / specific_loudness(bases)
+        self.assertTrue(np.allclose(ratios, 10**0.23))
+
+    def test_specific_loudness_monotonic(self):
+        """Specific loudness strictly increases with intensity."""
+        intensities = self.ref * np.logspace(-6, 2, num=20)
+        values = specific_loudness(intensities)
+        self.assertTrue(np.all(np.diff(values) > 0))
+
+    def test_total_loudness_responsive_across_range(self):
+        """Total loudness spans orders of magnitude over a wide dB range,
+        unlike the old dB-level-exponent form which barely moved."""
+        low = total_loudness(np.array([[self.ref]]))[0]
+        high = total_loudness(np.array([[self.ref * 10**12]]))[0]
+        self.assertAlmostEqual(high/low, 10**(12*0.23), delta=1.0)

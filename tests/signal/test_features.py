@@ -111,6 +111,61 @@ class TestSpectralSpread(unittest.TestCase):
 
 
 
+class TestLoudness(unittest.TestCase):
+
+    def test_scales_with_bin_magnitude(self):
+        """Loudness is finite, non-negative, and grows with signal level."""
+        dft = Dft(fps=44100, window=None)
+        sxx = dft.transform(sinusoid(440, fps=44100))
+        quiet = features.loudness(sxx.frqs, sxx.bins)
+        loud = features.loudness(sxx.frqs, sxx.bins * 10)
+        self.assertTrue(np.all(np.isfinite(quiet)))
+        self.assertTrue(np.all(quiet >= 0))
+        self.assertGreater(loud.item(), quiet.item())
+
+
+class TestSharpness(unittest.TestCase):
+
+    def test_scales_with_bin_magnitude(self):
+        """Sharpness is finite and unaffected by uniform level scaling."""
+        dft = Dft(fps=44100, window=None)
+        sxx = dft.transform(sinusoid(440, fps=44100))
+        quiet = features.sharpness(sxx.frqs, sxx.bins)
+        loud = features.sharpness(sxx.frqs, sxx.bins * 10)
+        self.assertTrue(np.all(np.isfinite(quiet)))
+        self.assertAlmostEqual(quiet.item(), loud.item())
+
+    @unittest.expectedFailure
+    def test_din45692_reference_stimulus(self):
+        """DIN 45692's calibration reference stimulus -- narrow-band noise
+        from 920 Hz to 1080 Hz at 60 dB SPL -- must measure 1 acum.
+
+        Tracked as open issue #11 (see
+        analyze-src-apollon-signal-critical-band-elegant-teacup.md): apollon's
+        filter_bank hard-assigns each FFT bin to exactly one integer Bark
+        band with no excitation spreading (auditory-filter leakage into
+        neighbouring bands), so the energy-weighted Bark centroid sits below
+        the ~9.09 Bark the 0.11 DIN constant assumes. Currently measures
+        ~0.93 acum. Remove the ``expectedFailure`` marker once spreading is
+        implemented.
+        """
+        fps = 44100
+        n = fps * 2
+        rng = np.random.default_rng(0)
+        white = rng.normal(size=n)
+        spec = np.fft.rfft(white)
+        frq_axis = np.fft.rfftfreq(n, 1/fps)
+        spec[~((frq_axis >= 920) & (frq_axis <= 1080))] = 0
+        band = np.fft.irfft(spec, n)
+        target_rms = SPL_REF * 10**(60/20)
+        band *= target_rms / np.sqrt(np.mean(band**2))
+
+        dft = Dft(fps=fps, window=None)
+        sxx = dft.transform(band.reshape(-1, 1))
+        sharp = features.sharpness(sxx.frqs, sxx.bins)
+        self.assertAlmostEqual(sharp.item(), 1.0, places=2)
+
+
 class TestRoughness(unittest.TestCase):
     def setUp(self):
         self.fps = 44100

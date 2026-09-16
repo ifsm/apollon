@@ -29,28 +29,38 @@ def level(cbi: FloatArray) -> FloatArray:
     """Compute the critical band level L_G from critical band intensities I_G.
 
     Args:
-        cbi: Critical band intensities
+        cbi: Critical band intensities, i.e. proportional to physical power,
+            not a pressure amplitude.
 
     Returns:
-        Critical band levels
+        Critical band levels. Zero (silent) input maps to ``-inf`` rather
+        than a floor at the reference, so ``specific_loudness`` in turn maps
+        silence to zero loudness instead of a constant, non-physical floor.
     """
     ref = 10e-12
-    return floatarray(10.0 * _np.log10(_np.maximum(cbi, ref) / ref))
+    ratio = _np.maximum(cbi, 0.0) / ref
+    out = _np.full_like(ratio, -_np.inf, dtype='float64')
+    return floatarray(10.0 * _np.log10(ratio, where=ratio > 0, out=out))
 
 
 def specific_loudness(cbr: FloatArray) -> FloatArray:
     """Compute the specific loudness of a critical band rate spectrum.
 
-    The specific loudness is the loudness per critical band rate. The spectra
-    should be scaled in critical band levels.
+    The specific loudness is the loudness per critical band rate, following
+    the Peeters/DIN 45692 power-law form: it scales with the 0.23 power of
+    the critical band *intensity ratio* (not the dB level itself), so a
+    constant dB step produces a constant multiplicative change in loudness.
+    ``cbr`` should be critical band intensities (i.e. power), consistent
+    with ``level()``.
 
     Args:
-        cbr: Critical band rate spectrum
+        cbr: Critical band rate spectrum (intensity/power).
 
     Returns:
         Specific loudness
     """
-    return _np.power(level(cbr), 0.23)
+    # (cbi/ref)**0.23 == (10**(level/10))**0.23 == 10**(0.023*level)
+    return floatarray(_np.power(10.0, 0.023 * level(cbr)))
 
 
 def total_loudness(cbr: FloatArray) -> FloatArray:
