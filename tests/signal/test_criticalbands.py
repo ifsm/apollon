@@ -5,7 +5,8 @@ from hypothesis import given, strategies as st
 from hypothesis.extra.numpy import arrays
 
 from apollon.signal.critical_bands import (filter_bank, frq2cbr, level,
-                                           sharpness, specific_loudness,
+                                           masking_slope, sharpness,
+                                           specific_loudness, spread,
                                            total_loudness, weight_factor)
 
 
@@ -81,14 +82,16 @@ class TestSharpness(unittest.TestCase):
         spctrm[band] = 1.0
         return spctrm
 
-    def test_single_band_closed_form(self):
-        """A lone active band yields 0.11 * z * g(z) at that band's centre."""
-        for band in (2, 17, 20):
+    def test_single_band_regression(self):
+        """A lone active band no longer has a closed form once excitation
+        spreading (spread()) leaks its energy into neighbouring bands --
+        pin the current, numerically verified output instead."""
+        expected = {2: 1.454389706443187,
+                    17: 4.023327825025507,
+                    20: 5.312699429940025}
+        for band, exp in expected.items():
             with self.subTest(band=band):
-                centre = band + 0.5
-                expected = 0.11 * centre * weight_factor(np.array([centre]))[0]
-                self.assertAlmostEqual(sharpness(self._single_band(band))[0],
-                                       expected)
+                self.assertAlmostEqual(sharpness(self._single_band(band))[0], exp)
 
     def test_frame_independence(self):
         """Each time instant is normalized by its own total loudness."""
@@ -102,11 +105,13 @@ class TestSharpness(unittest.TestCase):
         duplicated = np.concatenate([spctrm, spctrm], axis=1)
         self.assertTrue(np.allclose(sharpness(duplicated)[:3], sharpness(spctrm)))
 
-    def test_level_invariance(self):
-        """Sharpness is a weighted mean and hence invariant to overall level."""
+    def test_level_dependence(self):
+        """Sharpness increases with level: masking spreads further upward
+        in Bark at higher masker levels (masking_slope's level-dependent
+        upper flank), so a louder spectrum of the same shape reads sharper."""
         spctrm = self._single_band(17)
         values = [sharpness(spctrm*scale)[0] for scale in (1e-6, 1e-4, 1e-2, 1e0, 1e2)]
-        self.assertLess(np.ptp(values), 1e-12)
+        self.assertTrue(np.all(np.diff(values) > 0))
 
     def test_output_shape(self):
         """One value per time instant, and a scalar for a single spectrum."""
@@ -124,6 +129,81 @@ class TestSharpness(unittest.TestCase):
         """The exponential weighting switches on above roughly 16 Bark."""
         self.assertEqual(weight_factor(np.array([15.5]))[0], 1.0)
         self.assertGreater(weight_factor(np.array([16.5]))[0], 1.0)
+
+
+class TestMaskingSlope(unittest.TestCase):
+
+    def test_zero_at_own_band(self):
+        """A masker's excitation at its own band (dz=0) is unattenuated,
+        regardless of its frequency or level."""
+        for frq, lvl in [(200.0, 20.0), (1000.0, 60.0), (8000.0, 100.0)]:
+            with self.subTest(frq=frq, level=lvl):
+                sf = masking_slope(np.array([0.0]), np.array([frq]), np.array([lvl]))
+                self.assertEqual(sf[0], 0.0)
+
+    def test_lower_flank_constant(self):
+        """Below the masker, the slope is a constant 27 dB/Bark, independent
+        of the masker's frequency or level."""
+        dz = np.array([-2.0])
+        sf_a = masking_slope(dz, np.array([200.0]), np.array([20.0]))
+        sf_b = masking_slope(dz, np.array([8000.0]), np.array([100.0]))
+        self.assertAlmostEqual(sf_a[0], -54.0)
+        self.assertAlmostEqual(sf_b[0], -54.0)
+
+    def test_upper_flank_shallower_at_higher_level(self):
+        """A louder masker's excitation reaches further upward (a shallower,
+        less negative, upper-flank slope)."""
+        dz = np.array([3.0])
+        quiet = masking_slope(dz, np.array([1000.0]), np.array([20.0]))
+        loud = masking_slope(dz, np.array([1000.0]), np.array([100.0]))
+        self.assertGreater(loud[0], quiet[0])
+
+    def test_upper_flank_shallower_than_lower(self):
+        """At equal Bark distance, the upper flank is shallower than the
+        lower flank -- masking spreads further upward than downward."""
+        sf_up = masking_slope(np.array([2.0]), np.array([1000.0]), np.array([60.0]))
+        sf_down = masking_slope(np.array([-2.0]), np.array([1000.0]), np.array([60.0]))
+        self.assertGreater(sf_up[0], sf_down[0])
+
+
+class TestSpreading(unittest.TestCase):
+
+    n_bands = 22
+
+    def test_silence_stays_silent(self):
+        """An all-zero critical band spectrum spreads to all zero."""
+        spread_out = spread(np.zeros(self.n_bands))
+        self.assertTrue(np.all(spread_out == 0.0))
+
+    def test_leaks_into_neighbours(self):
+        """A single active band's energy leaks into neighbouring bands
+        after spreading."""
+        frame = np.zeros(self.n_bands)
+        frame[10] = 1e-6
+        spread_out = spread(frame)
+        self.assertGreater(spread_out[9], 0.0)
+        self.assertGreater(spread_out[11], 0.0)
+
+    def test_self_band_preserved(self):
+        """A band's own contribution to itself is unattenuated."""
+        frame = np.zeros(self.n_bands)
+        frame[10] = 1e-6
+        spread_out = spread(frame)
+        self.assertAlmostEqual(spread_out[10], 1e-6)
+
+    def test_spreads_further_upward_than_downward(self):
+        """The excitation pattern falls off more slowly above an active
+        band than below it, matching masking_slope's asymmetry."""
+        frame = np.zeros(self.n_bands)
+        frame[10] = 1e-6
+        spread_out = spread(frame)
+        self.assertGreater(spread_out[13], spread_out[7])
+
+    def test_operates_per_frame(self):
+        """Each time instant is spread independently of the others."""
+        spctrm = np.random.default_rng(3).random((self.n_bands, 4)) * 1e-6
+        per_frame = np.stack([spread(spctrm[:, i]) for i in range(4)], axis=1)
+        self.assertTrue(np.allclose(spread(spctrm), per_frame))
 
 
 class TestSpecificLoudness(unittest.TestCase):

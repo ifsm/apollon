@@ -53,6 +53,86 @@ def level(cbi: FloatArray) -> FloatArray:
     return floatarray(10.0 * _np.log10(ratio, where=ratio > 0, out=out))
 
 
+def _band_frequencies(bark: FloatArray) -> FloatArray:
+    """Approximate the centre frequency (Hz) for each critical band rate.
+
+    Numerically inverts ``frq2cbr`` against a dense forward table, rather
+    than using a different author's closed-form approximation, so the
+    inverse stays exactly consistent with this module's own Bark formula.
+
+    Args:
+        bark: Critical band rate(s) in Bark.
+
+    Returns:
+        Approximate centre frequency in Hz.
+    """
+    hz_grid = _np.linspace(0.0, 30000.0, 30001)
+    bark_grid = frq2cbr(hz_grid)
+    return floatarray(_np.interp(bark, bark_grid, hz_grid))
+
+
+def masking_slope(dz: FloatArray, frq: FloatArray,
+                   masker_level: FloatArray) -> FloatArray:
+    """Return the Terhardt masking-slope excitation level (dB) at Bark
+    distance ``dz`` from a masker.
+
+    The excitation a masker produces in a neighbouring critical band falls
+    off from the masker's own level at a rate that is constant below the
+    masker (27 dB/Bark) but shallower, and level- and frequency-dependent,
+    above it -- masking spreads further upward in frequency than downward.
+    Same source as ``specific_loudness``'s Zwicker & Fastl (1999) citation.
+
+    Args:
+        dz: Bark distance from the masker (``z_target - z_masker``).
+        frq: Masker centre frequency in Hz.
+        masker_level: Masker's own critical band level in dB.
+
+    Returns:
+        Excitation level (dB) relative to the masker's own level.
+    """
+    # A silent masker (masker_level == -inf) always contributes zero energy
+    # downstream regardless of its slope, so substitute a finite placeholder
+    # here to avoid an -inf * 0 = nan at dz == 0 rather than let it propagate.
+    safe_level = _np.where(_np.isneginf(masker_level), 0.0, masker_level)
+    lower = 27.0 * dz
+    upper = (-24.0 - 230.0/frq + 0.2*safe_level) * dz
+    return floatarray(_np.where(dz <= 0, lower, upper))
+
+
+def spread(cbr: FloatArray) -> FloatArray:
+    """Apply excitation spreading across critical bands.
+
+    Models auditory-filter leakage between neighbouring Bark bands: each
+    band's energy leaks into its neighbours according to
+    ``masking_slope``, turning the per-band critical-band intensity
+    pattern into an excitation pattern. Because the upward slope depends on
+    each masker band's own level, this is applied one time instant at a
+    time.
+
+    Args:
+        cbr: Critical band rate spectrum (intensity/power).
+
+    Returns:
+        Excitation pattern: ``cbr`` after cross-band masking spread.
+    """
+    cbr = _np.asarray(cbr, dtype='float64')
+    n_bands = cbr.shape[0]
+    z = _np.arange(n_bands, dtype='float64') + 0.5
+    frqs = _band_frequencies(z)
+    dz = z[:, None] - z[None, :]   # dz[j, i] = distance from masker i to band j
+
+    def _spread_frame(frame: FloatArray) -> FloatArray:
+        masker_level = level(frame)
+        sf_db = masking_slope(dz, frqs[None, :], masker_level[None, :])
+        gain = _np.power(10.0, sf_db/10.0)
+        return gain @ frame
+
+    if cbr.ndim == 1:
+        return floatarray(_spread_frame(cbr))
+    return floatarray(_np.stack([_spread_frame(cbr[:, t])
+                                  for t in range(cbr.shape[1])], axis=1))
+
+
 def specific_loudness(cbr: FloatArray) -> FloatArray:
     """Compute the specific loudness of a critical band rate spectrum.
 
@@ -79,8 +159,9 @@ def specific_loudness(cbr: FloatArray) -> FloatArray:
 def total_loudness(cbr: FloatArray) -> FloatArray:
     """Compute the totals loudness of critical band rate spectra.
 
-    The total loudness is the sum of the specific loudnesses. The spectra
-    should be scaled to critical band levels.
+    The total loudness is the sum of the specific loudnesses, computed on
+    the excitation pattern after cross-band masking spread (``spread``),
+    not on the raw per-band intensities directly.
 
     Args:
         cbr: Critical band rate spectrum (intensity/power).
@@ -88,7 +169,7 @@ def total_loudness(cbr: FloatArray) -> FloatArray:
     Returns:
         Total loudness
     """
-    return floatarray(specific_loudness(cbr).sum(axis=0))
+    return floatarray(specific_loudness(spread(cbr)).sum(axis=0))
 
 
 def filter_bank(frqs: FloatArray) -> FloatArray:
@@ -156,12 +237,14 @@ def sharpness(cbr_spctrm: FloatArray) -> FloatArray:
     of critical band levels.
 
     Row ``i`` of ``cbr_spctrm`` is taken to be Bark band ``i``, whose
-    representative critical band rate is the band centre ``i + 0.5``. Specific
-    loudness weights both the numerator and the denominator, so the result is a
-    weighted mean of the critical band rate and hence independent of the overall
-    level and of the number of time instants. The ``0.11`` scaling constant of
-    the Peeters/DIN 45692 sharpness formulation is applied (same source as
-    ``weight_factor``'s Peeters citation, section 8.1.3).
+    representative critical band rate is the band centre ``i + 0.5``. Cross-band
+    masking spread (``spread``) is applied first, so specific loudness weights
+    both the numerator and the denominator of an excitation pattern rather than
+    the raw per-band intensities. The result is a weighted mean of the critical
+    band rate and hence independent of the overall level and of the number of
+    time instants. The ``0.11`` scaling constant of the Peeters/DIN 45692
+    sharpness formulation is applied (same source as ``weight_factor``'s
+    Peeters citation, section 8.1.3).
 
     Args:
         cbr_spctrm: Critical band rate Spectrogram
@@ -169,7 +252,8 @@ def sharpness(cbr_spctrm: FloatArray) -> FloatArray:
     Returns:
         Sharpness for each time instant of the ``cbr_spctrm``.
     """
-    loud_specific = _np.maximum(specific_loudness(cbr_spctrm), _np.finfo('float64').eps) # pylint: disable=E1101
+    excitation = spread(cbr_spctrm)
+    loud_specific = _np.maximum(specific_loudness(excitation), _np.finfo('float64').eps) # pylint: disable=E1101
     loud_total = loud_specific.sum(axis=0)
 
     cbrs = _np.arange(cbr_spctrm.shape[0], dtype='float64') + 0.5

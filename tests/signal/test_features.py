@@ -127,13 +127,15 @@ class TestLoudness(unittest.TestCase):
 class TestSharpness(unittest.TestCase):
 
     def test_scales_with_bin_magnitude(self):
-        """Sharpness is finite and unaffected by uniform level scaling."""
+        """Sharpness is finite and increases with signal level: masking
+        spreads further upward in Bark at higher levels, so the same
+        spectral shape reads sharper when louder."""
         dft = Dft(fps=44100, window=None)
         sxx = dft.transform(sinusoid(440, fps=44100))
         quiet = features.sharpness(sxx.frqs, sxx.bins)
         loud = features.sharpness(sxx.frqs, sxx.bins * 10)
         self.assertTrue(np.all(np.isfinite(quiet)))
-        self.assertAlmostEqual(quiet.item(), loud.item())
+        self.assertGreater(loud.item(), quiet.item())
 
     @unittest.expectedFailure
     def test_din45692_reference_stimulus(self):
@@ -141,13 +143,15 @@ class TestSharpness(unittest.TestCase):
         from 920 Hz to 1080 Hz at 60 dB SPL -- must measure 1 acum.
 
         Tracked as open issue #11 (see
-        analyze-src-apollon-signal-critical-band-elegant-teacup.md): apollon's
-        filter_bank hard-assigns each FFT bin to exactly one integer Bark
-        band with no excitation spreading (auditory-filter leakage into
-        neighbouring bands), so the energy-weighted Bark centroid sits below
-        the ~9.09 Bark the 0.11 DIN constant assumes. Currently measures
-        ~0.93 acum. Remove the ``expectedFailure`` marker once spreading is
-        implemented.
+        analyze-src-apollon-signal-critical-band-elegant-teacup.md).
+        critical_bands.spread() now applies Terhardt's masking-slope
+        excitation spreading, which measurably moves this stimulus (was
+        ~0.93 acum with no spreading at all), but overshoots to ~1.26 acum
+        rather than landing on 1.0 -- likely because spreading is applied
+        after energy is already coarsely quantized into 1-Bark-wide bands
+        by filter_bank, rather than over a finer-grained excitation pattern
+        as the full Zwicker model does. Remove the ``expectedFailure``
+        marker once that's addressed and this reads 1.0.
         """
         fps = 44100
         n = fps * 2
