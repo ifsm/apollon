@@ -70,7 +70,7 @@ def total_loudness(cbr: FloatArray) -> FloatArray:
     should be scaled to critical band levels.
 
     Args:
-        cbr_spctr: Critical band rate spectra.
+        cbr: Critical band rate spectrum (intensity/power).
 
     Returns:
         Total loudness
