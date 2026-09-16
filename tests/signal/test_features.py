@@ -144,14 +144,17 @@ class TestSharpness(unittest.TestCase):
 
         Tracked as open issue #11 (see
         analyze-src-apollon-signal-critical-band-elegant-teacup.md).
-        critical_bands.spread() now applies Terhardt's masking-slope
-        excitation spreading, which measurably moves this stimulus (was
-        ~0.93 acum with no spreading at all), but overshoots to ~1.26 acum
-        rather than landing on 1.0 -- likely because spreading is applied
-        after energy is already coarsely quantized into 1-Bark-wide bands
-        by filter_bank, rather than over a finer-grained excitation pattern
-        as the full Zwicker model does. Remove the ``expectedFailure``
-        marker once that's addressed and this reads 1.0.
+        critical_bands.excitation_pattern() now spreads at finer-than-1-Bark
+        resolution (default 0.1 Bark) before aggregating down to 1-Bark
+        bands, closing most of the gap: was ~0.93 acum with no spreading at
+        all, ~1.26 acum spreading only at coarse 1-Bark resolution, and now
+        ~1.12 acum at the default resolution. It still doesn't reach exactly
+        1.0 -- verified this converges to ~1.03-1.05 even at much finer
+        resolution (0.02-0.002 Bark), so a residual gap remains from other
+        model simplifications (no threshold-in-quiet correction, and
+        possible small discrepancies in the masking-slope transcription).
+        Remove the ``expectedFailure`` marker only once that residual is
+        also resolved and this reads 1.0.
         """
         fps = 44100
         n = fps * 2

@@ -334,19 +334,22 @@ def log_attack_time(inp: FloatArray, fps: int, ons_idx: IntArray,
     return floatarray(_np.log(attack_time))
 
 
-def loudness(frqs: FloatArray, bins: ComplexArray) -> FloatArray:
+def loudness(frqs: FloatArray, bins: ComplexArray, resolution: float = 0.1) -> FloatArray:
     """Calculate a measure for the perceived loudness from a spectrogram.
 
     Args:
         frqs:   Frquency axis.
         bins:   Raw DFT bins.
+        resolution: Bark width of the fine excitation-spreading grid (see
+            ``critical_bands.excitation_pattern``); smaller is more
+            accurate but more expensive.
 
     Returns:
         Estimate of the total loudness.
     """
     power = _np.square(_np.abs(bins))
-    cbrs = _cb.filter_bank(frqs.squeeze()) @ power
-    return _cb.total_loudness(cbrs)
+    cbrs = _cb.excitation_pattern(frqs.squeeze(), power, resolution)
+    return _cb.total_loudness(cbrs, spread_input=False)
 
 
 def roughness_helmholtz(d_frq: float, bins: FloatArray, frq_max: float,
@@ -385,20 +388,23 @@ def roughness_helmholtz(d_frq: float, bins: FloatArray, frq_max: float,
     return out
 
 
-def sharpness(frqs: FloatArray, bins: ComplexArray) -> FloatArray:
+def sharpness(frqs: FloatArray, bins: ComplexArray, resolution: float = 0.1) -> FloatArray:
     """Calculate a measure for the perception of auditory sharpness from a
     spectrogram.
 
     Args:
         frqs:    Frequencies.
         bins:    Raw DFT bins.
+        resolution: Bark width of the fine excitation-spreading grid (see
+            ``critical_bands.excitation_pattern``); smaller is more
+            accurate but more expensive.
 
     Returns:
         Sharpness.
     """
     power = _np.square(_np.abs(bins))
-    cbrs = _cb.filter_bank(frqs.squeeze()) @ power
-    return _cb.sharpness(cbrs)
+    cbrs = _cb.excitation_pattern(frqs.squeeze(), power, resolution)
+    return _cb.sharpness(cbrs, spread_input=False)
 
 
 def _power_distr(bins: FloatArray) -> FloatArray:

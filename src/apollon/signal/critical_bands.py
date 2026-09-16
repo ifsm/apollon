@@ -99,7 +99,7 @@ def masking_slope(dz: FloatArray, frq: FloatArray,
     return floatarray(_np.where(dz <= 0, lower, upper))
 
 
-def spread(cbr: FloatArray) -> FloatArray:
+def spread(cbr: FloatArray, resolution: float = 1.0) -> FloatArray:
     """Apply excitation spreading across critical bands.
 
     Models auditory-filter leakage between neighbouring Bark bands: each
@@ -111,13 +111,22 @@ def spread(cbr: FloatArray) -> FloatArray:
 
     Args:
         cbr: Critical band rate spectrum (intensity/power).
+        resolution: Bark width of one row of ``cbr``. Defaults to the
+            standard 1-Bark critical band; pass a smaller value when
+            ``cbr`` is a finer-grained excitation pattern (see
+            ``excitation_pattern``).
 
     Returns:
         Excitation pattern: ``cbr`` after cross-band masking spread.
+
+    Raises:
+        ValueError: If ``resolution`` is not positive.
     """
+    if resolution <= 0:
+        raise ValueError('resolution must be positive.')
     cbr = _np.asarray(cbr, dtype='float64')
     n_bands = cbr.shape[0]
-    z = _np.arange(n_bands, dtype='float64') + 0.5
+    z = (_np.arange(n_bands, dtype='float64') + 0.5) * resolution
     frqs = _band_frequencies(z)
     dz = z[:, None] - z[None, :]   # dz[j, i] = distance from masker i to band j
 
@@ -156,7 +165,7 @@ def specific_loudness(cbr: FloatArray) -> FloatArray:
     return floatarray(_np.power(10.0, 0.023 * level(cbr)))
 
 
-def total_loudness(cbr: FloatArray) -> FloatArray:
+def total_loudness(cbr: FloatArray, spread_input: bool = True) -> FloatArray:
     """Compute the totals loudness of critical band rate spectra.
 
     The total loudness is the sum of the specific loudnesses, computed on
@@ -165,23 +174,30 @@ def total_loudness(cbr: FloatArray) -> FloatArray:
 
     Args:
         cbr: Critical band rate spectrum (intensity/power).
+        spread_input: If ``True`` (default), apply ``spread`` (at the
+            standard 1-Bark resolution) to ``cbr`` first. Set ``False``
+            when ``cbr`` is already a prepared excitation pattern (e.g.
+            from ``excitation_pattern``), to avoid spreading twice.
 
     Returns:
         Total loudness
     """
-    return floatarray(specific_loudness(spread(cbr)).sum(axis=0))
+    if spread_input:
+        cbr = spread(cbr)
+    return floatarray(specific_loudness(cbr).sum(axis=0))
 
 
-def filter_bank(frqs: FloatArray) -> FloatArray:
+def filter_bank(frqs: FloatArray, resolution: float = 1.0) -> FloatArray:
     """Return a critical band rate scaled filter bank.
 
     Each filter is triangular, which lower and upper cuttoff frequencies
     set to lower and upper bound of the given critical band rate.
 
     Row ``i`` of the returned filter bank always corresponds to Bark band
-    ``i``. A band with no frequency bin in ``frqs`` gets an all-zero row
-    rather than being omitted, so the row count and row-to-band mapping
-    don't depend on how densely ``frqs`` happens to sample the Bark scale.
+    ``i`` (of width ``resolution``). A band with no frequency bin in
+    ``frqs`` gets an all-zero row rather than being omitted, so the row
+    count and row-to-band mapping don't depend on how densely ``frqs``
+    happens to sample the Bark scale.
 
     Each band's triangular window is rescaled to sum to exactly the number
     of bins it contains, so a band's total gain on a flat spectrum scales
@@ -189,15 +205,20 @@ def filter_bank(frqs: FloatArray) -> FloatArray:
 
     Args:
         frqs:   Frequency axis in Hz
+        resolution: Bark width of one row. Defaults to the standard 1-Bark
+            critical band; pass a smaller value to build a finer-grained
+            filter bank (see ``excitation_pattern``).
 
     Returns:
         Bark scaled filter bank
 
     Raises:
         ValueError: If ``frqs`` contains negative frequencies (propagated
-            from ``frq2cbr``).
+            from ``frq2cbr``), or if ``resolution`` is not positive.
     """
-    z_frq = frq2cbr(frqs)
+    if resolution <= 0:
+        raise ValueError('resolution must be positive.')
+    z_frq = frq2cbr(frqs) / resolution
     bands = z_frq.astype(int)
     n_bands = int(bands.max()) + 1 if bands.size else 0
     fbank = _np.zeros((n_bands, z_frq.size))
@@ -209,6 +230,56 @@ def filter_bank(frqs: FloatArray) -> FloatArray:
             fbank[bnd, idx] = window * (idx.size / window.sum())
 
     return fbank
+
+
+def _coarsen(fine: FloatArray, resolution: float) -> FloatArray:
+    """Sum a fine-resolution critical band pattern back down into standard
+    1-Bark-wide bands.
+
+    Args:
+        fine: Pattern at ``resolution``-Bark row width (one frame,
+            ``(n_fine,)``, or a spectrogram, ``(n_fine, T)``).
+        resolution: Bark width of one row of ``fine``.
+
+    Returns:
+        Pattern at standard 1-Bark row width.
+    """
+    n_fine = fine.shape[0]
+    if n_fine == 0:
+        return floatarray(fine)
+    fine_centres = (_np.arange(n_fine, dtype='float64') + 0.5) * resolution
+    n_bands = int(fine_centres[-1]) + 1
+    coarse_idx = _np.clip(fine_centres.astype(int), 0, n_bands - 1)
+    coarse = _np.zeros((n_bands,) + fine.shape[1:])
+    _np.add.at(coarse, coarse_idx, fine)
+    return floatarray(coarse)
+
+
+def excitation_pattern(frqs: FloatArray, power: FloatArray,
+                        resolution: float = 0.1) -> FloatArray:
+    """Compute the 1-Bark critical band excitation pattern from a raw power
+    spectrum.
+
+    Spreads at finer-than-1-Bark resolution before aggregating down to
+    standard 1-Bark critical bands -- matching the order of operations the
+    full Zwicker model uses (spread first, then bin), rather than spreading
+    energy that has already been coarsely quantized into 1-Bark bands.
+
+    Args:
+        frqs: Frequency axis in Hz.
+        power: Power spectrum (or spectrogram) aligned with ``frqs``.
+        resolution: Bark width of the fine spreading grid. Smaller values
+            track DIN 45692's calibration more closely, at higher
+            computational cost (an O(n^2) masking-spread matrix per time
+            instant, with n inversely proportional to ``resolution``).
+
+    Returns:
+        Critical band rate spectrum at standard 1-Bark resolution, ready
+        for ``total_loudness``/``sharpness`` (called with
+        ``spread_input=False``, since spreading already happened here).
+    """
+    fine = filter_bank(frqs, resolution) @ power
+    return _coarsen(spread(fine, resolution), resolution)
 
 
 def weight_factor(cbr: FloatArray) -> FloatArray:
@@ -232,7 +303,7 @@ def weight_factor(cbr: FloatArray) -> FloatArray:
     return floatarray(_np.maximum(base, slope))
 
 
-def sharpness(cbr_spctrm: FloatArray) -> FloatArray:
+def sharpness(cbr_spctrm: FloatArray, spread_input: bool = True) -> FloatArray:
     """Calculate a measure for the perception of auditory sharpness from a spectrogram
     of critical band levels.
 
@@ -248,12 +319,18 @@ def sharpness(cbr_spctrm: FloatArray) -> FloatArray:
 
     Args:
         cbr_spctrm: Critical band rate Spectrogram
+        spread_input: If ``True`` (default), apply ``spread`` (at the
+            standard 1-Bark resolution) to ``cbr_spctrm`` first. Set
+            ``False`` when ``cbr_spctrm`` is already a prepared excitation
+            pattern (e.g. from ``excitation_pattern``), to avoid spreading
+            twice.
 
     Returns:
         Sharpness for each time instant of the ``cbr_spctrm``.
     """
-    excitation = spread(cbr_spctrm)
-    loud_specific = _np.maximum(specific_loudness(excitation), _np.finfo('float64').eps) # pylint: disable=E1101
+    if spread_input:
+        cbr_spctrm = spread(cbr_spctrm)
+    loud_specific = _np.maximum(specific_loudness(cbr_spctrm), _np.finfo('float64').eps) # pylint: disable=E1101
     loud_total = loud_specific.sum(axis=0)
 
     cbrs = _np.arange(cbr_spctrm.shape[0], dtype='float64') + 0.5

@@ -4,10 +4,11 @@ import numpy as np
 from hypothesis import given, strategies as st
 from hypothesis.extra.numpy import arrays
 
-from apollon.signal.critical_bands import (filter_bank, frq2cbr, level,
-                                           masking_slope, sharpness,
-                                           specific_loudness, spread,
-                                           total_loudness, weight_factor)
+from apollon.signal.critical_bands import (excitation_pattern, filter_bank,
+                                           frq2cbr, level, masking_slope,
+                                           sharpness, specific_loudness,
+                                           spread, total_loudness,
+                                           weight_factor)
 
 
 class TestFilterBank(unittest.TestCase):
@@ -60,6 +61,18 @@ class TestFilterBank(unittest.TestCase):
         dropped from every band."""
         with self.assertRaises(ValueError):
             filter_bank(np.array([-100.0, 1000.0]))
+
+    def test_finer_resolution_has_more_rows(self):
+        """Halving the Bark width per row roughly doubles the row count."""
+        frqs = np.linspace(0, 8000, 1000)
+        coarse = filter_bank(frqs, resolution=1.0)
+        fine = filter_bank(frqs, resolution=0.5)
+        self.assertAlmostEqual(fine.shape[0] / coarse.shape[0], 2.0, delta=0.2)
+
+    def test_non_positive_resolution_raises(self):
+        """A zero or negative resolution is not a valid Bark row width."""
+        with self.assertRaises(ValueError):
+            filter_bank(np.array([1000.0]), resolution=0.0)
 
 
 class TestFrq2cbr(unittest.TestCase):
@@ -204,6 +217,52 @@ class TestSpreading(unittest.TestCase):
         spctrm = np.random.default_rng(3).random((self.n_bands, 4)) * 1e-6
         per_frame = np.stack([spread(spctrm[:, i]) for i in range(4)], axis=1)
         self.assertTrue(np.allclose(spread(spctrm), per_frame))
+
+    def test_finer_resolution_still_preserves_self_band(self):
+        """A band's own contribution stays unattenuated regardless of the
+        Bark resolution the bands are spaced at."""
+        n_fine = self.n_bands * 4
+        frame = np.zeros(n_fine)
+        frame[40] = 1e-6
+        spread_out = spread(frame, resolution=0.25)
+        self.assertAlmostEqual(spread_out[40], 1e-6)
+
+    def test_non_positive_resolution_raises(self):
+        """A zero or negative resolution is not a valid Bark row width."""
+        with self.assertRaises(ValueError):
+            spread(np.zeros(self.n_bands), resolution=-1.0)
+
+
+class TestExcitationPattern(unittest.TestCase):
+
+    def test_row_count_matches_coarse_filter_bank(self):
+        """Output is always at standard 1-Bark resolution, regardless of
+        the fine spreading resolution used internally."""
+        frqs = np.linspace(0, 8000, 1000)
+        power = np.ones_like(frqs)
+        expected_rows = filter_bank(frqs, resolution=1.0).shape[0]
+        for res in (0.5, 0.1, 0.05):
+            with self.subTest(resolution=res):
+                pattern = excitation_pattern(frqs, power, resolution=res)
+                self.assertEqual(pattern.shape[0], expected_rows)
+
+    def test_finer_resolution_changes_result(self):
+        """Spreading at finer resolution measurably changes the output --
+        a regression guard that resolution actually has an effect, not
+        tied to a specific target value."""
+        frqs = np.linspace(0, 8000, 1000)
+        power = np.zeros_like(frqs)
+        power[(frqs >= 920) & (frqs <= 1080)] = 1e-6
+        coarse = excitation_pattern(frqs, power, resolution=1.0)
+        fine = excitation_pattern(frqs, power, resolution=0.05)
+        self.assertFalse(np.allclose(coarse, fine))
+
+    def test_non_positive_resolution_raises(self):
+        """A zero or negative resolution is not a valid Bark row width."""
+        frqs = np.linspace(0, 8000, 100)
+        power = np.ones_like(frqs)
+        with self.assertRaises(ValueError):
+            excitation_pattern(frqs, power, resolution=0.0)
 
 
 class TestSpecificLoudness(unittest.TestCase):
