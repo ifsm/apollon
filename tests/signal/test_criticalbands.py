@@ -129,7 +129,7 @@ class TestSharpness(unittest.TestCase):
 class TestSpecificLoudness(unittest.TestCase):
 
     # Mirrors the ``ref`` constant hard-coded inside ``level()``.
-    ref = 10e-12
+    ref = 1e-12
 
     def test_level_zero_at_reference(self):
         """The reference intensity maps to a 0 dB critical band level."""

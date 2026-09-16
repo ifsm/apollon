@@ -46,9 +46,8 @@ def level(cbi: FloatArray) -> FloatArray:
         than a floor at the reference, so ``specific_loudness`` in turn maps
         silence to zero loudness instead of a constant, non-physical floor.
     """
-    # Reference intensity, nominally the standard 1e-12 W/m^2 -- the extra
-    # decimal is tracked as a separate open issue (#3), not fixed here.
-    ref = 10e-12
+    # Reference intensity, ISO 226 / Zwicker & Fastl (1999) I_0 = 1e-12 W/m^2.
+    ref = 1e-12
     ratio = _np.maximum(cbi, 0.0) / ref
     out = _np.full_like(ratio, -_np.inf, dtype='float64')
     return floatarray(10.0 * _np.log10(ratio, where=ratio > 0, out=out))
