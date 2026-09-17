@@ -151,3 +151,107 @@ def triang(fps: int, n_fft: int, frqs: FloatArray,
         out[roi] = np.interp(roi, (low, ctr, high), amps)
         filters.append(out)
     return np.vstack(filters)
+
+
+def preemphasis(inp: FloatArray, coef: float = 0.97,
+                prev: float | FloatArray | None = None
+                ) -> tuple[FloatArray, FloatArray]:
+    """Apply a first-order pre-emphasis filter to ``inp``.
+
+    The filter computes ``out[n] = inp[n] - coef * inp[n-1]``, boosting the
+    high-frequency content of the signal. Following the convention of this
+    package, time runs along the first axis: an array of shape
+    ``(n_samples, n_channels)`` is filtered per channel. One-dimensional
+    input is treated as a single channel.
+
+    The sample preceding ``inp[0]`` is unknown. By default it is linearly
+    extrapolated as ``2*inp[0] - inp[1]``, which requires at least two
+    samples. Pass ``prev`` to supply it explicitly. Filtering a signal in
+    successive blocks is therefore equivalent to filtering it in one go,
+    provided each call receives the state returned by its predecessor.
+
+    Args:
+        inp:    Input array, filtered along its first axis
+        coef:   Pre-emphasis coefficient
+        prev:   Sample preceding ``inp[0]``. Pass the state returned by the
+                previous call when filtering successive blocks. If ``None``,
+                it is linearly extrapolated from ``inp``.
+
+    Returns:
+        Filtered signal, and the state to pass as ``prev`` on the next call.
+
+    Raises:
+        ValueError: If ``inp`` is empty, or if it holds less than two samples
+            and no ``prev`` is given.
+    """
+    if inp.shape[0] < 1:
+        raise ValueError("``inp`` is empty along its first axis")
+
+    if prev is None:
+        if inp.shape[0] < 2:
+            raise ValueError("``inp`` holds less than two samples. Cannot "
+                             "extrapolate the preceding sample. Pass "
+                             "``prev`` explicitly.")
+        prev = 2 * inp[0] - inp[1]
+
+    out = np.empty_like(inp, dtype=np.double)
+    np.subtract(inp[1:], coef*inp[:-1], out=out[1:])
+    out[0] = inp[0] - coef*prev
+    return out, floatarray(inp[-1])
+
+
+def preemphasis_old(inp: FloatArray, coef: float = 0.97,
+                    zi: FloatArray | None = None) -> FloatArray:
+    """Apply a first-order pre-emphasis filter to ``inp``.
+
+    Frozen, pre-fix copy of :func:`preemphasis`, kept for comparison and
+    regression testing. Do not use in new code.
+
+    Args:
+        inp:    Input array, filtered along its last axis
+        coef:   Pre-emphasis coefficient
+        zi:     Initial delay state of the filter. Note that this is *not*
+                the sample preceding ``inp[..., 0]``, but that sample scaled
+                by ``-coef``. If ``None``, the preceding sample is linearly
+                extrapolated from ``inp``.
+
+    Returns:
+        Filtered signal
+
+    Known bugs:
+        The original called ``sp.signal.lfilter``, but this module imports
+        ``scipy.signal`` as ``_scs`` and never binds ``sp``, so every call
+        raised ``NameError``. That copy-paste artifact is repaired here;
+        every behavioural difference to :func:`preemphasis` is not.
+
+        The filter runs along the *last* axis, which is the SciPy convention
+        rather than this package's. Signals are laid out as ``(n_samples,
+        n_channels)`` throughout ``apollon``, so a column signal is filtered
+        across its channels instead of across time. Single-channel input of
+        shape ``(n, 1)`` raises from inside ``lfilter``, and genuinely
+        multi-channel input silently returns nonsense. Only the transpose,
+        ``preemphasis_old(inp.T).T``, matches :func:`preemphasis`.
+
+        The final delay state ``z_f`` is discarded, so successive blocks of
+        one signal cannot be chained: there is no way to obtain the state
+        that the next call's ``zi`` expects.
+
+        ``zi`` is the raw filter state rather than the preceding sample. A
+        caller passing the sample itself, which is what the name suggests,
+        silently gets a wrong first output sample.
+
+        ``inp[..., 1:2]`` is empty for a single-sample input, which surfaces
+        as ``ValueError: Unexpected shape for parameter zi`` from deep inside
+        ``lfilter`` instead of as a statement about ``inp``.
+
+        Float32 input is upcast to float64, because the coefficients are
+        built as float64 regardless of the input dtype.
+    """
+    num = np.asarray([1.0, -coef])
+    denom = np.asarray([1.0])
+
+    if zi is None:
+        x_prev = 2 * inp[..., 0:1] - inp[..., 1:2]
+        zi = -coef * x_prev
+    y_out, _ = _scs.lfilter(num, denom, inp, zi=zi)
+    return floatarray(y_out)
