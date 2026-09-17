@@ -198,3 +198,44 @@ def preemphasis(inp: FloatArray, coef: float = 0.97,
     np.subtract(inp[1:], coef*inp[:-1], out=out[1:])
     out[0] = inp[0] - coef*prev
     return out, floatarray(inp[-1])
+
+
+def lifter(inp: FloatArray, lift: float) -> FloatArray:
+    """Apply a sinusoidal lifter to cepstral coefficients.
+
+    The lifter scales the cepstral coefficient with index ``n`` by
+
+        ``w[n] = 1 + lift/2 * sin(pi*n/lift)``,
+
+    which attenuates the low-order coefficients relative to the higher ones,
+    equalizing their otherwise widely differing numerical ranges.
+
+    Following the convention of this package, the coefficients run along the
+    first axis: an array of shape ``(n_coefs, n_frames)`` is liftered per
+    frame. Counting starts at one, so the first coefficient -- usually the DC
+    term ``c_0`` -- is scaled by ``w[1]`` rather than passed through
+    unchanged. This matches the convention used by ``librosa``.
+
+    ``w[n]`` turns negative for ``n > lift``, flipping the sign of the
+    affected coefficients. Pick ``lift`` at least as large as the number of
+    coefficients, such as the customary ``lift=22`` for 13 coefficients.
+
+    Args:
+        inp:    Array of cepstral coefficients, liftered along its first axis
+        lift:   Liftering parameter. ``0`` leaves ``inp`` unchanged
+
+    Returns:
+        Liftered coefficients
+
+    Raises:
+        ValueError: If ``lift`` is negative
+    """
+    if lift < 0:
+        raise ValueError("``lift`` is negative")
+
+    idx = np.arange(1, inp.shape[0]+1)
+    if lift == 0:
+        win = np.ones_like(idx, dtype=np.double)
+    else:
+        win = 1 + lift/2 * np.sin(np.pi*idx/lift)
+    return floatarray(inp * win.reshape((-1,) + (1,)*(inp.ndim-1)))

@@ -1,7 +1,8 @@
 from unittest import TestCase
 
 from apollon.typing import FloatArray
-from apollon.signal.filter import preemphasis, triang, triang_filter_bank
+from apollon.signal.filter import (lifter, preemphasis, triang,
+                                   triang_filter_bank)
 from apollon.signal.tools import sinusoid
 from hypothesis import strategies as st
 from hypothesis import assume, given
@@ -112,6 +113,42 @@ class TestPreemphasis(TestCase):
     def test_output_is_float64(self, inp: FloatArray) -> None:
         out, _ = preemphasis(inp.astype(np.float32))
         self.assertEqual(out.dtype, np.double)
+
+
+class TestLifter(TestCase):
+    @given(signals(), st.floats(min_value=1.0, max_value=100.0))
+    def test_matches_reference(self, inp: FloatArray, lift: float) -> None:
+        idx = np.arange(1, inp.shape[0]+1)
+        expected = inp * (1 + lift/2 * np.sin(np.pi*idx/lift))
+        self.assertTrue(np.allclose(lifter(inp, lift), expected))
+
+    @given(signals())
+    def test_zero_lift_is_identity(self, inp: FloatArray) -> None:
+        out = lifter(inp, 0.0)
+        self.assertTrue(np.array_equal(out, inp))
+        self.assertIsNot(out, inp)
+
+    @given(signals(), st.floats(min_value=1.0, max_value=100.0))
+    def test_negative_lift_raises(self, inp: FloatArray, lift: float) -> None:
+        with self.assertRaises(ValueError):
+            lifter(inp, -lift)
+
+    @given(signals())
+    def test_output_is_float64(self, inp: FloatArray) -> None:
+        self.assertEqual(lifter(inp.astype(np.float32), 22.0).dtype, np.double)
+        self.assertEqual(lifter(inp.astype(int), 22.0).dtype, np.double)
+
+    @given(signals())
+    def test_accepts_1d(self, inp: FloatArray) -> None:
+        self.assertEqual(lifter(inp, 22.0).shape, inp.shape)
+
+    @given(signals(max_size=32), st.integers(min_value=2, max_value=4))
+    def test_lifters_along_first_axis(self, inp: FloatArray, n_frames: int) -> None:
+        frames = inp[:, None] * np.arange(1, n_frames+1)
+        out = lifter(frames, 22.0)
+        self.assertEqual(out.shape, frames.shape)
+        for idx, frame in enumerate(frames.T):
+            self.assertTrue(np.allclose(out[:, idx], lifter(frame, 22.0)))
 
 
 class TestTriang(TestCase):
