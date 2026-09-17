@@ -1,8 +1,7 @@
 from unittest import TestCase
 
 from apollon.typing import FloatArray
-from apollon.signal.filter import (preemphasis, preemphasis_old, triang,
-                                   triang_filter_bank)
+from apollon.signal.filter import preemphasis, triang, triang_filter_bank
 from apollon.signal.tools import sinusoid
 from hypothesis import strategies as st
 from hypothesis import assume, given
@@ -63,19 +62,6 @@ class TestPreemphasis(TestCase):
     def test_extrapolated_first_sample(self, inp: FloatArray, coef: float) -> None:
         out, _ = preemphasis(inp, coef)
         self.assertAlmostEqual(out[0], inp[0] - coef*(2*inp[0]-inp[1]))
-
-    @given(signals(), st.floats(min_value=0.0, max_value=1.0))
-    def test_matches_old_implementation(self, inp: FloatArray, coef: float) -> None:
-        out, _ = preemphasis(inp, coef)
-        self.assertTrue(np.allclose(out, preemphasis_old(inp, coef)))
-
-    @given(signals(), st.floats(min_value=0.0, max_value=1.0))
-    def test_column_signal_matches_transposed_old(self, inp: FloatArray,
-                                                  coef: float) -> None:
-        column = inp[:, None]
-        out, _ = preemphasis(column, coef)
-        self.assertEqual(out.shape, column.shape)
-        self.assertTrue(np.allclose(out, preemphasis_old(column.T, coef).T))
 
     def test_accepts_sinusoid(self) -> None:
         inp = sinusoid(300, fps=1000)
