@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
 
 from functools import partial
+from math import ceil
 import unittest
 import numpy as np
 from hypothesis import given
-from hypothesis.strategies import composite, floats, integers, DrawFn
+from hypothesis.strategies import (composite, floats, integers, sampled_from,
+                                   DrawFn)
 
 from apollon._defaults import SPL_REF
 from apollon.signal import features
 from apollon.signal import tools
+from apollon.typing import FloatArray
 
 
 frequencies = partial(floats, allow_nan=False, allow_infinity=False)
+
+TrimSpec = tuple[FloatArray, int, int | None, int | None]
 
 class TestAmp(unittest.TestCase):
     def test_amp_at_1Pa(self):
@@ -65,6 +70,166 @@ class TestMelHzConverte(unittest.TestCase):
         res = tools.mel_to_hz(tools.hz_to_mel(frq))
         self.assertIsInstance(res, np.ndarray)
         self.assertTrue(np.isclose(res, frq))
+
+
+def signal(n_frames: int, n_channels: int) -> FloatArray:
+    """Signal of shape ``(n_frames, n_channels)`` with unique frame values."""
+    return np.arange(n_frames*n_channels,
+                     dtype=np.double).reshape(n_frames, n_channels)
+
+
+def n_trimmed(fps: int, duration: int | None) -> int:
+    """Number of frames ``trim_ms`` removes for ``duration`` milliseconds."""
+    return 0 if duration is None else (fps*duration + 500) // 1000
+
+
+@composite
+def trim_specs(draw: DrawFn, which: str | None = None) -> TrimSpec:
+    """Draw ``(sig, fps, pre, post)`` that leave at least one frame.
+
+    Args:
+        which:  Which boundaries to trim. One of ``'pre'``, ``'post'``, or
+                ``'both'``. Drawn if not given.
+    """
+    fps = draw(integers(min_value=1, max_value=8000))
+    which = which or draw(sampled_from(('pre', 'post', 'both')))
+    durations = integers(min_value=1, max_value=200)
+    pre = draw(durations) if which in ('pre', 'both') else None
+    post = draw(durations) if which in ('post', 'both') else None
+    n_frames = (n_trimmed(fps, pre) + n_trimmed(fps, post)
+                + draw(integers(min_value=1, max_value=100)))
+    return signal(n_frames, draw(integers(1, 3))), fps, pre, post
+
+
+@composite
+def overtrim_specs(draw: DrawFn) -> TrimSpec:
+    """Draw ``(sig, fps, pre, post)`` that leave no frame at all."""
+    fps = draw(integers(min_value=1, max_value=8000))
+    n_frames = draw(integers(min_value=1, max_value=100))
+    n_cut = n_frames + draw(integers(min_value=0, max_value=50))
+    n_pre = draw(integers(min_value=0, max_value=n_cut))
+    n_post = n_cut - n_pre
+    pre = ceil(n_pre * 1000 / fps) if n_pre else None
+    post = ceil(n_post * 1000 / fps) if n_post else None
+    return signal(n_frames, draw(integers(1, 3))), fps, pre, post
+
+
+class TestTrimMs(unittest.TestCase):
+    @given(trim_specs())
+    def test_removes_requested_number_of_frames(self, spec: TrimSpec) -> None:
+        sig, fps, pre, post = spec
+        out = tools.trim_ms(sig, fps, pre, post)
+        self.assertEqual(out.shape[0], sig.shape[0] - n_trimmed(fps, pre)
+                         - n_trimmed(fps, post))
+
+    @given(trim_specs())
+    def test_keeps_the_expected_frames(self, spec: TrimSpec) -> None:
+        sig, fps, pre, post = spec
+        start = n_trimmed(fps, pre)
+        stop = sig.shape[0] - n_trimmed(fps, post)
+        out = tools.trim_ms(sig, fps, pre, post)
+        self.assertTrue(np.array_equal(out, sig[start:stop]))
+
+    @given(trim_specs())
+    def test_output_is_two_dimensional_view(self, spec: TrimSpec) -> None:
+        sig, fps, pre, post = spec
+        out = tools.trim_ms(sig, fps, pre, post)
+        self.assertEqual(out.ndim, 2)
+        self.assertEqual(out.shape[1], sig.shape[1])
+        self.assertTrue(np.shares_memory(out, sig))
+
+    @given(trim_specs())
+    def test_trims_all_channels_alike(self, spec: TrimSpec) -> None:
+        sig, fps, pre, post = spec
+        out = tools.trim_ms(sig, fps, pre, post)
+        for idx, channel in enumerate(sig.T):
+            expected = tools.trim_ms(channel[:, None], fps, pre, post)
+            self.assertTrue(np.array_equal(out[:, idx, None], expected))
+
+    @given(trim_specs('post'))
+    def test_omitted_pre_keeps_the_first_frame(self, spec: TrimSpec) -> None:
+        sig, fps, _, post = spec
+        out = tools.trim_ms(sig, fps, post=post)
+        self.assertTrue(np.array_equal(out[0], sig[0]))
+
+    @given(trim_specs('pre'))
+    def test_omitted_post_keeps_the_last_frame(self, spec: TrimSpec) -> None:
+        sig, fps, pre, _ = spec
+        out = tools.trim_ms(sig, fps, pre=pre)
+        self.assertTrue(np.array_equal(out[-1], sig[-1]))
+
+    @given(trim_specs())
+    def test_accepts_numpy_integers(self, spec: TrimSpec) -> None:
+        sig, fps, pre, post = spec
+        np_pre = None if pre is None else np.int64(pre)
+        np_post = None if post is None else np.int32(post)
+        self.assertTrue(np.array_equal(
+            tools.trim_ms(sig, np.int64(fps), np_pre, np_post),
+            tools.trim_ms(sig, fps, pre, post)))
+
+    def test_rounds_to_nearest_frame(self) -> None:
+        sig = signal(1000, 2)
+        self.assertEqual(tools.trim_ms(sig, 44100, pre=1).shape[0], 1000-44)
+        self.assertEqual(tools.trim_ms(sig, 1000, pre=100).shape[0], 900)
+
+    def test_rounds_half_up(self) -> None:
+        sig = signal(1000, 2)
+        self.assertEqual(tools.trim_ms(sig, 5, pre=100).shape[0], 999)
+        self.assertEqual(tools.trim_ms(sig, 5, pre=500).shape[0], 997)
+
+    def test_sub_frame_duration_is_noop(self) -> None:
+        sig = signal(1000, 2)
+        self.assertTrue(np.array_equal(tools.trim_ms(sig, 100, 4, 4), sig))
+
+    def test_keeps_single_remaining_frame(self) -> None:
+        sig = signal(1000, 2)
+        out = tools.trim_ms(sig, 1000, 400, 599)
+        self.assertEqual(out.shape, (1, 2))
+        self.assertTrue(np.array_equal(out[0], sig[400]))
+
+    @given(overtrim_specs())
+    def test_raises_on_empty_result(self, spec: TrimSpec) -> None:
+        sig, fps, pre, post = spec
+        with self.assertRaises(ValueError):
+            tools.trim_ms(sig, fps, pre, post)
+
+    def test_raises_without_durations(self) -> None:
+        with self.assertRaises(ValueError):
+            tools.trim_ms(signal(1000, 2), 1000)
+
+    @given(sampled_from((1, 3, 4)))
+    def test_raises_on_wrong_dimensions(self, ndim: int) -> None:
+        sig = np.zeros((4,)*ndim, dtype=np.double)
+        with self.assertRaises(ValueError):
+            tools.trim_ms(sig, 1000, pre=1)
+
+    @given(sampled_from((0.5, 12.5, np.float64(10.0), '10', b'10')))
+    def test_raises_on_non_integer_duration(self, duration: object) -> None:
+        sig = signal(1000, 2)
+        with self.assertRaises(TypeError):
+            tools.trim_ms(sig, 1000, pre=duration)    # type: ignore[arg-type]
+        with self.assertRaises(TypeError):
+            tools.trim_ms(sig, 1000, post=duration)   # type: ignore[arg-type]
+
+    @given(integers(min_value=-1000, max_value=0))
+    def test_raises_on_non_positive_duration(self, duration: int) -> None:
+        sig = signal(1000, 2)
+        with self.assertRaises(ValueError):
+            tools.trim_ms(sig, 1000, pre=duration)
+        with self.assertRaises(ValueError):
+            tools.trim_ms(sig, 1000, post=duration)
+
+    @given(integers(min_value=-1000, max_value=0))
+    def test_raises_on_non_positive_fps(self, fps: int) -> None:
+        sig = signal(1000, 2)
+        with self.assertRaises(ValueError):
+            tools.trim_ms(sig, fps, pre=100)
+
+    @given(sampled_from((0.5, 44100.0, np.float64(1000.0), '1000')))
+    def test_raises_on_non_integer_fps(self, fps: object) -> None:
+        sig = signal(1000, 2)
+        with self.assertRaises(TypeError):
+            tools.trim_ms(sig, fps, pre=100)          # type: ignore[arg-type]
 
 
 if __name__ == '__main__':

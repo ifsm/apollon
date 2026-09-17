@@ -2,6 +2,7 @@
 Signal processing tools
 ========================
 """
+import numbers
 from collections.abc import Sequence
 from typing import Any
 
@@ -294,6 +295,99 @@ def amp(spl: Sequence[float] | float,
         DFT magnituds
     """
     return np.power(10.0, 0.05*np.atleast_1d(spl)) * ref
+
+
+def _assert_positive_int(val: int, name: str) -> None:
+    """Raise if ``val`` is not a positive integer.
+
+    Integer types other than ``int`` are accepted, the integer scalars of
+    ``numpy`` in particular.
+
+    Args:
+        val:   Value to test
+        name:  Parameter name to refer to in the error message
+
+    Raises:
+        TypeError:  If ``val`` is not of integer type
+        ValueError: If ``val`` is less than one
+    """
+    if not isinstance(val, numbers.Integral):
+        raise TypeError(f'Argument to ``{name}`` must be an integer. '
+                        f'Found {type(val)}.')
+    if val < 1:
+        raise ValueError(f'Argument to ``{name}`` must be positive. '
+                         f'Found {val}.')
+
+
+def _ms_to_frames(fps: int, duration: int, name: str) -> int:
+    """Convert a duration in milliseconds to a number of frames.
+
+    Fractional frames are rounded half up, so durations shorter than half a
+    frame convert to zero frames.
+
+    Args:
+        fps:       Number of frames per second
+        duration:  Duration in milliseconds
+        name:      Parameter name to refer to in the error message
+
+    Returns:
+        Number of frames covered by ``duration``
+
+    Raises:
+        TypeError:  If ``duration`` is not of integer type
+        ValueError: If ``duration`` is less than one
+    """
+    _assert_positive_int(duration, name)
+    return (fps*duration + 500) // 1000
+
+
+def trim_ms(sig: FloatArray, fps: int, pre: int | None = None,
+            post: int | None = None) -> FloatArray:
+    """Trim the given durations from the start and the end of ``sig``.
+
+    Durations are given in milliseconds and converted to frames given the
+    frame rate ``fps``, rounding half up. Hence, a duration shorter than half
+    a frame trims nothing. Omit a boundary to leave that end untouched; at
+    least one of ``pre`` and ``post`` has to be given.
+
+    ``fps``, ``pre``, and ``post`` must be positive integers. They are
+    annotated as ``int`` for the benefit of static type checking, but any
+    integer type is accepted at runtime, the integer scalars of ``numpy`` in
+    particular.
+
+    The input signal must be two-dimensional with shape
+    ``(n_frames, n_channels)``. Trimming is applied along the time axis, so
+    all channels are trimmed alike.
+
+    Args:
+        sig:   Two-dimensional input signal
+        fps:   Number of frames per second
+        pre:   Duration to trim from the start in milliseconds
+        post:  Duration to trim from the end in milliseconds
+
+    Returns:
+        View of ``sig`` with the respective ends trimmed
+
+    Raises:
+        ValueError: If ``sig`` is not two-dimensional, if neither ``pre`` nor
+                    ``post`` is given, if ``fps``, ``pre``, or ``post`` is not
+                    positive, or if the requested durations leave no frames
+        TypeError:  If ``fps``, ``pre``, or ``post`` is not of integer type
+    """
+    if sig.ndim != 2:
+        raise ValueError(f'Input array has {sig.ndim} dimensions. However,'
+                         ' ``trim_ms`` expects two-dimensional array.')
+    if pre is None and post is None:
+        raise ValueError('At least one of ``pre`` and ``post`` must be given.')
+    _assert_positive_int(fps, 'fps')
+    n_pre = 0 if pre is None else _ms_to_frames(fps, pre, 'pre')
+    n_post = 0 if post is None else _ms_to_frames(fps, post, 'post')
+    stop = sig.shape[0] - n_post
+    if n_pre >= stop:
+        raise ValueError(f'Trimming {n_pre} frames from the start and '
+                         f'{n_post} frames from the end of a signal of '
+                         f'{sig.shape[0]} frames leaves nothing.')
+    return sig[n_pre:stop]
 
 
 def zero_padding(sig: FloatArray, n_pad: int,
