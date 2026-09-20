@@ -1,7 +1,7 @@
 # pylint: disable = C0114, C0115, R0903
 
-from typing import Self
-from pydantic import BaseModel, model_validator
+from typing import Self, Literal
+from pydantic import BaseModel, model_validator, PositiveInt
 
 
 class SpectralTransformParams(BaseModel):
@@ -38,9 +38,35 @@ class TriangFilterSpec(BaseModel):
     low: float
     high: float
     n_filters: int
+    scale: Literal["mel", "hz"] = "mel"
 
     @model_validator(mode="after")
     def _check_low_lt_high(self) -> Self:
         if self.low >= self.high:
             raise ValueError("low freq must be less then high")
         return self
+
+
+class CepstrumParams(BaseModel):
+    n_coefs: PositiveInt = 13
+    dct_type: Literal[1, 2, 3, 4] = 2
+    lifter_gain: float = 24.0
+
+
+class CepstralParams(BaseModel):
+    fb: TriangFilterSpec
+    cepstrum: CepstrumParams = CepstrumParams()
+
+    @model_validator(mode="after")
+    def _check_n_coefs_le_n_filters(self) -> Self:
+        if self.cepstrum.n_coefs > self.fb.n_filters:
+            raise ValueError(f"Requested {self.cepstrum.n_coefs} cepstral "
+                             f"coefficients from {self.fb.n_filters} filters. "
+                             "The cepstrum cannot hold more coefficients than "
+                             "the filter bank has filters.")
+        return self
+
+
+class MfccParams(CepstralParams):
+    stft: StftParams
+    preemphasis: float | None = 0.97

@@ -3,6 +3,6 @@ Signal processing
 =================
 """
 
-from . import features, spectral, tools
+from . import cepstral, features, spectral, tools
 
-__all__ = ("features", "spectral", "tools")
+__all__ = ("cepstral", "features", "spectral", "tools")
