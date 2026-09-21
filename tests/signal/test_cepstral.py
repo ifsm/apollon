@@ -59,6 +59,68 @@ class TestLogMelEnergies(TestCase):
         with self.assertRaises(ValueError):
             log_mel_energies(self.power[:-1], self.fbank)
 
+    def test_top_db_is_off_by_default(self) -> None:
+        self.assertTrue(np.array_equal(
+            log_mel_energies(self.power, self.fbank),
+            log_mel_energies(self.power, self.fbank, top_db=None)))
+
+    def test_top_db_bounds_the_range_of_every_segment(self) -> None:
+        plain = log_mel_energies(self.power, self.fbank)
+        narrow = (plain.max(axis=0) - plain.min(axis=0)).min() / 2
+        energies = log_mel_energies(self.power, self.fbank, top_db=narrow)
+        spans = energies.max(axis=0) - energies.min(axis=0)
+        self.assertTrue(np.allclose(spans, narrow))
+
+    def test_top_db_wider_than_the_signal_is_a_no_op(self) -> None:
+        plain = log_mel_energies(self.power, self.fbank)
+        span = plain.max() - plain.min()
+        self.assertTrue(np.array_equal(
+            plain, log_mel_energies(self.power, self.fbank, top_db=2*span)))
+
+    def test_top_db_floors_at_the_maximum_of_each_segment(self) -> None:
+        """The reference is the loudest band of the segment itself."""
+        plain = log_mel_energies(self.power, self.fbank)
+        clamped = log_mel_energies(self.power, self.fbank, top_db=5.0)
+        self.assertTrue(np.allclose(
+            clamped, np.maximum(plain, plain.max(axis=0, keepdims=True) - 5.0)))
+
+    def test_segments_are_independent(self) -> None:
+        """A loud segment elsewhere leaves every other segment untouched.
+
+        This is the point of the per-segment reference, and what the
+        whole-spectrogram variant on ``topdb-global`` cannot offer.
+        """
+        louder = self.power.copy()
+        louder[:, 0] *= 1e6
+        a = log_mel_energies(self.power, self.fbank, top_db=5.0)[:, 1:]
+        b = log_mel_energies(louder, self.fbank, top_db=5.0)[:, 1:]
+        self.assertTrue(np.array_equal(a, b))
+
+    def test_chunking_does_not_change_the_result(self) -> None:
+        """Segment by segment equals all at once, which is what makes this
+        variant usable with ``segment.FileSegmentation``.
+
+        Agreement is to floating point rather than bit-exact: ``fbank @ power``
+        takes a different BLAS path for a matrix than for a single column. The
+        clamp itself contributes nothing to the difference.
+        """
+        whole = log_mel_energies(self.power, self.fbank, top_db=5.0)
+        piecewise = np.hstack([
+            log_mel_energies(self.power[:, i:i+1], self.fbank, top_db=5.0)
+            for i in range(self.power.shape[1])])
+        self.assertTrue(np.allclose(whole, piecewise, rtol=0, atol=1e-12))
+
+    def test_differs_from_librosa_power_to_db(self) -> None:
+        """Stated plainly: this variant is not librosa-compatible."""
+        librosa = __import__("librosa")
+        self.assertFalse(np.allclose(
+            log_mel_energies(self.power, self.fbank, top_db=5.0),
+            librosa.power_to_db(self.fbank @ self.power, top_db=5.0)))
+
+    def test_negative_top_db_raises(self) -> None:
+        with self.assertRaises(ValueError):
+            log_mel_energies(self.power, self.fbank, top_db=-1.0)
+
 
 class TestCepstralCoefs(TestCase):
 
@@ -172,6 +234,32 @@ class TestMfcc(TestCase):
         self.assertIsNone(mfcc.params.stft.norm)
         self.assertFalse(np.allclose(mfcc.transform(self.sig).coefs,
                                      self.mfcc.transform(self.sig).coefs))
+
+    def test_top_db_reaches_the_energies(self) -> None:
+        """``top_db`` flows from the constructor into the log energies."""
+        mfcc = Mfcc(stft=stft_params(), fb=self.fb, top_db=20.0)
+        res = mfcc.transform(self.sig)
+        lme = res.log_mel_energies
+        self.assertEqual(mfcc.params.top_db, 20.0)
+        self.assertTrue(np.allclose(lme.max(axis=0) - lme.min(axis=0), 20.0))
+        self.assertFalse(np.allclose(res.coefs,
+                                     self.mfcc.transform(self.sig).coefs))
+
+    def test_a_loud_event_leaves_other_frames_alone(self) -> None:
+        """The property the whole-spectrogram variant cannot provide."""
+        mfcc = Mfcc(stft=stft_params(), fb=self.fb, top_db=20.0)
+        clicked = self.sig.copy()
+        clicked[:64] = 10.0
+        plain = mfcc.transform(self.sig).coefs
+        loud = mfcc.transform(clicked).coefs
+        self.assertTrue(np.allclose(plain[:, 20:], loud[:, 20:]))
+
+    def test_top_db_defaults_to_off(self) -> None:
+        self.assertIsNone(self.mfcc.params.top_db)
+
+    def test_negative_top_db_raises_at_construction(self) -> None:
+        with self.assertRaises(ValidationError):
+            Mfcc(stft=stft_params(), fb=self.fb, top_db=-1.0)
 
     def test_stft_single_sided_is_forwarded(self) -> None:
         """``single_sided`` reaches the STFT instead of being dropped."""

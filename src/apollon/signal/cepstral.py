@@ -33,7 +33,8 @@ ENERGY_FLOOR = 1e-10
 
 
 def log_mel_energies(power: FloatArray, fbank: FloatArray,
-                     floor: float = ENERGY_FLOOR) -> FloatArray:
+                     floor: float = ENERGY_FLOOR,
+                     top_db: float | None = None) -> FloatArray:
     """Compute the log energy per filter of a filter bank.
 
     Each filter of ``fbank`` is applied to every column of ``power``, and the
@@ -45,32 +46,65 @@ def log_mel_energies(power: FloatArray, fbank: FloatArray,
     ``floor`` beforehand, which maps them to a large negative value instead
     of ``-inf`` and keeps the subsequent DCT finite.
 
+    ``floor`` is an absolute bound and rarely engages: any recording with
+    dither or quantization noise stays above it, while its logarithm reaches
+    far below anything the signal says. ``top_db`` bounds the dynamic range
+    instead, discarding every band more than ``top_db`` below the **loudest
+    band of its own segment**. Bands that far down carry numerical residue
+    rather than signal, and the logarithm magnifies it: two empty bands at
+    ``1e-12`` and ``1e-14`` read 20 dB apart. The DCT would spread that
+    fiction over every coefficient.
+
+    The reference is taken per segment, so each column is floored by its own
+    maximum and no segment can affect another. A signal may be cut into
+    chunks, or extended, without changing the coefficients of the segments
+    already computed, and a single loud event leaves the rest of the signal
+    alone. Note that this differs from ``librosa.power_to_db``, whose default
+    ``axes="auto"`` reduces over frequency and time alike and so references
+    the whole spectrogram; coefficients from this function are not
+    bit-comparable with librosa's when ``top_db`` is set.
+
+    Bounding each segment separately also means the bound is on the dynamic
+    range *within* a segment, not across the spectrogram: a quiet segment and
+    a loud one are each flattened to ``top_db``, and the difference in level
+    between them survives in the zeroth coefficient.
+
     Following the convention of this package, frequency runs along the first
     axis of ``power``, as in ``spectral.Spectrogram.power``. The filters of
     ``fbank`` run along its first axis, as returned by
     ``filter.triangular_filter_bank``.
 
     Args:
-        power:  Power spectrum, shaped ``(n_frqs, n_segments)``
-        fbank:  Filter bank, shaped ``(n_filters, n_frqs)``
-        floor:  Lower bound on the band energies
+        power:   Power spectrum, shaped ``(n_frqs, n_segments)``
+        fbank:   Filter bank, shaped ``(n_filters, n_frqs)``
+        floor:   Absolute lower bound on the band energies
+        top_db:  Width of the retained dynamic range in dB, measured down
+                 from the loudest band of each segment. If ``None``, do not
+                 bound it
 
     Returns:
         Log band energies in dB, shaped ``(n_filters, n_segments)``.
 
     Raises:
-        ValueError: If ``floor`` is not positive, or if the filters of
-            ``fbank`` are not defined on as many frequencies as ``power``
-            holds.
+        ValueError: If ``floor`` is not positive, if ``top_db`` is negative,
+            or if the filters of ``fbank`` are not defined on as many
+            frequencies as ``power`` holds.
     """
     if floor <= 0:
         raise ValueError("``floor`` is not positive")
+
+    if top_db is not None and top_db < 0:
+        raise ValueError("``top_db`` is negative")
 
     if fbank.shape[-1] != power.shape[0]:
         raise ValueError(f"Filter bank is defined on {fbank.shape[-1]} "
                          f"frequencies, but ``power`` holds {power.shape[0]}.")
 
-    return floatarray(10 * np.log10(np.maximum(fbank @ power, floor)))
+    energies = 10 * np.log10(np.maximum(fbank @ power, floor))
+    if top_db is not None:
+        energies = np.maximum(energies,
+                              energies.max(axis=0, keepdims=True) - top_db)
+    return floatarray(energies)
 
 
 def cepstral_coefs(log_energies: FloatArray, dct_type: int = 2,
@@ -200,9 +234,11 @@ class MelCepstrogram:
 class Mfcc:
     """Mel-frequency cepstral coefficients of a signal"""
 
+    # pylint: disable = R0913
     def __init__(self, stft: StftParams, fb: TriangFilterSpec,
                  cepstrum: CepstrumParams | None = None,
-                 preemphasis: float = 0.97) -> None:
+                 preemphasis: float = 0.97,
+                 top_db: float | None = None) -> None:
         """Transform a signal to Mel-frequency cepstral coefficients.
 
         The transform owns the whole chain: pre-emphasis of the signal, the
@@ -221,11 +257,16 @@ class Mfcc:
                           defaults of ``CepstrumParams``
             preemphasis:  Pre-emphasis coefficient applied to the signal.
                           ``0.0`` disables it
+            top_db:       Width of the retained dynamic range in dB, measured
+                          down from the loudest band of each segment, see
+                          :func:`log_mel_energies`. Segments are bounded
+                          independently of each other
 
         Raises:
             ValueError: If more cepstral coefficients are requested than the
-                        filter bank has filters, or if the filter bank cannot
-                        be built on the frequency axis implied by ``stft``
+                        filter bank has filters, if the filter bank cannot
+                        be built on the frequency axis implied by ``stft``,
+                        or if ``top_db`` is negative
         """
         self._stft = Stft(fps=stft.fps, n_perseg=stft.n_perseg,
                           n_overlap=stft.n_overlap, window=stft.window,
@@ -234,7 +275,7 @@ class Mfcc:
                           extend=stft.extend, pad=stft.pad)
         self._params = MfccParams(stft=self._stft.params, fb=fb,
                                   cepstrum=cepstrum or CepstrumParams(),
-                                  preemphasis=preemphasis)
+                                  preemphasis=preemphasis, top_db=top_db)
         self._fbank = _build_fbank(_rfftfreq(self._stft.params), fb)
 
     def transform(self, data: FloatArray) -> MelCepstrogram:
@@ -261,7 +302,8 @@ class MfccSpectrogram:
     """Mel-frequency cepstral coefficients of an existing ``Spectrogram``"""
 
     def __init__(self, fb: TriangFilterSpec,
-                 cepstrum: CepstrumParams | None = None) -> None:
+                 cepstrum: CepstrumParams | None = None,
+                 top_db: float | None = None) -> None:
         """Transform a spectrogram to Mel-frequency cepstral coefficients.
 
         Use this transform to reuse a Short Time Fourier Transform that has
@@ -281,12 +323,16 @@ class MfccSpectrogram:
             fb:        Specification of the triangular filter bank
             cepstrum:  Parameters of the cepstrum. If ``None``, use the
                        defaults of ``CepstrumParams``
+            top_db:    Width of the retained dynamic range in dB, measured
+                       down from the loudest band of each segment, see
+                       :func:`log_mel_energies`. Segments are bounded
+                       independently of each other
 
         Raises:
             ValueError: If more cepstral coefficients are requested than the
-                        filter bank has filters
+                        filter bank has filters, or if ``top_db`` is negative
         """
-        self._params = CepstralParams(fb=fb,
+        self._params = CepstralParams(fb=fb, top_db=top_db,
                                       cepstrum=cepstrum or CepstrumParams())
         self._frqs: FloatArray | None = None
         self._fbank: FloatArray | None = None
@@ -311,6 +357,7 @@ class MfccSpectrogram:
             self._fbank = fbank
             self._frqs = data.frqs
         params = MfccParams(stft=data.params, fb=self._params.fb,
+                            top_db=self._params.top_db,
                             cepstrum=self._params.cepstrum, preemphasis=None)
         return _assemble(data, fbank, params)
 
@@ -362,7 +409,7 @@ def _assemble(sxx: Spectrogram, fbank: FloatArray,
     Returns:
         Cepstral coefficients and the stages they came from.
     """
-    energies = log_mel_energies(sxx.power, fbank)
+    energies = log_mel_energies(sxx.power, fbank, top_db=params.top_db)
     coefs = cepstral_coefs(energies, params.cepstrum.dct_type,
                            params.cepstrum.n_coefs,
                            params.cepstrum.lifter_gain)
