@@ -9,6 +9,16 @@ feature extraction, onset detection, time-series segmentation, Hidden Markov
 Models, and Self-Organizing Maps. Package sources live under `src/apollon`,
 performance-critical routines are implemented as C extension modules.
 
+### Backward compatibility
+
+At the current version (0.2) backward compatibility is explicitly **not** a
+goal. Prefer the better design over the compatible one, and do not soften a
+change to keep old usage working: no compatibility shims, no deprecation
+periods, no aliases for renamed parameters or classes, no validators that
+coerce a superseded form of an argument. Breaking the public API, and breaking
+params already serialized to JSON, are both acceptable. State the break in the
+commit message; do not propose a migration path unless asked for one.
+
 ## Commands
 
 The project uses Poetry for dependency management and packaging.
