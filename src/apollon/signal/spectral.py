@@ -29,8 +29,8 @@ def fft(sig: FloatArray, window: str | None = None, n_fft: int | None = None,
         sig:     Two-dimensional input array
         n_fft:   FFT length in samples
         window:  Name of window function
-        norm:    If True, scale such that a sinusodial signal with unit
-                 aplitude has unit amplitude in the spectrum
+        norm:    If True, scale such that a sinusoidal signal with unit
+                 amplitude has unit amplitude in the spectrum
 
     Returns:
         FFT bins
@@ -52,9 +52,29 @@ def fft(sig: FloatArray, window: str | None = None, n_fft: int | None = None,
     bins = np.fft.rfft(sig*win, n_fft, axis=0)
 
     if norm:
-        bins = bins / np.sqrt(np.square(win.sum())) * 2
+        bins /= abs(win.sum())
+        bins[_paired_bins(n_fft)] *= 2
 
     return bins
+
+
+def _paired_bins(n_fft: int) -> slice:
+    """Select the bins that have a partner in the negative half spectrum
+
+    ``numpy.fft.rfft`` discards the negative frequencies, which hold half the
+    amplitude of each real sinusoid. Doubling the remaining bins restores it,
+    but only for those that actually lost a partner. The zeroth bin never has
+    one, and neither has the Nyquist bin, which ``rfft`` returns as the last
+    bin for even ``n_fft`` only. For odd ``n_fft`` there is no Nyquist bin and
+    the last bin is paired like any other.
+
+    Args:
+        n_fft:  FFT length in samples
+
+    Returns:
+        Index of the paired bins along the frequency axis
+    """
+    return slice(1, -1 if n_fft % 2 == 0 else None)
 
 
 class TransformResult(ABC):

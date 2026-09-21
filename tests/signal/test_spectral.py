@@ -39,6 +39,39 @@ class TestFft(unittest.TestCase):
         idx = np.arange(self.frqs.size, dtype=int)
         self.assertTrue(np.allclose(bins[self.frqs, idx], self.amps))
 
+    def test_dc_is_not_doubled(self):
+        """The zeroth bin has no partner in the negative half spectrum."""
+        amp = 3.0
+        bins = fft(np.full((512, 1), amp))
+        self.assertAlmostEqual(np.absolute(bins)[0, 0], amp)
+
+    def test_nyquist_is_not_doubled(self):
+        """For even ``n_fft`` the last bin is Nyquist, which is unpaired."""
+        amp = 3.0
+        sig = (amp * (-1.0)**np.arange(512)).reshape(-1, 1)
+        self.assertAlmostEqual(np.absolute(fft(sig))[-1, 0], amp)
+
+    def test_last_bin_is_doubled_for_odd_n_fft(self):
+        """Odd ``n_fft`` has no Nyquist bin, so its last bin is paired."""
+        n_fft = 513
+        amp = 3.0
+        frq = self.fps * (n_fft//2) / n_fft
+        sig = sinusoid(frq, amp, fps=self.fps)[:n_fft]
+        self.assertAlmostEqual(np.absolute(fft(sig, n_fft=n_fft))[-1, 0], amp)
+
+    def test_only_paired_bins_are_doubled(self):
+        """Parity of ``n_fft`` decides, not the length of the signal."""
+        sig = np.random.default_rng(0).standard_normal((512, 1))
+        for n_fft, last in ((512, 1.0), (513, 2.0)):
+            with self.subTest(n_fft=n_fft):
+                # the rect window sums to the signal length
+                ratio = (np.absolute(fft(sig, n_fft=n_fft))
+                         / np.absolute(fft(sig, n_fft=n_fft, norm=False))
+                         * sig.shape[0])
+                self.assertAlmostEqual(ratio[0, 0], 1.0)
+                self.assertAlmostEqual(ratio[-1, 0], last)
+                self.assertTrue(np.allclose(ratio[1:-1], 2.0))
+
 
 
 class TestStftSegmentsTimes(unittest.TestCase):
@@ -196,7 +229,14 @@ class TestStftNorm(unittest.TestCase):
         self.signal = sinusoid(frq, fps=self.fps)
         self.segs = ArraySegmentation(**self.seg_params.model_dump()).transform(
                 self.signal)
-        self.win_sum = sp.signal.get_window(self.window, self.n_perseg).sum()
+        # broadband, so that the DC and Nyquist bins carry something
+        self.noise = np.random.default_rng(0).standard_normal((self.fps, 1))
+        self.noise_segs = ArraySegmentation(
+                **self.seg_params.model_dump()).transform(self.noise)
+        win_sum = sp.signal.get_window(self.window, self.n_perseg).sum()
+        # ``n_perseg`` is even, so the last bin is Nyquist and stays unpaired
+        self.factor = np.full((self.n_perseg//2 + 1, 1), 2.0 / win_sum)
+        self.factor[[0, -1]] = 1.0 / win_sum
 
     def _stft(self, **kwargs) -> Stft:
         return Stft(fps=self.fps, n_perseg=self.n_perseg,
@@ -221,18 +261,20 @@ class TestStftNorm(unittest.TestCase):
         self.assertAlmostEqual(sxx.abs.max(), 1.0, places=9)
 
     def test_norm_false_leaves_bins_unscaled(self) -> None:
-        normed = self._stft(norm=True).transform(self.signal)
-        raw = self._stft(norm=False).transform(self.signal)
-        self.assertTrue(np.allclose(normed.bins * self.win_sum / 2, raw.bins))
+        """Only the paired bins pick up the factor two."""
+        normed = self._stft(norm=True).transform(self.noise)
+        raw = self._stft(norm=False).transform(self.noise)
+        self.assertTrue(np.allclose(raw.bins * self.factor, normed.bins))
 
     def test_segments_bin_centered_sinusoid_has_unit_amplitude(self) -> None:
         sxx = self._stft_segments().transform(self.segs)
         self.assertAlmostEqual(sxx.abs.max(), 1.0, places=9)
 
     def test_segments_norm_false_leaves_bins_unscaled(self) -> None:
-        normed = self._stft_segments(norm=True).transform(self.segs)
-        raw = self._stft_segments(norm=False).transform(self.segs)
-        self.assertTrue(np.allclose(normed.bins * self.win_sum / 2, raw.bins))
+        """Only the paired bins pick up the factor two."""
+        normed = self._stft_segments(norm=True).transform(self.noise_segs)
+        raw = self._stft_segments(norm=False).transform(self.noise_segs)
+        self.assertTrue(np.allclose(raw.bins * self.factor, normed.bins))
 
     def test_agrees_with_stft_on_the_same_segmentation(self) -> None:
         """Both transforms normalize the same way."""
