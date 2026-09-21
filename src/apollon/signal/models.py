@@ -4,6 +4,10 @@ from typing import Self, Literal
 from pydantic import BaseModel, model_validator, PositiveInt
 
 
+Normalization = Literal["amplitude", "ortho"]
+"""Scaling convention of a spectral transform, see ``spectral.fft``."""
+
+
 class SpectralTransformParams(BaseModel):
     fps: int
     window: str | None = None
@@ -11,7 +15,8 @@ class SpectralTransformParams(BaseModel):
 
 
 class DftParams(SpectralTransformParams):
-    norm: bool = True
+    norm: Normalization | None = "amplitude"
+    single_sided: bool = True
 
 
 class StftParams(DftParams):

@@ -152,8 +152,15 @@ class TestMfcc(TestCase):
 
     def test_stft_norm_is_forwarded(self) -> None:
         """``norm`` reaches the STFT instead of being dropped."""
-        mfcc = Mfcc(stft=stft_params(norm=False), fb=self.fb)
-        self.assertFalse(mfcc.params.stft.norm)
+        mfcc = Mfcc(stft=stft_params(norm=None), fb=self.fb)
+        self.assertIsNone(mfcc.params.stft.norm)
+        self.assertFalse(np.allclose(mfcc.transform(self.sig).coefs,
+                                     self.mfcc.transform(self.sig).coefs))
+
+    def test_stft_single_sided_is_forwarded(self) -> None:
+        """``single_sided`` reaches the STFT instead of being dropped."""
+        mfcc = Mfcc(stft=stft_params(single_sided=False), fb=self.fb)
+        self.assertFalse(mfcc.params.stft.single_sided)
         self.assertFalse(np.allclose(mfcc.transform(self.sig).coefs,
                                      self.mfcc.transform(self.sig).coefs))
 

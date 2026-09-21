@@ -6,8 +6,11 @@ from hypothesis import given
 from hypothesis.strategies import integers, floats
 from hypothesis.extra.numpy import arrays, array_shapes
 
+from pydantic import ValidationError
+
 from apollon.segment import ArraySegmentation
 from apollon.segment.models import SegmentationParams
+from apollon.signal.models import StftParams
 from apollon.signal.spectral import fft, Dft, Stft, StftSegments
 from apollon.signal.tools import sinusoid
 
@@ -65,12 +68,65 @@ class TestFft(unittest.TestCase):
         for n_fft, last in ((512, 1.0), (513, 2.0)):
             with self.subTest(n_fft=n_fft):
                 # the rect window sums to the signal length
+                raw = fft(sig, n_fft=n_fft, norm=None, single_sided=False)
                 ratio = (np.absolute(fft(sig, n_fft=n_fft))
-                         / np.absolute(fft(sig, n_fft=n_fft, norm=False))
-                         * sig.shape[0])
+                         / np.absolute(raw) * sig.shape[0])
                 self.assertAlmostEqual(ratio[0, 0], 1.0)
                 self.assertAlmostEqual(ratio[-1, 0], last)
                 self.assertTrue(np.allclose(ratio[1:-1], 2.0))
+
+    def test_norm_passes_convention_to_numpy(self):
+        """Without the one-sided correction, the bins are numpy's own."""
+        n = 512
+        win = sp.signal.get_window('hamming', n).reshape(-1, 1)
+        sig = np.random.default_rng(0).standard_normal((n, 1))
+        for norm, expected in ((None, np.fft.rfft(sig*win, n, axis=0)),
+                               ('ortho', np.fft.rfft(sig*win, n, axis=0,
+                                                     norm='ortho')),
+                               ('amplitude', np.fft.rfft(sig*win, n, axis=0)
+                                / abs(win.sum()))):
+            with self.subTest(norm=norm):
+                bins = fft(sig, 'hamming', norm=norm, single_sided=False)
+                self.assertTrue(np.array_equal(bins, expected))
+
+    def test_single_sided_factor_follows_norm(self):
+        """Amplitude conventions double, the unitary one scales by sqrt(2)."""
+        n = 512
+        sig = np.random.default_rng(0).standard_normal((n, 1))
+        for norm, fac in ((None, 2.0), ('amplitude', 2.0),
+                          ('ortho', np.sqrt(2.0))):
+            with self.subTest(norm=norm):
+                half = fft(sig, 'hamming', norm=norm, single_sided=False)
+                full = fft(sig, 'hamming', norm=norm, single_sided=True)
+                ratio = np.absolute(full) / np.absolute(half)
+                self.assertAlmostEqual(ratio[0, 0], 1.0)
+                self.assertAlmostEqual(ratio[-1, 0], 1.0)
+                self.assertTrue(np.allclose(ratio[1:-1], fac))
+
+    def test_ortho_conserves_energy_of_the_windowed_signal(self):
+        """``ortho`` and ``single_sided`` together satisfy Parseval."""
+        n = 512
+        win = sp.signal.get_window('hamming', n).reshape(-1, 1)
+        sig = np.random.default_rng(0).standard_normal((n, 1))
+        for n_fft in (n, n+1):
+            with self.subTest(n_fft=n_fft):
+                bins = fft(sig, 'hamming', n_fft=n_fft, norm='ortho')
+                self.assertAlmostEqual(float((np.absolute(bins)**2).sum()),
+                                       float(((sig*win)**2).sum()))
+
+    def test_amplitude_without_single_sided_reads_half(self):
+        """The negative half keeps half of a real sinusoid's amplitude."""
+        amp = 3.0
+        sig = sinusoid(self.fps * 25 / 512, amp, fps=self.fps)[:512]
+        bins = fft(sig, 'hamming', norm='amplitude', single_sided=False)
+        self.assertAlmostEqual(np.absolute(bins).max(), amp/2)
+
+    def test_unknown_norm_raises(self):
+        for bad in ('backward', 'forward', True, False, 'whatever'):
+            with self.subTest(norm=bad):
+                with self.assertRaises(ValueError) as ctx:
+                    fft(self.signal, norm=bad)
+                self.assertIn('"amplitude"', str(ctx.exception))
 
 
 
@@ -248,41 +304,64 @@ class TestStftNorm(unittest.TestCase):
                             window=self.window, **kwargs)
 
     def test_norm_is_stored_in_params(self) -> None:
-        self.assertFalse(self._stft(norm=False).params.norm)
-        self.assertFalse(self._stft_segments(norm=False).params.norm)
+        self.assertIsNone(self._stft(norm=None).params.norm)
+        self.assertIsNone(self._stft_segments(norm=None).params.norm)
+        self.assertFalse(self._stft(single_sided=False).params.single_sided)
 
-    def test_norm_defaults_to_true(self) -> None:
-        self.assertTrue(self._stft().params.norm)
-        self.assertTrue(self._stft_segments().params.norm)
+    def test_norm_defaults_to_amplitude(self) -> None:
+        for params in (self._stft().params, self._stft_segments().params):
+            self.assertEqual(params.norm, 'amplitude')
+            self.assertTrue(params.single_sided)
 
     def test_bin_centered_sinusoid_has_unit_amplitude(self) -> None:
         """Unit amplitude on a bin center reads as 1.0 in the spectrum."""
         sxx = self._stft().transform(self.signal)
         self.assertAlmostEqual(sxx.abs.max(), 1.0, places=9)
 
-    def test_norm_false_leaves_bins_unscaled(self) -> None:
+    def test_raw_bins_scale_up_to_the_normed_ones(self) -> None:
         """Only the paired bins pick up the factor two."""
-        normed = self._stft(norm=True).transform(self.noise)
-        raw = self._stft(norm=False).transform(self.noise)
+        normed = self._stft().transform(self.noise)
+        raw = self._stft(norm=None, single_sided=False).transform(self.noise)
         self.assertTrue(np.allclose(raw.bins * self.factor, normed.bins))
 
     def test_segments_bin_centered_sinusoid_has_unit_amplitude(self) -> None:
         sxx = self._stft_segments().transform(self.segs)
         self.assertAlmostEqual(sxx.abs.max(), 1.0, places=9)
 
-    def test_segments_norm_false_leaves_bins_unscaled(self) -> None:
+    def test_segments_raw_bins_scale_up_to_the_normed_ones(self) -> None:
         """Only the paired bins pick up the factor two."""
-        normed = self._stft_segments(norm=True).transform(self.noise_segs)
-        raw = self._stft_segments(norm=False).transform(self.noise_segs)
+        normed = self._stft_segments().transform(self.noise_segs)
+        raw = self._stft_segments(norm=None, single_sided=False).transform(
+                self.noise_segs)
         self.assertTrue(np.allclose(raw.bins * self.factor, normed.bins))
 
     def test_agrees_with_stft_on_the_same_segmentation(self) -> None:
         """Both transforms normalize the same way."""
-        for norm in (True, False):
+        for norm in (None, 'ortho', 'amplitude'):
+            for single_sided in (True, False):
+                with self.subTest(norm=norm, single_sided=single_sided):
+                    kwargs = {'norm': norm, 'single_sided': single_sided}
+                    from_sig = self._stft(**kwargs).transform(self.signal)
+                    from_segs = self._stft_segments(**kwargs).transform(
+                            self.segs)
+                    self.assertTrue(np.array_equal(from_sig.bins,
+                                                   from_segs.bins))
+
+    def test_params_round_trip(self) -> None:
+        """Every setting survives serialization."""
+        for norm in (None, 'ortho', 'amplitude'):
             with self.subTest(norm=norm):
-                from_sig = self._stft(norm=norm).transform(self.signal)
-                from_segs = self._stft_segments(norm=norm).transform(self.segs)
-                self.assertTrue(np.array_equal(from_sig.bins, from_segs.bins))
+                params = self._stft(norm=norm, single_sided=False).params
+                self.assertEqual(
+                        type(params).model_validate_json(
+                            params.model_dump_json()), params)
+
+    def test_legacy_boolean_norm_is_rejected(self) -> None:
+        """The boolean flag is gone; old params must not load silently."""
+        with self.assertRaises(ValidationError):
+            StftParams.model_validate_json(
+                    '{"fps": 9000, "norm": true, "n_perseg": 512,'
+                    ' "n_overlap": 256, "extend": true, "pad": true}')
 
 
 if __name__ == '__main__':

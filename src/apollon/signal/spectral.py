@@ -13,34 +13,57 @@ import scipy.signal as _sps
 from apollon.segment import ArraySegmentation, Segments
 from apollon.segment.models import SegmentationParams
 
-from . models import DftParams, StftParams, SpectralTransformParams
+from . models import (DftParams, Normalization, StftParams,
+                      SpectralTransformParams)
 from .. typing import FloatArray, IntArray, ComplexArray
 from .. signal import features
 
 
 def fft(sig: FloatArray, window: str | None = None, n_fft: int | None = None,
-        norm: bool = True) -> ComplexArray:
+        norm: Normalization | None = 'amplitude',
+        single_sided: bool = True) -> ComplexArray:
     """Compute the Discrete Fouier Transform for real input
 
     This is a simple wrapper around ``numpy.fft.rfft``. Input signal must
     be two-dimensional. FTT is performed along the rows.
 
+    ``norm`` selects the scaling convention:
+
+    ============  =========================================================
+    ``None``      Leave the bins as ``rfft`` returns them
+    ``'ortho'``   Divide by ``sqrt(n_fft)``, making the transform unitary
+    ``amplitude`` Divide by the window's coherent gain, so that a sinusoid
+                  reads its own amplitude
+    ============  =========================================================
+
+    ``rfft`` drops the negative half of the spectrum, where a real sinusoid
+    keeps half of its amplitude. If ``single_sided`` is ``True``, the bins
+    that lost a partner there are scaled up to account for it, by ``sqrt(2)``
+    under ``'ortho'``, which conserves energy, and by two otherwise, which
+    conserves amplitude. Note that ``'amplitude'`` without ``single_sided``
+    hence reads a sinusoid of amplitude ``A`` as ``A/2``.
+
     Args:
-        sig:     Two-dimensional input array
-        n_fft:   FFT length in samples
-        window:  Name of window function
-        norm:    If True, scale such that a sinusoidal signal with unit
-                 amplitude has unit amplitude in the spectrum
+        sig:           Two-dimensional input array
+        n_fft:         FFT length in samples
+        window:        Name of window function
+        norm:          Scaling convention
+        single_sided:  If ``True``, account for the discarded negative half
+                       of the spectrum
 
     Returns:
         FFT bins
 
     Raises:
-        AttributeError
+        ValueError:  If ``sig`` is not two-dimensional, or if ``norm`` is
+            not one of the above
     """
     if sig.ndim != 2:
         raise ValueError(f'Input array has {sig.ndim} dimensions. However,'
                          ' ``fft`` expects two-dimensional array.')
+    if norm not in (None, 'ortho', 'amplitude'):
+        raise ValueError(f'Invalid norm value {norm!r}; should be None,'
+                         ' "ortho" or "amplitude".')
     n_sig = sig.shape[0]
     if n_fft is None:
         n_fft = n_sig
@@ -49,11 +72,14 @@ def fft(sig: FloatArray, window: str | None = None, n_fft: int | None = None,
         window = 'rect'
 
     win = np.expand_dims(_sps.get_window(window, n_sig), 1)
-    bins = np.fft.rfft(sig*win, n_fft, axis=0)
+    bins = np.fft.rfft(sig*win, n_fft, axis=0,
+                       norm='ortho' if norm == 'ortho' else 'backward')
 
-    if norm:
+    if norm == 'amplitude':
         bins /= abs(win.sum())
-        bins[_paired_bins(n_fft)] *= 2
+
+    if single_sided:
+        bins[_paired_bins(n_fft)] *= np.sqrt(2) if norm == 'ortho' else 2
 
     return bins
 
@@ -245,21 +271,28 @@ class SpectralTransform(ABC):
 class Dft(SpectralTransform):
     """Discrete Fourier Transform"""
     def __init__(self, fps: int, window: str | None = None,
-                 n_fft: int | None = None, norm: bool = True) -> None:
+                 n_fft: int | None = None,
+                 norm: Normalization | None = 'amplitude',
+                 single_sided: bool = True) -> None:
         """Create a new spectrum
 
         Args:
-            fps:     Sample rate
-            window:  Name of window function
-            n_fft:   FFT length
-            norm:    If ``True``, normalize the spectrum
+            fps:           Sample rate
+            window:        Name of window function
+            n_fft:         FFT length
+            norm:          Scaling convention, see ``fft``
+            single_sided:  If ``True``, account for the discarded negative
+                           half of the spectrum, see ``fft``
         """
         super().__init__()
-        self._params: DftParams = DftParams(fps=fps, window=window, n_fft=n_fft, norm=norm)
+        self._params: DftParams = DftParams(fps=fps, window=window, n_fft=n_fft,
+                                            norm=norm, single_sided=single_sided)
 
     def transform(self, data: FloatArray) -> Spectrum:
         """Transform ``data`` to spectral domain."""
-        bins = fft(data, self.params.window, self.params.n_fft, norm=self.params.norm)
+        bins = fft(data, self.params.window, self.params.n_fft,
+                   norm=self.params.norm,
+                   single_sided=self.params.single_sided)
         return Spectrum(self.params, bins, data.shape[0])
 
     @property
@@ -271,25 +304,30 @@ class Stft(SpectralTransform):
     """Short Time Fourier Transform of AudioFile."""
     def __init__(self, fps: int, n_perseg: int, n_overlap: int,
                  window: str | None = None,
-                 n_fft: int | None = None, norm: bool = True,
+                 n_fft: int | None = None,
+                 norm: Normalization | None = 'amplitude',
+                 single_sided: bool = True,
                  extend: bool = True, pad: bool = True) -> None:
         # pylint: disable = R0913
         """Create a new spectrogram.
 
         Args:
-            fps:        Sample rate
-            n_perseg:   Samples per segment
-            n_overlap:  Number of overlapping samples per segment
-            window:     Name of window function
-            n_fft:      FFT length
-            norm:       If ``True``, normalize the spectrum
-            extend:     If ``True``, extend the signal at both ends
-            pad:        If ``True``, pad the last segment with zeros
+            fps:           Sample rate
+            n_perseg:      Samples per segment
+            n_overlap:     Number of overlapping samples per segment
+            window:        Name of window function
+            n_fft:         FFT length
+            norm:          Scaling convention, see ``fft``
+            single_sided:  If ``True``, account for the discarded negative
+                           half of the spectrum, see ``fft``
+            extend:        If ``True``, extend the signal at both ends
+            pad:           If ``True``, pad the last segment with zeros
         """
         super().__init__()
         self._params: StftParams = StftParams(fps=fps, window=window, n_fft=n_fft,
-                                    norm=norm, n_perseg=n_perseg,
-                                    n_overlap=n_overlap, extend=extend, pad=pad)
+                                    norm=norm, single_sided=single_sided,
+                                    n_perseg=n_perseg, n_overlap=n_overlap,
+                                    extend=extend, pad=pad)
         self._cutter = ArraySegmentation(self.params.n_perseg, self.params.n_overlap,
                                          self.params.extend, self.params.pad)
 
@@ -297,7 +335,8 @@ class Stft(SpectralTransform):
         """Transform ``data`` to spectral domain"""
         segs = self._cutter.transform(data)
         bins = fft(segs.data, self.params.window, self.params.n_fft,
-                   norm=self.params.norm)
+                   norm=self.params.norm,
+                   single_sided=self.params.single_sided)
         return Spectrogram(self._params, bins, segs.params.n_perseg)
 
     @property
@@ -308,25 +347,31 @@ class Stft(SpectralTransform):
 class StftSegments(SpectralTransform):
     """Short Time Fourier Transform on already segmented audio"""
     def __init__(self, fps: int, seg_params: SegmentationParams, window: str | None = None,
-                 n_fft: int | None = None, norm: bool = True) -> None:
+                 n_fft: int | None = None,
+                 norm: Normalization | None = 'amplitude',
+                 single_sided: bool = True) -> None:
         """Create a new ``Spectrogram`` from ``Segments``
 
         Args:
-            fps:         Sample rate
-            seg_params:  Parameters of the segmentation behind the input
-            window:      Name of window function
-            n_fft:       FFT length
-            norm:        If ``True``, normalize the spectrum
+            fps:           Sample rate
+            seg_params:    Parameters of the segmentation behind the input
+            window:        Name of window function
+            n_fft:         FFT length
+            norm:          Scaling convention, see ``fft``
+            single_sided:  If ``True``, account for the discarded negative
+                           half of the spectrum, see ``fft``
         """
         super().__init__()
         self._params: StftParams = StftParams(fps=fps, window=window,
                                               n_fft=n_fft, norm=norm,
+                                              single_sided=single_sided,
                                               **seg_params.dict())
 
     def transform(self, data: Segments) -> Spectrogram:
         """Transform ``data`` to spectral domain"""
         bins = fft(data.data, self._params.window, self._params.n_fft,
-                   norm=self._params.norm)
+                   norm=self._params.norm,
+                   single_sided=self._params.single_sided)
         return Spectrogram(self._params, bins, data.params.n_perseg)
 
     @property
