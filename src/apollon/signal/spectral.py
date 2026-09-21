@@ -251,25 +251,33 @@ class Stft(SpectralTransform):
     """Short Time Fourier Transform of AudioFile."""
     def __init__(self, fps: int, n_perseg: int, n_overlap: int,
                  window: str | None = None,
-                 n_fft: int | None = None, extend: bool = True,
-                 pad: bool = True) -> None:
+                 n_fft: int | None = None, norm: bool = True,
+                 extend: bool = True, pad: bool = True) -> None:
         # pylint: disable = R0913
         """Create a new spectrogram.
 
         Args:
-            params:  Initial parameters
+            fps:        Sample rate
+            n_perseg:   Samples per segment
+            n_overlap:  Number of overlapping samples per segment
+            window:     Name of window function
+            n_fft:      FFT length
+            norm:       If ``True``, normalize the spectrum
+            extend:     If ``True``, extend the signal at both ends
+            pad:        If ``True``, pad the last segment with zeros
         """
         super().__init__()
         self._params: StftParams = StftParams(fps=fps, window=window, n_fft=n_fft,
-                                    n_perseg=n_perseg, n_overlap=n_overlap,
-                                    extend=extend, pad=pad)
+                                    norm=norm, n_perseg=n_perseg,
+                                    n_overlap=n_overlap, extend=extend, pad=pad)
         self._cutter = ArraySegmentation(self.params.n_perseg, self.params.n_overlap,
                                          self.params.extend, self.params.pad)
 
     def transform(self, data: FloatArray) -> Spectrogram:
         """Transform ``data`` to spectral domain"""
         segs = self._cutter.transform(data)
-        bins = fft(segs.data, self.params.window, self.params.n_fft)
+        bins = fft(segs.data, self.params.window, self.params.n_fft,
+                   norm=self.params.norm)
         return Spectrogram(self._params, bins, segs.params.n_perseg)
 
     @property
@@ -280,21 +288,25 @@ class Stft(SpectralTransform):
 class StftSegments(SpectralTransform):
     """Short Time Fourier Transform on already segmented audio"""
     def __init__(self, fps: int, seg_params: SegmentationParams, window: str | None = None,
-                 n_fft: int | None = None) -> None:
+                 n_fft: int | None = None, norm: bool = True) -> None:
         """Create a new ``Spectrogram`` from ``Segments``
 
         Args:
-            fps:     Sample rate
-            window:  Name of window function
-            n_fft:   FFT length
+            fps:         Sample rate
+            seg_params:  Parameters of the segmentation behind the input
+            window:      Name of window function
+            n_fft:       FFT length
+            norm:        If ``True``, normalize the spectrum
         """
         super().__init__()
         self._params: StftParams = StftParams(fps=fps, window=window,
-                                              n_fft=n_fft, **seg_params.dict())
+                                              n_fft=n_fft, norm=norm,
+                                              **seg_params.dict())
 
     def transform(self, data: Segments) -> Spectrogram:
         """Transform ``data`` to spectral domain"""
-        bins = fft(data.data, self._params.window, self._params.n_fft)
+        bins = fft(data.data, self._params.window, self._params.n_fft,
+                   norm=self._params.norm)
         return Spectrogram(self._params, bins, data.params.n_perseg)
 
     @property

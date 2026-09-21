@@ -150,6 +150,13 @@ class TestMfcc(TestCase):
         self.assertEqual(type(params).model_validate_json(
             params.model_dump_json()), params)
 
+    def test_stft_norm_is_forwarded(self) -> None:
+        """``norm`` reaches the STFT instead of being dropped."""
+        mfcc = Mfcc(stft=stft_params(norm=False), fb=self.fb)
+        self.assertFalse(mfcc.params.stft.norm)
+        self.assertFalse(np.allclose(mfcc.transform(self.sig).coefs,
+                                     self.mfcc.transform(self.sig).coefs))
+
     def test_zero_preemphasis_leaves_signal_unchanged(self) -> None:
         plain = Mfcc(stft=stft_params(), fb=self.fb, preemphasis=0.0)
         sxx = Stft(fps=FPS, n_perseg=N_PERSEG, n_overlap=N_PERSEG//2,

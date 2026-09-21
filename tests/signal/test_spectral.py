@@ -6,6 +6,8 @@ from hypothesis import given
 from hypothesis.strategies import integers, floats
 from hypothesis.extra.numpy import arrays, array_shapes
 
+from apollon.segment import ArraySegmentation
+from apollon.segment.models import SegmentationParams
 from apollon.signal.spectral import fft, Dft, Stft, StftSegments
 from apollon.signal.tools import sinusoid
 
@@ -176,6 +178,69 @@ class TestSpectrogram(unittest.TestCase):
         stft = Stft(fps, **TestSpectrogram.ap_args)
         sxx = stft.transform(sig)
         self.assertEqual(sxx.frqs.shape[0], sxx.bins.shape[0])
+
+
+class TestStftNorm(unittest.TestCase):
+    """``norm`` scales the bins such that unit amplitude reads as unit
+    amplitude in the spectrum."""
+
+    fps = 9000
+    n_perseg = 512
+    window = 'hamming'
+
+    def setUp(self):
+        self.seg_params = SegmentationParams(n_perseg=self.n_perseg,
+                                             n_overlap=self.n_perseg//2,
+                                             extend=False, pad=False)
+        frq = self.fps * 25 / self.n_perseg
+        self.signal = sinusoid(frq, fps=self.fps)
+        self.segs = ArraySegmentation(**self.seg_params.model_dump()).transform(
+                self.signal)
+        self.win_sum = sp.signal.get_window(self.window, self.n_perseg).sum()
+
+    def _stft(self, **kwargs) -> Stft:
+        return Stft(fps=self.fps, n_perseg=self.n_perseg,
+                    n_overlap=self.n_perseg//2, window=self.window,
+                    extend=False, pad=False, **kwargs)
+
+    def _stft_segments(self, **kwargs) -> StftSegments:
+        return StftSegments(fps=self.fps, seg_params=self.seg_params,
+                            window=self.window, **kwargs)
+
+    def test_norm_is_stored_in_params(self) -> None:
+        self.assertFalse(self._stft(norm=False).params.norm)
+        self.assertFalse(self._stft_segments(norm=False).params.norm)
+
+    def test_norm_defaults_to_true(self) -> None:
+        self.assertTrue(self._stft().params.norm)
+        self.assertTrue(self._stft_segments().params.norm)
+
+    def test_bin_centered_sinusoid_has_unit_amplitude(self) -> None:
+        """Unit amplitude on a bin center reads as 1.0 in the spectrum."""
+        sxx = self._stft().transform(self.signal)
+        self.assertAlmostEqual(sxx.abs.max(), 1.0, places=9)
+
+    def test_norm_false_leaves_bins_unscaled(self) -> None:
+        normed = self._stft(norm=True).transform(self.signal)
+        raw = self._stft(norm=False).transform(self.signal)
+        self.assertTrue(np.allclose(normed.bins * self.win_sum / 2, raw.bins))
+
+    def test_segments_bin_centered_sinusoid_has_unit_amplitude(self) -> None:
+        sxx = self._stft_segments().transform(self.segs)
+        self.assertAlmostEqual(sxx.abs.max(), 1.0, places=9)
+
+    def test_segments_norm_false_leaves_bins_unscaled(self) -> None:
+        normed = self._stft_segments(norm=True).transform(self.segs)
+        raw = self._stft_segments(norm=False).transform(self.segs)
+        self.assertTrue(np.allclose(normed.bins * self.win_sum / 2, raw.bins))
+
+    def test_agrees_with_stft_on_the_same_segmentation(self) -> None:
+        """Both transforms normalize the same way."""
+        for norm in (True, False):
+            with self.subTest(norm=norm):
+                from_sig = self._stft(norm=norm).transform(self.signal)
+                from_segs = self._stft_segments(norm=norm).transform(self.segs)
+                self.assertTrue(np.array_equal(from_sig.bins, from_segs.bins))
 
 
 if __name__ == '__main__':

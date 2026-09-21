@@ -226,7 +226,8 @@ class Mfcc:
         """
         self._stft = Stft(fps=stft.fps, n_perseg=stft.n_perseg,
                           n_overlap=stft.n_overlap, window=stft.window,
-                          n_fft=stft.n_fft, extend=stft.extend, pad=stft.pad)
+                          n_fft=stft.n_fft, norm=stft.norm,
+                          extend=stft.extend, pad=stft.pad)
         self._params = MfccParams(stft=self._stft.params, fb=fb,
                                   cepstrum=cepstrum or CepstrumParams(),
                                   preemphasis=preemphasis)
