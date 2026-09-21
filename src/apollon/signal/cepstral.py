@@ -80,8 +80,11 @@ def cepstral_coefs(log_energies: FloatArray, dct_type: int = 2,
 
     The Discrete Cosine Transform decorrelates the log band energies and
     compacts their energy into the first few coefficients, of which the
-    leading ``n_coefs`` are kept. ``scipy.fft.dct`` is used unnormalized, so
-    the coefficients scale with the number of bands.
+    leading ``n_coefs`` are kept. ``scipy.fft.dct`` is used orthonormalized
+    (``norm="ortho"``), which makes the transform unitary: the full set of
+    coefficients carries the same energy as the band energies it came from,
+    and so does not grow with the number of bands. This is also how
+    ``librosa.feature.mfcc`` normalizes by default.
 
     Following the convention of this package, the bands run along the first
     axis of ``log_energies``, as returned by :func:`log_mel_energies`, and so
@@ -110,7 +113,7 @@ def cepstral_coefs(log_energies: FloatArray, dct_type: int = 2,
                              f"{n_bands} bands. The cepstrum cannot hold more "
                              "coefficients than there are bands.")
 
-    coefs = floatarray(_spf.dct(log_energies, type=dct_type, axis=0))
+    coefs = floatarray(_spf.dct(log_energies, type=dct_type, axis=0, norm="ortho"))
     if n_coefs is not None:
         coefs = coefs[:n_coefs]
     return _filter.lifter(coefs, lifter_gain)

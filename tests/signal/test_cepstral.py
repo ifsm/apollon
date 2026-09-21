@@ -67,9 +67,25 @@ class TestCepstralCoefs(TestCase):
 
     @given(st.integers(min_value=1, max_value=4))
     def test_matches_scipy_dct(self, dct_type: int) -> None:
-        expected = spf.dct(self.energies, type=dct_type, axis=0)
+        expected = spf.dct(self.energies, type=dct_type, axis=0, norm="ortho")
         coefs = cepstral_coefs(self.energies, dct_type)
         self.assertTrue(np.allclose(coefs, expected))
+
+    @given(st.integers(min_value=1, max_value=4))
+    def test_dct_is_unitary(self, dct_type: int) -> None:
+        """``norm="ortho"`` conserves the energy of the band energies."""
+        coefs = cepstral_coefs(self.energies, dct_type)
+        self.assertAlmostEqual(float((coefs**2).sum()),
+                               float((self.energies**2).sum()))
+
+    @given(st.integers(min_value=1, max_value=4))
+    def test_coefs_do_not_grow_with_the_number_of_bands(self,
+                                                        dct_type: int) -> None:
+        """The unnormalized DCT scaled with the band count; this one does not."""
+        rng = np.random.default_rng(0)
+        peaks = [np.absolute(cepstral_coefs(rng.random((n, 17)), dct_type)).max()
+                 for n in (26, 104)]
+        self.assertLess(max(peaks)/min(peaks), 2.0)
 
     def test_truncates_to_n_coefs(self) -> None:
         coefs = cepstral_coefs(self.energies, n_coefs=13)
