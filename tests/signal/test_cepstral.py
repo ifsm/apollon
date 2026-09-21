@@ -59,6 +59,54 @@ class TestLogMelEnergies(TestCase):
         with self.assertRaises(ValueError):
             log_mel_energies(self.power[:-1], self.fbank)
 
+    def test_top_db_is_off_by_default(self) -> None:
+        self.assertTrue(np.array_equal(
+            log_mel_energies(self.power, self.fbank),
+            log_mel_energies(self.power, self.fbank, top_db=None)))
+
+    def test_top_db_bounds_the_dynamic_range(self) -> None:
+        plain = log_mel_energies(self.power, self.fbank)
+        span = plain.max() - plain.min()
+        narrow = span / 2
+        energies = log_mel_energies(self.power, self.fbank, top_db=narrow)
+        self.assertAlmostEqual(energies.max() - energies.min(), narrow)
+
+    def test_top_db_wider_than_the_signal_is_a_no_op(self) -> None:
+        plain = log_mel_energies(self.power, self.fbank)
+        span = plain.max() - plain.min()
+        self.assertTrue(np.array_equal(
+            plain, log_mel_energies(self.power, self.fbank, top_db=2*span)))
+
+    def test_top_db_floors_at_the_global_maximum(self) -> None:
+        """The reference is the loudest band of the whole spectrogram."""
+        plain = log_mel_energies(self.power, self.fbank)
+        clamped = log_mel_energies(self.power, self.fbank, top_db=20.0)
+        self.assertTrue(np.allclose(clamped,
+                                    np.maximum(plain, plain.max() - 20.0)))
+
+    def test_top_db_matches_librosa_power_to_db(self) -> None:
+        """The whole point of this variant: bit-compatible with librosa."""
+        librosa = __import__("librosa")
+        self.assertTrue(np.array_equal(
+            log_mel_energies(self.power, self.fbank, top_db=80.0),
+            librosa.power_to_db(self.fbank @ self.power, top_db=80.0)))
+
+    def test_segments_are_coupled_through_the_reference(self) -> None:
+        """A loud segment elsewhere re-floors every other segment.
+
+        This is the cost of the global reference, pinned so that it cannot
+        change unnoticed.
+        """
+        louder = self.power.copy()
+        louder[:, 0] *= 1e6
+        a = log_mel_energies(self.power, self.fbank, top_db=20.0)[:, 1:]
+        b = log_mel_energies(louder, self.fbank, top_db=20.0)[:, 1:]
+        self.assertFalse(np.allclose(a, b))
+
+    def test_negative_top_db_raises(self) -> None:
+        with self.assertRaises(ValueError):
+            log_mel_energies(self.power, self.fbank, top_db=-1.0)
+
 
 class TestCepstralCoefs(TestCase):
 
@@ -172,6 +220,23 @@ class TestMfcc(TestCase):
         self.assertIsNone(mfcc.params.stft.norm)
         self.assertFalse(np.allclose(mfcc.transform(self.sig).coefs,
                                      self.mfcc.transform(self.sig).coefs))
+
+    def test_top_db_reaches_the_energies(self) -> None:
+        """``top_db`` flows from the constructor into the log energies."""
+        mfcc = Mfcc(stft=stft_params(), fb=self.fb, top_db=20.0)
+        res = mfcc.transform(self.sig)
+        self.assertEqual(mfcc.params.top_db, 20.0)
+        self.assertAlmostEqual(
+            res.log_mel_energies.max() - res.log_mel_energies.min(), 20.0)
+        self.assertFalse(np.allclose(res.coefs,
+                                     self.mfcc.transform(self.sig).coefs))
+
+    def test_top_db_defaults_to_off(self) -> None:
+        self.assertIsNone(self.mfcc.params.top_db)
+
+    def test_negative_top_db_raises_at_construction(self) -> None:
+        with self.assertRaises(ValidationError):
+            Mfcc(stft=stft_params(), fb=self.fb, top_db=-1.0)
 
     def test_stft_single_sided_is_forwarded(self) -> None:
         """``single_sided`` reaches the STFT instead of being dropped."""
