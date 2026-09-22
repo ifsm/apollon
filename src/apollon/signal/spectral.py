@@ -425,13 +425,28 @@ class StftSegments(SpectralTransform):
                            half of the spectrum, see ``fft``
         """
         super().__init__()
+        self._seg_params = seg_params
         self._params: StftParams = StftParams(fps=fps, window=window,
                                               n_fft=n_fft, norm=norm,
                                               single_sided=single_sided,
-                                              **seg_params.dict())
+                                              **seg_params.model_dump())
 
     def transform(self, data: Segments) -> Spectrogram:
-        """Transform ``data`` to spectral domain"""
+        """Transform ``data`` to spectral domain
+
+        Args:
+            data:  Segments cut with the parameters given at construction
+
+        Returns:
+            Spectrogram of ``data``
+
+        Raises:
+            ValueError: If ``data`` was segmented with other parameters,
+                which would give the spectrogram a wrong time axis.
+        """
+        if data.params != self._seg_params:
+            raise ValueError(f'``data`` was segmented with {data.params!r}, '
+                             f'but this transform expects {self._seg_params!r}.')
         bins = fft(data.data, self._params.window, self._params.n_fft,
                    norm=self._params.norm,
                    single_sided=self._params.single_sided)

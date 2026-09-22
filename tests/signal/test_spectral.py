@@ -1,4 +1,6 @@
 import unittest
+import warnings
+
 import numpy as np
 import scipy as sp
 
@@ -362,6 +364,33 @@ class TestStftNorm(unittest.TestCase):
             StftParams.model_validate_json(
                     '{"fps": 9000, "norm": true, "n_perseg": 512,'
                     ' "n_overlap": 256, "extend": true, "pad": true}')
+
+
+class TestStftSegments(unittest.TestCase):
+    fps = 1000
+
+    def setUp(self):
+        self.seg_params = SegmentationParams(n_perseg=64, n_overlap=32)
+        self.sig = np.random.default_rng(0).normal(size=(self.fps, 1))
+
+    def _segments(self, n_overlap):
+        return ArraySegmentation(64, n_overlap).transform(self.sig)
+
+    def test_transforms_matching_segments(self):
+        sxx = StftSegments(self.fps, self.seg_params).transform(
+                self._segments(32))
+        self.assertEqual(sxx.n_segments, self._segments(32).n_segs)
+
+    def test_rejects_other_segmentation(self):
+        """A mismatch would give the spectrogram a wrong time axis."""
+        with self.assertRaises(ValueError):
+            StftSegments(self.fps, self.seg_params).transform(
+                    self._segments(48))
+
+    def test_uses_no_deprecated_api(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter('error', DeprecationWarning)
+            StftSegments(self.fps, self.seg_params)
 
 
 class TestFullScaleDb(unittest.TestCase):
