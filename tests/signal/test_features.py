@@ -164,7 +164,13 @@ class TestSharpness(unittest.TestCase):
 class TestRoughness(unittest.TestCase):
     def setUp(self):
         self.fps = 44100
-        self.sig = sinusoid(100, length=2)
+        self.sig = sinusoid(100, fps=self.fps, length=2)
+
+    def _stft(self, frqs):
+        """Hann STFT fine enough to resolve partials 33 Hz apart."""
+        stft = Stft(fps=self.fps, n_perseg=4096, n_overlap=2048,
+                    window='hann', extend=False, pad=False)
+        return stft.transform(sinusoid(frqs, fps=self.fps))
 
     def test_single_array(self):
         dft = Dft(fps=self.fps, window=None)
@@ -175,6 +181,54 @@ class TestRoughness(unittest.TestCase):
         stft = Stft(fps=self.fps, n_perseg=2**8, n_overlap=2**7)
         sxx = stft.transform(self.sig)
         features.roughness_helmholtz(sxx.d_frq, sxx.abs, frq_max=1000, total=False)
+
+    def test_follows_the_roughness_curve(self):
+        """Two equal partials read the curve at their spacing, which peaks
+        at 33.5 Hz."""
+        spacings = (10, 20, 33, 50, 100)
+        values = []
+        for spacing in spacings:
+            bins = np.zeros((301, 1))
+            bins[[20, 20+spacing]] = 1.0
+            values.append(features.roughness_helmholtz(1.0, bins, 200).item())
+        curve = [frq/33.5 * np.exp(1 - frq/33.5) for frq in spacings]
+        self.assertTrue(np.allclose(values, curve))
+        self.assertEqual(int(np.argmax(values)), spacings.index(33))
+
+    def test_pure_tone_is_smooth(self):
+        """A single partial has no spacing, whatever its main lobe covers."""
+        sxx = self._stft(1000)
+        rough = features.roughness_helmholtz(sxx.d_frq, sxx.abs, 1500)
+        self.assertTrue(np.all(rough == 0.0))
+
+    def test_rough_pair(self):
+        """Partials 33 Hz apart are close to maximally rough."""
+        sxx = self._stft((1000, 1033))
+        rough = features.roughness_helmholtz(sxx.d_frq, sxx.abs, 1500)
+        self.assertTrue(np.all(rough > 0.9))
+
+    def test_input_is_not_modified(self):
+        sxx = self._stft((1000, 1033))
+        bins = sxx.abs
+        before = bins.copy()
+        features.roughness_helmholtz(sxx.d_frq, bins, 1500)
+        self.assertTrue(np.array_equal(bins, before))
+
+    def test_frq_max_beyond_spectrum_raises(self):
+        bins = np.ones((101, 3))
+        for inp, frq_max in ((bins, 101.0), (bins[:, 0], 50.0)):
+            with self.subTest(shape=inp.shape, frq_max=frq_max):
+                with self.assertRaises(ValueError):
+                    features.roughness_helmholtz(1.0, inp, frq_max)
+
+    def test_output_shapes(self):
+        """One value per frame, or one row per spacing 0 ... frq_max."""
+        bins = np.zeros((101, 3))
+        self.assertEqual(features.roughness_helmholtz(2.0, bins, 100).shape,
+                         (1, 3))
+        self.assertEqual(features.roughness_helmholtz(2.0, bins, 100,
+                                                      total=False).shape,
+                         (51, 3))
 
 
 if __name__ == '__main__':

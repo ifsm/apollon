@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 import numpy as _np
 from scipy.signal import hilbert as _hilbert
-from scipy.signal import correlate
+from scipy.signal import correlate, find_peaks
 
 from . import _features     # pylint: disable = no-name-in-module
 from . import tools as _sigtools
@@ -368,34 +368,56 @@ def roughness_helmholtz(d_frq: float, bins: FloatArray, frq_max: float,
                         total: bool = True) -> FloatArray:
     """Estimate auditory roughness using Helmholtz' algorithm.
 
+    Each spectrum is reduced to its partials, the local maxima of at least a
+    tenth of its largest bin. Their autocorrelation holds, for each lag k, how
+    strongly pairs of partials ``k*d_frq`` Hz apart are present. Each lag is
+    weighted by Helmholtz' roughness curve, which peaks at a spacing of
+    33.5 Hz, and the result is divided by the number of lags that exceed a
+    fifth of the strongest one. Two equal partials hence read exactly the
+    value of the curve at their spacing.
+
+    Partials are normalized to the largest one, so the measure is relative
+    and independent of level. Partials closer than the main lobe of the
+    window merge into one. With a Hann window that is about three bins, so a
+    33 Hz spacing needs ``d_frq`` of about 11 Hz or less, i.e., 4096 samples
+    per segment at 44.1 kHz.
+
     Args:
-        d_frq:      Frequency spacing
-        bin:        DFT bins
-        frq_max:    Maximum frequency
-        total:      If ``True``, return total roughness over time.
+        d_frq:      Frequency resolution of ``bins`` in Hz.
+        bins:       Magnitude spectrogram, shaped ``(n_frqs, n_frames)``.
+        frq_max:    Highest frequency considered in Hz. Partials above it are
+                    ignored, and spacings up to it are weighted.
+        total:      If ``True``, sum the contributions of all spacings.
 
     Returns:
-        Auditoory roughness
+        Roughness per frame, shaped ``(1, n_frames)``. If ``total`` is
+        ``False``, the contribution of each spacing ``0, d_frq, ..., frq_max``
+        instead, shaped ``(n_spacings, n_frames)``.
+
+    Raises:
+        ValueError: If ``bins`` is not two-dimensional, or if ``frq_max``
+            exceeds the highest frequency of ``bins``.
     """
-    kernel = _roughnes_kernel(d_frq, frq_max)
-    out = _np.empty((kernel.size, bins.shape[1]))
-    for i, bin_slice in enumerate(bins.T):
-        bin_slice = bin_slice[:kernel.size]
-        bin_max = bin_slice.max()
-        if bin_max > 0:
-            bin_slice /= bin_max
-        bin_slice[bin_slice<0.1] = 0
-        rns = correlate(bin_slice, bin_slice)
-        rns = rns[rns.size//2:]
+    if bins.ndim != 2:
+        raise ValueError(f'``bins`` has {bins.ndim} dimensions. Expected a '
+                         'spectrogram shaped (n_frqs, n_frames).')
+
+    kernel = _roughness_kernel(d_frq, frq_max)
+    if kernel.size > bins.shape[0]:
+        raise ValueError(f'``frq_max`` ({frq_max} Hz) exceeds the highest '
+                         f'frequency of ``bins`` ({(bins.shape[0]-1)*d_frq} Hz).')
+
+    out = _np.zeros((kernel.size, bins.shape[1]))
+    for i, frame in enumerate(bins[:kernel.size].T):
+        partials = _partials(frame)
+        rns = correlate(partials, partials)[partials.size-1:]
         rns[0] = 0
         rns_max = rns.max()
         if rns_max > 0:
             rns /= rns_max
-            out[:, i] = rns * kernel / sum(rns>0.2)
-        else:
-            out[:, i] = rns * kernel
+            out[:, i] = rns * kernel / _np.count_nonzero(rns > 0.2)
 
-    if total is True:
+    if total:
         out = out.sum(axis=0, keepdims=True)
     return out
 
@@ -437,22 +459,37 @@ def _power_distr(bins: FloatArray) -> FloatArray:
     return bins / total_power
 
 
-def _roughnes_kernel(frq_res: float, frq_max: float) -> FloatArray:
-    """Comput the convolution kernel for roughness computation.
+def _partials(spectrum: FloatArray) -> FloatArray:
+    """Reduce a magnitude spectrum to its partials.
 
     Args:
-        frq_res:    Frequency resolution.
-        frq_max:    Frequency bound.
+        spectrum:  One-dimensional magnitude spectrum.
 
     Returns:
-        Weight for each frequency below ``frq_max``.
+        New array holding each local maximum of at least a tenth of the
+        largest bin, divided by that bin, and zero elsewhere.
+    """
+    out = _np.zeros(spectrum.shape, dtype=_np.double)
+    peak = spectrum.max()
+    if peak > 0:
+        idx, _ = find_peaks(spectrum, height=0.1*peak)
+        out[idx] = spectrum[idx] / peak
+    return out
+
+
+def _roughness_kernel(frq_res: float, frq_max: float) -> FloatArray:
+    """Compute Helmholtz' roughness curve for the spacings of partials.
+
+    The curve ``g(f) = f/f_m * exp(1 - f/f_m)`` with ``f_m = 33.5`` Hz peaks
+    at 1 for a spacing of ``f_m``, and vanishes for coinciding partials.
+
+    Args:
+        frq_res:    Frequency resolution in Hz.
+        frq_max:    Largest spacing in Hz.
+
+    Returns:
+        Weight for each spacing ``0, frq_res, ..., frq_max``.
     """
     frm = 33.5
-    bin_idx = int(round(frq_max/frq_res))
-    norm = frm * _np.exp(-1)
-    base = _np.abs(_np.arange(-bin_idx, bin_idx+1)) * frq_res
-
-    out = _np.empty_like(base, dtype=_np.double)
-    _np.divide(base, norm, out=out)
-    _np.multiply(out, _np.exp(-base/frm), out)
-    return out
+    base = _np.arange(int(round(frq_max/frq_res)) + 1) * frq_res
+    return floatarray(base / frm * _np.exp(1 - base/frm))
