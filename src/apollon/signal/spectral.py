@@ -22,10 +22,11 @@ from .. signal import features
 def fft(sig: FloatArray, window: str | None = None, n_fft: int | None = None,
         norm: Normalization | None = 'amplitude',
         single_sided: bool = True) -> ComplexArray:
-    """Compute the Discrete Fouier Transform for real input
+    """Compute the Discrete Fourier Transform for real input
 
     This is a simple wrapper around ``numpy.fft.rfft``. Input signal must
-    be two-dimensional. FTT is performed along the rows.
+    be two-dimensional. The FFT is performed along the first axis, i.e.,
+    each column is transformed.
 
     ``norm`` selects the scaling convention:
 
@@ -160,7 +161,7 @@ class TransformResult(ABC):
 
     @property
     def d_frq(self) -> float:
-        """Retrun the frequency resolution"""
+        """Return the frequency resolution"""
         return int(self._params.fps) / self._n_fft
 
     @property

@@ -61,6 +61,32 @@ class TestCorrCoefPearson(unittest.TestCase):
         self.assertTrue(np.allclose(res, expected))
 
 
+class TestAcf(unittest.TestCase):
+    def test_matches_lagged_products(self):
+        sig = np.random.default_rng(0).normal(size=300)
+        expected = [sig[:sig.size-lag] @ sig[lag:] / (sig @ sig)
+                    for lag in range(sig.size)]
+        self.assertTrue(np.allclose(tools.acf(sig), expected))
+
+    def test_silent_input(self):
+        expected = np.zeros(10)
+        expected[0] = 1.0
+        self.assertTrue(np.array_equal(tools.acf(np.zeros(10)), expected))
+
+
+class TestCWeighting(unittest.TestCase):
+    def test_is_zero_db_at_1khz(self):
+        self.assertAlmostEqual(tools.c_weighting(np.array([1000.0])).item(),
+                               1.0)
+
+    def test_matches_the_iec_table(self):
+        """IEC 61672-1 C-weighting in dB, to 0.1 dB."""
+        frqs = np.array([31.5, 63.0, 125.0, 4000.0, 8000.0])
+        expected = np.array([-3.0, -0.8, -0.2, -0.8, -3.0])
+        res = 20 * np.log10(tools.c_weighting(frqs))
+        self.assertTrue(np.allclose(res, expected, atol=0.1))
+
+
 class TestNormalize(unittest.TestCase):
     def test_scales_each_channel_to_unit_peak(self):
         sig = np.array([[0.5, -2.0], [-0.25, 1.0]])

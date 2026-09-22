@@ -158,11 +158,11 @@ comsar_fractal_cdim (const double *x,
 
 /* Compute an estimate of the correlation dimension using Bader style
  *
- * This implementation is an improovement of the original Bader style
+ * This implementation is an improvement of the original Bader style
  * algorithm ONLY IN TERMS OF SPEED and readability.
  *
  * The algorithm has beyond that several issues that are addressed where
- * they occure.
+ * they occur.
  */
 double
 corr_dim_bader (const short *snd, const size_t delay, const size_t m_dim,
@@ -171,7 +171,7 @@ corr_dim_bader (const short *snd, const size_t delay, const size_t m_dim,
     /* arbitrarily set boundary condition for distance matrix computation */
     const size_t bound = CDIM_BADER_BOUND;
 
-    /* arbitrarily set number of samples to consume form the input array.
+    /* arbitrarily set number of samples to consume from the input array.
      * The caller must provide at least ``n_samples - bound + (m_dim-1) * delay``
      * samples, and ``scaling_size`` must fit into ``n_bins`` above the
      * searched range; ``_features.cdim_bader`` checks both. */
@@ -200,8 +200,8 @@ corr_dim_bader (const short *snd, const size_t delay, const size_t m_dim,
      * It does, however, compute the distances in the upper right triangle
      * of the distance matrix. The outcome is the values on the main diagonal
      * of the distance matrix are computed even though they equal 0 by
-     * definiton. Moreover, the remaining distances are computed twice, i. e.,
-     * the vectors at (n, m) and (m, n) are computed. Additionlly, many other
+     * definition. Moreover, the remaining distances are computed twice, i. e.,
+     * the vectors at (n, m) and (m, n) are computed. Additionally, many other
      * distances are omitted.
      */
     for (size_t i = 0, cnt = 0; i < n_samples-bound; i++)
@@ -242,10 +242,10 @@ corr_dim_bader (const short *snd, const size_t delay, const size_t m_dim,
         }
     }
 
-    /* Compute the correlation sum as the cummulative sum over
+    /* Compute the correlation sum as the cumulative sum over
      * the correlation histogram `corr_hist`.
      * Note that the below implementation is wrong. Because of the
-     * condition `i < j`, it skips the first index and ommits the last.
+     * condition `i < j`, it skips the first index and omits the last.
      * Hence, `corr_sums[0]` is always 0.
      * To correct this implementation use either `j <= i`, or `j < i+1`.*/
     for (size_t i = 0; i < n_bins; i++)

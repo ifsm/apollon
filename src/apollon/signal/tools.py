@@ -8,6 +8,7 @@ from typing import Any
 
 import numpy as np
 from scipy import stats
+from scipy.signal import correlate
 
 from .. import _defaults
 from .. typing import FloatArray, Int16Array, floatarray
@@ -21,21 +22,15 @@ def acf(inp: FloatArray) -> FloatArray:
         inp:  One-dimensional input array.
 
     Returns:
-        Autocorrelation function for all positive lags.
+        Autocorrelation function for all non-negative lags, normalized to 1
+        at lag 0. A silent input reads 1 at lag 0 and 0 elsewhere.
     """
-    n_elem = len(inp)
-    norm = inp @ inp
-    out = np.empty(n_elem)
-    out[0] = 1
-    for lag in range(1, n_elem):
-        pre = inp[:-lag]
-        post = inp[lag:]
-        prod = pre @ post
-        if prod == 0:
-            out[lag] = 0
-        else:
-            out[lag] = prod / norm
-    return out
+    corr = floatarray(correlate(inp, inp, mode='full')[len(inp)-1:])
+    if corr[0] == 0:
+        out = np.zeros_like(corr)
+        out[0] = 1.0
+        return out
+    return floatarray(corr / corr[0])
 
 
 def acf_pearson(sig: FloatArray) -> FloatArray:
@@ -75,18 +70,22 @@ def corr_coef_pearson(x_sig: FloatArray, y_sig: FloatArray) -> float:
 
 
 def c_weighting(frqs: FloatArray) -> FloatArray:
-    """C-weighhting for SPL.
+    """C-weighting for SPL after IEC 61672-1.
+
+    The weights are normalized to 1, i.e., 0 dB, at 1 kHz, as the standard
+    defines them.
 
     Args:
-        frqs:    Frequencies
+        frqs:    Frequencies in Hz
 
     Returns:
-        Weight for DFT bin with center frequency ``frq``
+        Amplitude weight for each DFT bin with centre frequency in ``frqs``
     """
-    aaa = 148693636.0
-    bbb = 424.36
-    sqf = np.power(frqs, 2)
-    return np.divide(aaa*sqf, (sqf+aaa)*(sqf+bbb))
+    def response(sqf: FloatArray) -> FloatArray:
+        # poles at 20.6 Hz and 12194 Hz, squared
+        return floatarray(148693636.0*sqf / ((sqf+148693636.0)*(sqf+424.36)))
+
+    return floatarray(response(np.square(frqs)) / response(np.array(1e6)))
 
 
 def hz_to_mel(frqs: float | FloatArray) -> FloatArray:
@@ -131,7 +130,7 @@ def limit(inp: FloatArray, ldb: float | None = None,
 
 
 def mel_to_hz(zfrq: float | FloatArray) -> FloatArray:
-    """Transforms Mel-Frequencies to Hzfrq.
+    """Transforms Mel-Frequencies to Hz.
 
     Args:
         zfrq:  Mel-Frequencies
@@ -174,7 +173,7 @@ def minamp(sig: FloatArray) -> FloatArray:
 
 
 def white_noise(level: float, n_samples: int = 9000) -> FloatArray:
-    """Generate withe noise.
+    """Generate white noise.
 
     Args:
         level:      Noise level as standard deviation of Gaussian
@@ -214,12 +213,12 @@ def sinusoid(frqs: Sequence[float] | float,
         frqs:    Component frequencies.
         amps:    Amplitude of each component in ``frqs``. If ``amps`` is an
                  integer, each component of ``frqs`` is scaled according to
-                 ``amps``. If ``amps`` iis an iterable each frequency is scaled
+                 ``amps``. If ``amps`` is an iterable each frequency is scaled
                  by the respective amplitude.
         fps:     Sample rate.
         length:  Length of signal in seconds.
         noise:   Add gaussian noise with standard deviation ``noise`` to each
-                 sinusodial component.
+                 sinusoidal component.
         comps:   If True, return the components of the signal,
                  else return the sum.
 
@@ -258,8 +257,8 @@ def ampmod(frq_c: float, frq_m: float, mod: float, amp_c: float = 0.5,
 
          m = \frac{a_{m}}{a_{c}} \,
 
-    and determines the influcence of the modulator on the carrier. For
-    incoherent demodultaion, `mod` should range in [0, 1[, where `mod` = 0 means no
+    and determines the influence of the modulator on the carrier. For
+    incoherent demodulation, `mod` should range in [0, 1[, where `mod` = 0 means no
     modulation.
 
     Args:
@@ -288,16 +287,16 @@ def ampmod(frq_c: float, frq_m: float, mod: float, amp_c: float = 0.5,
 
 def amp(spl: Sequence[float] | float,
         ref: float = _defaults.SPL_REF) -> FloatArray:
-    """Computes amplitudes form sound pressure level.
+    """Computes amplitudes from sound pressure level.
 
     The reference pressure defaults to the human hearing
-    treshold of 20 μPa.
+    threshold of 20 μPa.
 
     Args:
         spl:    Sound pressure level
 
     Returns:
-        DFT magnituds
+        DFT magnitudes
     """
     return np.power(10.0, 0.05*np.atleast_1d(spl)) * ref
 

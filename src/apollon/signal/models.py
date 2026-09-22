@@ -60,7 +60,7 @@ class TriangFilterSpec(BaseModel):
     @model_validator(mode="after")
     def _check_low_lt_high(self) -> Self:
         if self.low >= self.high:
-            raise ValueError("low freq must be less then high")
+            raise ValueError("low freq must be less than high")
         return self
 
 

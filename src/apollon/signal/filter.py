@@ -16,7 +16,7 @@ def coef_bw_bandpass(low: int, high: int, fps: int, order: int = 4
 
     Args:
         low:    Lower cutoff frequency in Hz
-        high:   Upper cutoff freqency in Hz
+        high:   Upper cutoff frequency in Hz
         fps:    Signal sample rate
         order:  Order of the filter
 

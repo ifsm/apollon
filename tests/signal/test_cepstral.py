@@ -68,13 +68,13 @@ class TestCepstralCoefs(TestCase):
     @given(st.integers(min_value=1, max_value=4))
     def test_matches_scipy_dct(self, dct_type: int) -> None:
         expected = spf.dct(self.energies, type=dct_type, axis=0, norm="ortho")
-        coefs = cepstral_coefs(self.energies, dct_type)
+        coefs = cepstral_coefs(self.energies, dct_type, lifter_gain=0.0)
         self.assertTrue(np.allclose(coefs, expected))
 
     @given(st.integers(min_value=1, max_value=4))
     def test_dct_is_unitary(self, dct_type: int) -> None:
         """``norm="ortho"`` conserves the energy of the band energies."""
-        coefs = cepstral_coefs(self.energies, dct_type)
+        coefs = cepstral_coefs(self.energies, dct_type, lifter_gain=0.0)
         self.assertAlmostEqual(float((coefs**2).sum()),
                                float((self.energies**2).sum()))
 
@@ -83,7 +83,8 @@ class TestCepstralCoefs(TestCase):
                                                         dct_type: int) -> None:
         """The unnormalized DCT scaled with the band count; this one does not."""
         rng = np.random.default_rng(0)
-        peaks = [np.absolute(cepstral_coefs(rng.random((n, 17)), dct_type)).max()
+        peaks = [np.absolute(cepstral_coefs(rng.random((n, 17)), dct_type,
+                                            lifter_gain=0.0)).max()
                  for n in (26, 104)]
         self.assertLess(max(peaks)/min(peaks), 2.0)
 
@@ -96,11 +97,18 @@ class TestCepstralCoefs(TestCase):
         self.assertEqual(coefs.shape, self.energies.shape)
 
     def test_zero_lifter_gain_is_identity(self) -> None:
-        plain = cepstral_coefs(self.energies, n_coefs=13)
-        lifted = cepstral_coefs(self.energies, n_coefs=13, lifter_gain=24.0)
+        plain = spf.dct(self.energies, axis=0, norm="ortho")[:13]
         self.assertTrue(np.allclose(cepstral_coefs(self.energies, n_coefs=13,
                                                    lifter_gain=0.0), plain))
-        self.assertFalse(np.allclose(lifted, plain))
+
+    def test_lifter_gain_defaults_to_the_model(self) -> None:
+        """The function and ``CepstrumParams`` agree on the lifter."""
+        default = cepstral_coefs(self.energies, n_coefs=13)
+        model = cepstral_coefs(self.energies, n_coefs=13,
+                               lifter_gain=CepstrumParams().lifter_gain)
+        plain = cepstral_coefs(self.energies, n_coefs=13, lifter_gain=0.0)
+        self.assertTrue(np.array_equal(default, model))
+        self.assertFalse(np.allclose(default, plain))
 
     def test_too_many_coefs_raises(self) -> None:
         with self.assertRaises(ValueError):

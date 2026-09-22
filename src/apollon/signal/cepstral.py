@@ -80,7 +80,8 @@ def log_mel_energies(power: FloatArray, fbank: FloatArray,
 
 def cepstral_coefs(log_energies: FloatArray, dct_type: int = 2,
                    n_coefs: int | None = None,
-                   lifter_gain: float = 0.0) -> FloatArray:
+                   lifter_gain: float = CepstrumParams().lifter_gain
+                   ) -> FloatArray:
     """Compute cepstral coefficients from log band energies.
 
     The Discrete Cosine Transform decorrelates the log band energies and
@@ -89,7 +90,9 @@ def cepstral_coefs(log_energies: FloatArray, dct_type: int = 2,
     (``norm="ortho"``), which makes the transform unitary: the full set of
     coefficients carries the same energy as the band energies it came from,
     and so does not grow with the number of bands. This is also how
-    ``librosa.feature.mfcc`` normalizes by default.
+    ``librosa.feature.mfcc`` normalizes by default. The coefficients are then
+    liftered, by default with the gain of ``CepstrumParams``. Pass
+    ``lifter_gain=0.0`` to obtain the plain DCT.
 
     Following the convention of this package, the bands run along the first
     axis of ``log_energies``, as returned by :func:`log_mel_energies`, and so
@@ -99,7 +102,8 @@ def cepstral_coefs(log_energies: FloatArray, dct_type: int = 2,
         log_energies:  Log band energies, shaped ``(n_filters, n_segments)``
         dct_type:      Type of the Discrete Cosine Transform, 1 to 4
         n_coefs:       Number of coefficients to keep. If ``None``, keep all
-        lifter_gain:   Liftering parameter. ``0.0`` leaves the coefficients
+        lifter_gain:   Liftering parameter, defaulting to that of
+                       ``CepstrumParams``. ``0.0`` leaves the coefficients
                        unchanged, see ``filter.lifter``
 
     Returns:
