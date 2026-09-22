@@ -24,7 +24,7 @@ import scipy.fft as _spf
 from . import filter as _filter
 from . models import (CepstralParams, CepstrumParams, MfccParams, StftParams,
                       TriangFilterSpec)
-from . spectral import Spectrogram, Stft, full_scale_db
+from . spectral import Spectrogram, Stft, fft_length, full_scale_db
 from .. typing import FloatArray, floatarray
 
 
@@ -367,8 +367,8 @@ class MfccSpectrogram:
 def _rfftfreq(params: StftParams) -> FloatArray:
     """Compute the frequency axis a ``Spectrogram`` from ``params`` will have.
 
-    ``spectral.Stft`` passes ``n_perseg`` as the input size of its result, so
-    an unset ``n_fft`` falls back to ``n_perseg``.
+    ``spectral.Stft`` transforms frames of ``n_perseg`` samples, so the FFT
+    length is resolved against ``n_perseg``, see ``spectral.fft_length``.
 
     Args:
         params:  Parameters of the Short Time Fourier Transform
@@ -376,7 +376,7 @@ def _rfftfreq(params: StftParams) -> FloatArray:
     Returns:
         Frequency axis in Hz, shaped ``(n_frqs, 1)``.
     """
-    n_fft = params.n_perseg if params.n_fft is None else params.n_fft
+    n_fft = fft_length(params.n_fft, params.n_perseg)
     return floatarray(np.fft.rfftfreq(n_fft, 1.0/params.fps).reshape(-1, 1))
 
 

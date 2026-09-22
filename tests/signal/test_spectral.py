@@ -12,8 +12,10 @@ from pydantic import ValidationError
 
 from apollon.segment import ArraySegmentation
 from apollon.segment.models import SegmentationParams
+from apollon.signal.cepstral import _rfftfreq
 from apollon.signal.models import StftParams
-from apollon.signal.spectral import fft, full_scale_db, Dft, Stft, StftSegments
+from apollon.signal.spectral import (fft, fft_length, full_scale_db, Dft, Stft,
+                                     StftSegments)
 from apollon.signal.tools import sinusoid
 
 
@@ -136,6 +138,26 @@ class TestFft(unittest.TestCase):
                     fft(self.signal, norm=bad)
                 self.assertIn('"amplitude"', str(ctx.exception))
 
+
+
+class TestFftLength(unittest.TestCase):
+    def test_unset_falls_back_to_the_frame_length(self):
+        self.assertEqual(fft_length(None, 512), 512)
+
+    def test_set_value_wins(self):
+        self.assertEqual(fft_length(1024, 512), 1024)
+
+    def test_transforms_and_helpers_agree(self):
+        """Spectrogram, full_scale_db and the cepstral filter-bank axis
+        resolve an unset ``n_fft`` alike."""
+        unset = Stft(fps=9000, n_perseg=512, n_overlap=256)
+        explicit = Stft(fps=9000, n_perseg=512, n_overlap=256, n_fft=512)
+        sxx = unset.transform(np.zeros((9000, 1)))
+        self.assertEqual(sxx.frqs.shape[0], 512//2 + 1)
+        self.assertEqual(sxx.d_frq, 9000 / 512)
+        self.assertTrue(np.array_equal(_rfftfreq(unset.params), sxx.frqs))
+        self.assertEqual(full_scale_db(unset.params),
+                         full_scale_db(explicit.params))
 
 
 class TestStftSegmentsTimes(unittest.TestCase):

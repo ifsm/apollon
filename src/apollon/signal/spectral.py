@@ -67,8 +67,7 @@ def fft(sig: FloatArray, window: str | None = None, n_fft: int | None = None,
         raise ValueError(f'Invalid norm value {norm!r}; should be None,'
                          ' "ortho" or "amplitude".')
     n_sig = sig.shape[0]
-    if n_fft is None:
-        n_fft = n_sig
+    n_fft = fft_length(n_fft, n_sig)
     if n_fft < n_sig:
         raise ValueError(f'n_fft ({n_fft}) is less than the {n_sig} samples '
                          'of the signal, and would crop it.')
@@ -108,6 +107,23 @@ def _paired_bins(n_fft: int) -> slice:
     return slice(1, -1 if n_fft % 2 == 0 else None)
 
 
+def fft_length(n_fft: int | None, n_samples: int) -> int:
+    """Resolve the FFT length of a transform.
+
+    An unset ``n_fft`` means no zero padding: the FFT is then as long as the
+    frame it transforms. This is the one place that rule is written; every
+    transform, result, and helper of this package resolves ``n_fft`` here.
+
+    Args:
+        n_fft:      Requested FFT length in samples, or ``None``
+        n_samples:  Number of samples per transformed frame
+
+    Returns:
+        FFT length in samples
+    """
+    return n_samples if n_fft is None else n_fft
+
+
 def full_scale_db(params: StftParams) -> float:
     """Compute the level at which full scale appears in the power spectrum.
 
@@ -130,7 +146,7 @@ def full_scale_db(params: StftParams) -> float:
         spectrum.
     """
     win_sum = abs(_sps.get_window(params.window or 'rect', params.n_perseg).sum())
-    n_fft = params.n_perseg if params.n_fft is None else params.n_fft
+    n_fft = fft_length(params.n_fft, params.n_perseg)
 
     peak = win_sum / 2      # |rfft| of a unit sinusoid on a paired bin
     if params.norm == 'amplitude':
@@ -224,12 +240,8 @@ class TransformResult(ABC):
 
     @property
     def _n_fft(self) -> int:
-        """Compute the FFT length considering ``n_fft`` was ``None``."""
-        if self._params.n_fft is None:
-            n_fft = self._inp_size
-        else:
-            n_fft = self._params.n_fft
-        return n_fft
+        """FFT length of the transform, see ``fft_length``."""
+        return fft_length(self._params.n_fft, self._inp_size)
 
     def __abs__(self) -> FloatArray:
         return np.absolute(self._bins)
