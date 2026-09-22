@@ -57,11 +57,20 @@ def acf_pearson(sig: FloatArray) -> FloatArray:
 
 
 def corr_coef_pearson(x_sig: FloatArray, y_sig: FloatArray) -> float:
-    """Fast perason correlation coefficient."""
+    """Compute the Pearson correlation coefficient of two signals.
+
+    Args:
+        x_sig:  One-dimensional input signal
+        y_sig:  One-dimensional input signal of the same length
+
+    Returns:
+        Correlation coefficient in [-1, 1], or ``nan`` if either signal is
+        constant.
+    """
     x_dtr = x_sig - np.mean(x_sig)
     y_dtr = y_sig - np.mean(y_sig)
     r_xy = np.convolve(x_dtr, y_dtr[::-1], mode='valid')
-    r_xx_yy = (x_dtr @ x_dtr) * (y_dtr @ y_dtr)
+    r_xx_yy = np.sqrt((x_dtr @ x_dtr) * (y_dtr @ y_dtr))
     return floatarray(np.divide(r_xy, r_xx_yy)).item()
 
 

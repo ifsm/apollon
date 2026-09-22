@@ -32,6 +32,35 @@ class TestAmp(unittest.TestCase):
         self.assertEqual(res.dtype.name, "float64")
 
 
+class TestCorrCoefPearson(unittest.TestCase):
+    def setUp(self):
+        rng = np.random.default_rng(0)
+        self.x_sig = rng.normal(size=200)
+        self.y_sig = 0.5 * self.x_sig + rng.normal(size=200)
+
+    def test_matches_numpy(self):
+        res = tools.corr_coef_pearson(self.x_sig, self.y_sig)
+        self.assertAlmostEqual(res, np.corrcoef(self.x_sig, self.y_sig)[0, 1])
+
+    def test_is_invariant_to_offset_and_scale(self):
+        res = tools.corr_coef_pearson(self.x_sig, 3*self.y_sig + 2)
+        self.assertAlmostEqual(res, tools.corr_coef_pearson(self.x_sig,
+                                                            self.y_sig))
+
+    def test_reaches_the_bounds(self):
+        self.assertAlmostEqual(
+            tools.corr_coef_pearson(self.x_sig, 2*self.x_sig), 1.0)
+        self.assertAlmostEqual(
+            tools.corr_coef_pearson(self.x_sig, -self.x_sig), -1.0)
+
+    def test_acf_pearson_matches_numpy_per_lag(self):
+        res = tools.acf_pearson(self.x_sig)
+        expected = [1.0] + [np.corrcoef(self.x_sig[:-lag],
+                                        self.x_sig[lag:])[0, 1]
+                            for lag in range(1, self.x_sig.size-1)]
+        self.assertTrue(np.allclose(res, expected))
+
+
 class TestSinusoid(unittest.TestCase):
     def setUp(self):
         self.single_frq = 100
