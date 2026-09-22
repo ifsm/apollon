@@ -331,23 +331,31 @@ def log_attack_time(inp: FloatArray, fps: int, ons_idx: IntArray,
     """Estimate the attack time of each onset and return its logarithm.
 
     This function estimates the attack time as the duration between the
-    onset and the local maxima of the magnitude of the Hilbert transform
-    of the local window.
+    onset and the maximum of the magnitude of the Hilbert transform of the
+    window following it. An envelope that peaks at the onset itself has an
+    attack shorter than the sampling resolution; its attack time is floored
+    at one sample, ``1/fps``, so that the fastest attacks read the smallest
+    values.
 
     Args:
-        inp:      Input signal.
+        inp:      One-dimensional input signal.
         fps:      Sampling frequency.
         ons_idx:  Sample indices of onsets.
-        wlen:     Local window length in samples.
+        wlen:     Length of the window following each onset in seconds.
 
     Returns:
-        Logarithm of the attack time.
+        Natural logarithm of the attack time in seconds, one per onset.
+
+    Raises:
+        ValueError: If ``inp`` is not one-dimensional.
     """
-    wlen = int(fps * wlen)
-    segs = _segment.by_onsets(inp, wlen, ons_idx)
-    attack_time = _np.absolute(_hilbert(segs)).argmax(axis=1) / fps
-    attack_time[attack_time == 0.0] = 1.0
-    return floatarray(_np.log(attack_time))
+    if inp.ndim != 1:
+        raise ValueError(f'``inp`` has {inp.ndim} dimensions. Expected a '
+                         'one-dimensional signal.')
+    n_wlen = int(fps * wlen)
+    segs = _segment.by_onsets(inp, n_wlen, ons_idx)
+    n_attack = _np.absolute(_hilbert(segs)).argmax(axis=1)
+    return floatarray(_np.log(_np.maximum(n_attack, 1) / fps))
 
 
 def loudness(sxx: TransformResult, resolution: float = 0.1) -> FloatArray:

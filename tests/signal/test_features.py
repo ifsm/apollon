@@ -142,6 +142,46 @@ class TestSpectralFlux(unittest.TestCase):
         self.assertTrue(np.all(flux[:, 3] == 1))
 
 
+class TestLogAttackTime(unittest.TestCase):
+    fps = 1000
+
+    def _ramp(self, attack):
+        """A 200 Hz tone rising linearly over ``attack`` ms from 100 ms on,
+        then decaying."""
+        n = np.arange(self.fps)
+        env = np.zeros(self.fps)
+        env[100:100+attack] = np.linspace(0, 1, attack, endpoint=False)
+        env[100+attack:] = np.exp(-(n[100+attack:] - 100 - attack) / 50)
+        return env * np.sin(2*np.pi*200*n/self.fps + np.pi/4)
+
+    def test_instant_attack_is_floored_at_one_sample(self):
+        """An envelope peaking at the onset reads the shortest time, not
+        one second."""
+        imp = np.zeros(self.fps)
+        imp[100] = 1.0
+        lat = features.log_attack_time(imp, self.fps, np.array([100]))
+        self.assertAlmostEqual(lat.item(), np.log(1/self.fps))
+
+    def test_measures_the_rise_time(self):
+        for attack in (10, 20, 30):
+            with self.subTest(attack=attack):
+                lat = features.log_attack_time(self._ramp(attack), self.fps,
+                                               np.array([100]))
+                self.assertAlmostEqual(np.exp(lat.item()), attack/self.fps,
+                                       delta=1/self.fps)
+
+    def test_faster_attacks_read_smaller(self):
+        lats = [features.log_attack_time(self._ramp(attack), self.fps,
+                                         np.array([100])).item()
+                for attack in (5, 10, 20, 30)]
+        self.assertTrue(np.all(np.diff(lats) > 0))
+
+    def test_rejects_multichannel_input(self):
+        with self.assertRaises(ValueError):
+            features.log_attack_time(np.zeros((self.fps, 1)), self.fps,
+                                     np.array([100]))
+
+
 class TestLoudness(unittest.TestCase):
 
     def test_scales_with_signal_level(self):
