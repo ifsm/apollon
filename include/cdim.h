@@ -6,6 +6,17 @@
 #include <stdlib.h>
 
 
+/* Number of samples ``corr_dim_bader`` consumes, and the boundary it keeps
+ * off their end. It reads samples up to index
+ * ``CDIM_BADER_N_SAMPLES - CDIM_BADER_BOUND - 1 + (m_dim-1) * delay``.
+ */
+#define CDIM_BADER_N_SAMPLES 2400
+#define CDIM_BADER_BOUND       10
+
+/* Number of histogram bins ``corr_dim_bader`` searches for the maximum */
+#define CDIM_BADER_SEARCH(n_bins) ((size_t) ((double) (n_bins) * 3. / 5.))
+
+
 /** Condensed distance matrix of delay embedding
  */
 void

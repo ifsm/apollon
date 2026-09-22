@@ -34,21 +34,26 @@ def cdim(inp: FloatArray, delay: int, m_dim: int, n_bins: int = 1000,
 
     from a time delay embedding of ``inp``.
 
-    If ``mode`` is set to 'bader', the input array must have at least
-    2400 elements. Otherwise, the result is undefined.
+    If ``mode`` is set to 'bader', each column of ``inp`` must hold at least
+    ``2390 + (m_dim-1)*delay`` samples, and ``scaling_size`` must not exceed
+    ``n_bins - floor(0.6*n_bins)``, i.e., 400 for the default ``n_bins``.
 
     Args:
         inp:       Input array.
         delay:     Embedding delay in samples.
         m_dim:     Number of embedding dimensions.
         n_bins:    Number of bins.
+        scaling_size:  Distance in bins between the points of the slope.
         mode:      Use either 'bader' for the original algorithm
 
     Returns:
         Array of correlation dimension estimates.
 
     Raises:
-        ValueError
+        ValueError: If ``inp`` is not two-dimensional, if ``mode`` is
+            unknown, if ``delay``, ``m_dim``, ``n_bins``, or ``scaling_size``
+            is not positive, or if ``inp`` or ``n_bins`` is too small for
+            the requested embedding and ``scaling_size``.
 
     .. [Grassberger1983] P. Grassberger, and I. Procaccia,
        "Measuring the strangeness of strange attractors,"  *Physica 9d*, pp. 189-208.

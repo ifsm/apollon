@@ -169,12 +169,13 @@ corr_dim_bader (const short *snd, const size_t delay, const size_t m_dim,
         const size_t n_bins, const size_t scaling_size)
 {
     /* arbitrarily set boundary condition for distance matrix computation */
-    const size_t bound = 10;
+    const size_t bound = CDIM_BADER_BOUND;
 
-    /* arbitrarily set number of samples to consume form the input array 
-     * If the input array has less than ``n_samples`` frames the behaviour
-     * of this function is undefined. */
-    const size_t n_samples = 2400;
+    /* arbitrarily set number of samples to consume form the input array.
+     * The caller must provide at least ``n_samples - bound + (m_dim-1) * delay``
+     * samples, and ``scaling_size`` must fit into ``n_bins`` above the
+     * searched range; ``_features.cdim_bader`` checks both. */
+    const size_t n_samples = CDIM_BADER_N_SAMPLES;
 
     size_t n_dists = (n_samples-bound) * (n_samples-bound+1) / 2;
     double dist_min = 1.0;
@@ -254,7 +255,7 @@ corr_dim_bader (const short *snd, const size_t delay, const size_t m_dim,
     /* Find the bin with the most points in it and its index */
     size_t max_pts = 0;
     size_t max_bin = 0;
-    for (size_t i = 0; i < (size_t) ((double) n_bins * 3. / 5.); i++)
+    for (size_t i = 0; i < CDIM_BADER_SEARCH (n_bins); i++)
     {
         if (corr_hist[i] > max_pts)
         {

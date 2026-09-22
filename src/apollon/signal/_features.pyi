@@ -3,7 +3,7 @@ from apollon.typing import Array, FloatArray
 def correlogram(inp: Array, wlen: int, delay_max: int) -> FloatArray:
     ...
 
-def correlogram_delay(inp: Array, delays: Array,
+def correlogram_delay(inp: Array, delays: Array, wlen: int,
                       off_max: int) -> FloatArray:
     ...
 
