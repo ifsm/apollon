@@ -366,21 +366,39 @@ def loudness(sxx: TransformResult, resolution: float = 0.1) -> FloatArray:
 
 def roughness_helmholtz(d_frq: float, bins: FloatArray, frq_max: float,
                         total: bool = True) -> FloatArray:
-    """Estimate auditory roughness using Helmholtz' algorithm.
+    """Estimate a relative roughness index using Helmholtz' algorithm.
 
-    Each spectrum is reduced to its partials, the local maxima of at least a
-    tenth of its largest bin. Their autocorrelation holds, for each lag k, how
+    Each spectrum is reduced to its partials, its local maxima relative to
+    the largest bin. Partials fade in between 5 % and 15 % of the largest
+    bin, so that window sidelobes and noise count little, and no partial
+    appears suddenly. Their autocorrelation holds, for each lag k, how
     strongly pairs of partials ``k*d_frq`` Hz apart are present. Each lag is
     weighted by Helmholtz' roughness curve, which peaks at a spacing of
-    33.5 Hz, and the result is divided by the number of lags that exceed a
-    fifth of the strongest one. Two equal partials hence read exactly the
-    value of the curve at their spacing.
+    33.5 Hz, and taken relative to the power of the partials, i.e., to the
+    autocorrelation at lag 0. Two equal partials hence read exactly the
+    value of the curve at their spacing, and the index changes continuously
+    with the amplitudes of the partials.
 
-    Partials are normalized to the largest one, so the measure is relative
-    and independent of level. Partials closer than the main lobe of the
-    window merge into one. With a Hann window that is about three bins, so a
-    33 Hz spacing needs ``d_frq`` of about 11 Hz or less, i.e., 4096 samples
-    per segment at 44.1 kHz.
+    The measure is relative and independent of level. Partials closer than
+    the main lobe of the window merge into one. With a Hann window that is
+    about three bins, so a 33 Hz spacing needs ``d_frq`` of about 11 Hz or
+    less, i.e., 4096 samples per segment at 44.1 kHz. Use a window with low
+    sidelobes, such as Hann: the sidelobes of a rectangular window reach
+    22 % of the main lobe, and read as partials whenever a partial falls
+    between bins.
+
+    The result is a dimensionless index, not a roughness in asper, and it
+    does not follow the psychoacoustic data behind that unit:
+
+    - It ignores level, whereas perceived roughness grows with it.
+    - Its curve peaks at a spacing of 33.5 Hz, whereas the roughness of a
+      1 kHz tone peaks at a modulation frequency of about 70 Hz. The asper
+      reference stimulus, that tone fully modulated at 70 Hz and 60 dB SPL,
+      reads about 1.0 only by coincidence: modulated at 30 Hz, it reads 1.6.
+    - It grows with modulation depth, but not with the roughly 1.6th power
+      of the depth that perceived roughness follows.
+
+    Compare spectra with it only when they were analysed alike.
 
     Args:
         d_frq:      Frequency resolution of ``bins`` in Hz.
@@ -390,7 +408,7 @@ def roughness_helmholtz(d_frq: float, bins: FloatArray, frq_max: float,
         total:      If ``True``, sum the contributions of all spacings.
 
     Returns:
-        Roughness per frame, shaped ``(1, n_frames)``. If ``total`` is
+        Roughness index per frame, shaped ``(1, n_frames)``. If ``total`` is
         ``False``, the contribution of each spacing ``0, d_frq, ..., frq_max``
         instead, shaped ``(n_spacings, n_frames)``.
 
@@ -410,12 +428,11 @@ def roughness_helmholtz(d_frq: float, bins: FloatArray, frq_max: float,
     out = _np.zeros((kernel.size, bins.shape[1]))
     for i, frame in enumerate(bins[:kernel.size].T):
         partials = _partials(frame)
-        rns = correlate(partials, partials)[partials.size-1:]
-        rns[0] = 0
-        rns_max = rns.max()
-        if rns_max > 0:
-            rns /= rns_max
-            out[:, i] = rns * kernel / _np.count_nonzero(rns > 0.2)
+        acr = correlate(partials, partials)[partials.size-1:]
+        if acr[0] > 0:
+            # Each pair appears twice in the full autocorrelation, and lag 0
+            # carries no weight, since the curve vanishes there.
+            out[:, i] = 2 * acr * kernel / acr[0]
 
     if total:
         out = out.sum(axis=0, keepdims=True)
@@ -462,18 +479,24 @@ def _power_distr(bins: FloatArray) -> FloatArray:
 def _partials(spectrum: FloatArray) -> FloatArray:
     """Reduce a magnitude spectrum to its partials.
 
+    Each local maximum is divided by the largest bin and faded in by that
+    ratio: it is dropped up to 5 %, kept fully from 15 %, and scaled
+    linearly in between.
+
     Args:
         spectrum:  One-dimensional magnitude spectrum.
 
     Returns:
-        New array holding each local maximum of at least a tenth of the
-        largest bin, divided by that bin, and zero elsewhere.
+        New array holding the faded partials, and zero elsewhere.
     """
+    fade_start, fade_stop = 0.05, 0.15
     out = _np.zeros(spectrum.shape, dtype=_np.double)
     peak = spectrum.max()
     if peak > 0:
-        idx, _ = find_peaks(spectrum, height=0.1*peak)
-        out[idx] = spectrum[idx] / peak
+        idx, _ = find_peaks(spectrum)
+        rel = spectrum[idx] / peak
+        fade = _np.clip((rel-fade_start) / (fade_stop-fade_start), 0.0, 1.0)
+        out[idx] = rel * fade
     return out
 
 

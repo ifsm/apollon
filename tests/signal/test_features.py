@@ -10,7 +10,7 @@ import hypothesis.extra.numpy as htn
 from apollon.typing import FloatArray
 from apollon.signal import features
 from apollon.signal.spectral import Dft, Stft
-from apollon.signal.tools import sinusoid
+from apollon.signal.tools import ampmod, sinusoid
 from apollon._defaults import SPL_REF
 
 finite_float_arrays = htn.arrays(
@@ -166,11 +166,22 @@ class TestRoughness(unittest.TestCase):
         self.fps = 44100
         self.sig = sinusoid(100, fps=self.fps, length=2)
 
-    def _stft(self, frqs):
-        """Hann STFT fine enough to resolve partials 33 Hz apart."""
-        stft = Stft(fps=self.fps, n_perseg=4096, n_overlap=2048,
+    def _stft(self, frqs, n_perseg=4096):
+        """Hann STFT of a sum of sinusoids, or of the signal ``frqs``.
+
+        4096 samples resolve partials 33 Hz apart.
+        """
+        if not isinstance(frqs, np.ndarray):
+            frqs = sinusoid(frqs, fps=self.fps)
+        stft = Stft(fps=self.fps, n_perseg=n_perseg, n_overlap=n_perseg//2,
                     window='hann', extend=False, pad=False)
-        return stft.transform(sinusoid(frqs, fps=self.fps))
+        return stft.transform(frqs)
+
+    def _am_roughness(self, depth=1.0, n_perseg=4096):
+        """Mean roughness of a 1 kHz tone amplitude-modulated at 70 Hz."""
+        sig = ampmod(1000, 70, depth, 1.0, fps=self.fps, length=1.0)
+        sxx = self._stft(sig, n_perseg)
+        return features.roughness_helmholtz(sxx.d_frq, sxx.abs, 1500).mean()
 
     def test_single_array(self):
         dft = Dft(fps=self.fps, window=None)
@@ -199,7 +210,22 @@ class TestRoughness(unittest.TestCase):
         """A single partial has no spacing, whatever its main lobe covers."""
         sxx = self._stft(1000)
         rough = features.roughness_helmholtz(sxx.d_frq, sxx.abs, 1500)
-        self.assertTrue(np.all(rough == 0.0))
+        self.assertTrue(np.allclose(rough, 0.0, rtol=0.0, atol=1e-12))
+
+    def test_rises_continuously_with_modulation_depth(self):
+        """No threshold makes the index jump or drop as the sidebands of an
+        amplitude-modulated tone grow."""
+        rough = [self._am_roughness(depth)
+                 for depth in np.arange(0.05, 1.0001, 0.05)]
+        steps = np.diff(rough)
+        self.assertTrue(np.all(steps >= 0.0))
+        self.assertLess(steps.max(), 0.2)
+
+    def test_stable_across_frame_lengths(self):
+        """Small changes in peak height between frame lengths move the index
+        only a little."""
+        rough = [self._am_roughness(n_perseg=n) for n in (2048, 4096, 8192)]
+        self.assertLess(np.ptp(rough), 0.08)
 
     def test_rough_pair(self):
         """Partials 33 Hz apart are close to maximally rough."""
