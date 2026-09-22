@@ -55,8 +55,9 @@ def fft(sig: FloatArray, window: str | None = None, n_fft: int | None = None,
         FFT bins
 
     Raises:
-        ValueError:  If ``sig`` is not two-dimensional, or if ``norm`` is
-            not one of the above
+        ValueError:  If ``sig`` is not two-dimensional, if ``norm`` is
+            not one of the above, or if ``n_fft`` is less than the length
+            of ``sig``, which would crop the signal
     """
     if sig.ndim != 2:
         raise ValueError(f'Input array has {sig.ndim} dimensions. However,'
@@ -67,6 +68,9 @@ def fft(sig: FloatArray, window: str | None = None, n_fft: int | None = None,
     n_sig = sig.shape[0]
     if n_fft is None:
         n_fft = n_sig
+    if n_fft < n_sig:
+        raise ValueError(f'n_fft ({n_fft}) is less than the {n_sig} samples '
+                         'of the signal, and would crop it.')
 
     if window is None:
         window = 'rect'

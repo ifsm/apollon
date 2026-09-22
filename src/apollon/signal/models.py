@@ -1,7 +1,8 @@
 # pylint: disable = C0114, C0115, R0903
 
 from typing import Self, Literal
-from pydantic import BaseModel, FiniteFloat, model_validator, PositiveInt
+from pydantic import (BaseModel, FiniteFloat, model_validator,
+                      NonNegativeFloat, NonNegativeInt, PositiveInt)
 
 
 Normalization = Literal["amplitude", "ortho"]
@@ -9,9 +10,9 @@ Normalization = Literal["amplitude", "ortho"]
 
 
 class SpectralTransformParams(BaseModel):
-    fps: int
+    fps: PositiveInt
     window: str | None = None
-    n_fft: int | None = None
+    n_fft: PositiveInt | None = None
 
 
 class DftParams(SpectralTransformParams):
@@ -20,10 +21,21 @@ class DftParams(SpectralTransformParams):
 
 
 class StftParams(DftParams):
-    n_perseg: int
-    n_overlap: int
+    n_perseg: PositiveInt
+    n_overlap: NonNegativeInt
     extend: bool
     pad: bool
+
+    @model_validator(mode="after")
+    def _check_segment_lengths(self) -> Self:
+        if self.n_overlap >= self.n_perseg:
+            raise ValueError(f"n_overlap ({self.n_overlap}) must be less "
+                             f"than n_perseg ({self.n_perseg}).")
+        if self.n_fft is not None and self.n_fft < self.n_perseg:
+            raise ValueError(f"n_fft ({self.n_fft}) must not be less than "
+                             f"n_perseg ({self.n_perseg}); a shorter FFT "
+                             "would crop every segment.")
+        return self
 
 
 class CorrDimParams(BaseModel):
@@ -40,9 +52,9 @@ class CorrGramParams(BaseModel):
 
 
 class TriangFilterSpec(BaseModel):
-    low: float
+    low: NonNegativeFloat
     high: float
-    n_filters: int
+    n_filters: PositiveInt
     scale: Literal["mel", "hz"] = "mel"
 
     @model_validator(mode="after")
@@ -55,7 +67,7 @@ class TriangFilterSpec(BaseModel):
 class CepstrumParams(BaseModel):
     n_coefs: PositiveInt = 13
     dct_type: Literal[1, 2, 3, 4] = 2
-    lifter_gain: float = 24.0
+    lifter_gain: NonNegativeFloat = 24.0
 
 
 class CepstralParams(BaseModel):

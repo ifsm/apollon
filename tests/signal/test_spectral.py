@@ -34,10 +34,16 @@ class TestFft(unittest.TestCase):
         with self.assertRaises(ValueError):
             fft(self.signal, window='whatever')
 
-    @given(integers(min_value=1, max_value=44100))
+    @given(integers(min_value=9000, max_value=44100))
     def test_nfft(self, n_fft):
+        """``n_fft`` from the signal length (9000 samples) upwards."""
         bins = fft(self.signal, n_fft=n_fft)
         self.assertEqual(bins.shape[0], n_fft//2+1)
+
+    def test_nfft_shorter_than_signal_raises(self):
+        """A shorter FFT would silently crop the signal."""
+        with self.assertRaises(ValueError):
+            fft(self.signal, n_fft=self.signal.shape[0]-1)
 
     def test_transform(self):
         bins = np.absolute(fft(self.signal))
