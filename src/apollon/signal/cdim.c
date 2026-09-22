@@ -185,8 +185,11 @@ corr_dim_bader (const short *snd, const size_t delay, const size_t m_dim,
     size_t *corr_hist = calloc (n_bins, sizeof (size_t));
     size_t *corr_sums = calloc (n_bins, sizeof (size_t));
 
+    /* The caller reports the failure; free what was allocated. */
     if (corr_hist == NULL || corr_sums == NULL || dists == NULL) {
-        fprintf (stderr, "Failed to allocate memory.");
+        free (dists);
+        free (corr_hist);
+        free (corr_sums);
         return -1.0;
     }
 
@@ -219,8 +222,10 @@ corr_dim_bader (const short *snd, const size_t delay, const size_t m_dim,
         }
     }
 
-   size_t bin_spacing = (size_t) (dist_max / 1000.0);
-   size_t step_size   = bin_spacing == 0 ? 1 : bin_spacing;
+    /* Spread the histogram over the full range of distances, so that
+     * ``n_bins`` sets its resolution. */
+    size_t bin_spacing = (size_t) (dist_max / (double) n_bins);
+    size_t step_size   = bin_spacing == 0 ? 1 : bin_spacing;
     for (size_t i = 0; i < n_dists; i++)
     {
         if (dists[i] < dist_min)

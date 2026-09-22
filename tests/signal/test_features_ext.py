@@ -1,4 +1,5 @@
 """Tests of the C extension ``apollon.signal._features``."""
+import os
 import sys
 import unittest
 
@@ -156,6 +157,21 @@ class TestNoLeaks(ExtensionTestCase):
         self.assert_no_leak(short, lambda: _features.cdim_bader(
             short, self.delay, self.m_dim, 1000, 10))
 
+    @unittest.skipUnless(sys.platform.startswith('linux'),
+                         'reads the virtual size from /proc')
+    def test_cdim_bader_frees_on_failed_allocation(self):
+        """A histogram too large to allocate raises MemoryError, and the
+        distances allocated before it, about 23 MB, are freed."""
+        def vsize():
+            with open('/proc/self/statm', encoding='ascii') as statm:
+                return int(statm.read().split()[0]) * os.sysconf('SC_PAGE_SIZE')
+        before = vsize()
+        for _ in range(20):
+            with self.assertRaises(MemoryError):
+                _features.cdim_bader(self.snd, self.delay, self.m_dim,
+                                     2**60, 10)
+        self.assertLess(vsize() - before, 100 * 2**20)
+
 
 class TestResults(ExtensionTestCase):
     """The rebuilt argument handling passes the right data to the C code."""
@@ -169,6 +185,17 @@ class TestResults(ExtensionTestCase):
     def test_emb_dists_matches_pdist(self):
         out = _features.emb_dists(self.sig, 3, 4)
         self.assertTrue(np.allclose(out, pdist(embed(self.sig, 3, 4))))
+
+    def test_cdim_n_bins_sets_the_resolution(self):
+        """Doubling n_bins halves the bin width, so doubling scaling_size
+        as well keeps the range of the slope, and the estimate."""
+        t = np.arange(3000) / 3000
+        x = (0.2*np.sin(2*np.pi*300*t) + 0.1*np.sin(2*np.pi*600*t)
+             + 0.01*np.random.default_rng(0).normal(size=3000))
+        snd = fti16(x.reshape(-1, 1)).ravel()
+        base = _features.cdim_bader(snd, self.delay, self.m_dim, 1000, 10)
+        fine = _features.cdim_bader(snd, self.delay, self.m_dim, 2000, 20)
+        self.assertAlmostEqual(fine, base, delta=0.05)
 
     def test_cdim_bader_is_finite(self):
         out = _features.cdim_bader(self.snd, self.delay, self.m_dim, 1000, 10)

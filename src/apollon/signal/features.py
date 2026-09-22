@@ -42,8 +42,10 @@ def cdim(inp: FloatArray, delay: int, m_dim: int, n_bins: int = 1000,
         inp:       Input array.
         delay:     Embedding delay in samples.
         m_dim:     Number of embedding dimensions.
-        n_bins:    Number of bins.
-        scaling_size:  Distance in bins between the points of the slope.
+        n_bins:    Number of histogram bins over the range of distances.
+        scaling_size:  Distance in bins between the points of the slope. It
+                   counts bins, so scale it along with ``n_bins`` to keep
+                   the range of distances the slope covers.
         mode:      Use either 'bader' for the original algorithm
 
     Returns:
@@ -77,8 +79,7 @@ def cdim(inp: FloatArray, delay: int, m_dim: int, n_bins: int = 1000,
                          'or "blass"')
     out = _np.zeros(inp_.shape[1])
     for i, seg in enumerate(inp_.T):
-        out[i] = _np.nan_to_num(cdim_func(seg, delay, m_dim, n_bins,
-                                          scaling_size))
+        out[i] = cdim_func(seg, delay, m_dim, n_bins, scaling_size)
     return _np.expand_dims(out, 0)
 
 
