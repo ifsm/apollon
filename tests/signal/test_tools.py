@@ -61,6 +61,36 @@ class TestCorrCoefPearson(unittest.TestCase):
         self.assertTrue(np.allclose(res, expected))
 
 
+class TestLimit(unittest.TestCase):
+    def setUp(self):
+        self.inp = tools.amp([20.0, 40.0, 60.0])
+
+    def test_without_boundaries_returns_a_copy(self):
+        res = tools.limit(self.inp)
+        self.assertTrue(np.array_equal(res, self.inp))
+        self.assertFalse(np.shares_memory(res, self.inp))
+
+    def test_lower_boundary_raises_values(self):
+        res = tools.limit(self.inp, ldb=40.0)
+        self.assertTrue(np.allclose(res, tools.amp([40.0, 40.0, 60.0])))
+
+    def test_upper_boundary_lowers_values(self):
+        res = tools.limit(self.inp, udb=40.0)
+        self.assertTrue(np.allclose(res, tools.amp([20.0, 40.0, 40.0])))
+
+    def test_both_boundaries(self):
+        res = tools.limit(self.inp, ldb=30.0, udb=50.0)
+        self.assertTrue(np.allclose(res, tools.amp([30.0, 40.0, 50.0])))
+
+    def test_accepts_numpy_scalars(self):
+        res = tools.limit(self.inp, ldb=np.float32(40.0))
+        self.assertTrue(np.allclose(res, tools.amp([40.0, 40.0, 60.0])))
+
+    def test_inverted_boundaries_raise(self):
+        with self.assertRaises(ValueError):
+            tools.limit(self.inp, ldb=50.0, udb=30.0)
+
+
 class TestSinusoid(unittest.TestCase):
     def setUp(self):
         self.single_frq = 100

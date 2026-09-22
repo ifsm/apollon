@@ -104,38 +104,30 @@ def hz_to_mel(frqs: float | FloatArray) -> FloatArray:
 
 def limit(inp: FloatArray, ldb: float | None = None,
           udb: float | None = None) -> FloatArray:
-    """Limit the dynamic range of ``inp`` to  [``ldb``, ``udb``].
+    """Limit the dynamic range of ``inp`` to [``ldb``, ``udb``].
 
-    Boundaries are given in dB SPL.
+    Values below the lower boundary are raised to it, and values above the
+    upper boundary are lowered to it. Boundaries are given in dB SPL and
+    converted to amplitudes by ``amp``, so ``inp`` holds magnitudes in Pa.
+    Omit a boundary to leave that side unlimited.
 
     Args:
-        inp:  DFT bin magnitudes
-        ldb:  Lower clip boundary in deci Bel
-        udb:  Upper clip boundary in deci Bel
+        inp:  DFT bin magnitudes in Pa
+        ldb:  Lower boundary in dB SPL
+        udb:  Upper boundary in dB SPL
 
     Returns:
-        Copy of ``inp`` with values clipped
+        Copy of ``inp`` with its values clipped to the boundaries
+
+    Raises:
+        ValueError: If ``ldb`` exceeds ``udb``.
     """
-    if ldb is None:
-        lth = 0.0
-    elif isinstance(ldb, (int, float)):
-        lth = amp(ldb).item()
-    else:
-        msg = (f'Argument to ``ldb`` must be of types ``int``, or ``float``.\n'
-               f'Found {type(ldb)}.')
-        raise TypeError(msg)
-
-    if udb is None:
-        uth = 0.0
-    elif isinstance(udb, (int, float)):
-        uth = inp.max()
-    else:
-        msg = (f'Argument to ``udb`` must be of types ``int``, or ``float``.\n'
-               f'Found {type(ldb)}.')
-        raise TypeError(msg)
-
-    low = np.where(inp < lth, 0.0, inp)
-    return np.minimum(low, uth)
+    if ldb is not None and udb is not None and ldb > udb:
+        raise ValueError(f'Lower boundary ({ldb} dB) exceeds upper boundary '
+                         f'({udb} dB).')
+    lth = None if ldb is None else amp(ldb).item()
+    uth = None if udb is None else amp(udb).item()
+    return floatarray(np.clip(inp, lth, uth))
 
 
 def mel_to_hz(zfrq: float | FloatArray) -> FloatArray:
