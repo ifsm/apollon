@@ -4,6 +4,7 @@ import numpy as np
 from hypothesis import given, strategies as st
 from hypothesis.extra.numpy import arrays
 
+from apollon._defaults import SPL_REF
 from apollon.signal.critical_bands import (excitation_pattern, filter_bank,
                                            frq2cbr, level, masking_slope,
                                            sharpness, specific_loudness,
@@ -98,10 +99,11 @@ class TestSharpness(unittest.TestCase):
     def test_single_band_regression(self):
         """A lone active band no longer has a closed form once excitation
         spreading (spread()) leaks its energy into neighbouring bands --
-        pin the current, numerically verified output instead."""
-        expected = {2: 1.454389706443187,
-                    17: 4.023327825025507,
-                    20: 5.312699429940025}
+        pin the current, numerically verified output instead. The band
+        holds 1 Pa², i.e. about 94 dB SPL."""
+        expected = {2: 0.5377763327700203,
+                    17: 3.521144468650611,
+                    20: 5.21359740198404}
         for band, exp in expected.items():
             with self.subTest(band=band):
                 self.assertAlmostEqual(sharpness(self._single_band(band))[0], exp)
@@ -177,6 +179,12 @@ class TestMaskingSlope(unittest.TestCase):
         sf_up = masking_slope(np.array([2.0]), np.array([1000.0]), np.array([60.0]))
         sf_down = masking_slope(np.array([-2.0]), np.array([1000.0]), np.array([60.0]))
         self.assertGreater(sf_up[0], sf_down[0])
+
+    def test_upper_flank_never_rises(self):
+        """Terhardt's upper slope would turn positive above about 120 dB SPL;
+        the excitation must still not exceed the masker's own level."""
+        sf = masking_slope(np.array([3.0]), np.array([1000.0]), np.array([130.0]))
+        self.assertLessEqual(sf[0], 0.0)
 
 
 class TestSpreading(unittest.TestCase):
@@ -267,11 +275,12 @@ class TestExcitationPattern(unittest.TestCase):
 
 class TestSpecificLoudness(unittest.TestCase):
 
-    # Mirrors the ``ref`` constant hard-coded inside ``level()``.
-    ref = 1e-12
+    # Mirrors the ``ref`` constant inside ``level()``: (20 uPa)^2 in Pa^2.
+    ref = SPL_REF**2
 
     def test_level_zero_at_reference(self):
-        """The reference intensity maps to a 0 dB critical band level."""
+        """The squared reference pressure maps to a 0 dB critical band
+        level."""
         self.assertAlmostEqual(level(np.array([self.ref]))[0], 0.0)
 
     def test_ten_db_step_constant_ratio(self):

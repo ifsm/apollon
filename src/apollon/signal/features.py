@@ -2,6 +2,8 @@
 Feature extraction routines
 ============================
 """
+from __future__ import annotations
+from typing import TYPE_CHECKING
 
 import numpy as _np
 from scipy.signal import hilbert as _hilbert
@@ -10,9 +12,12 @@ from scipy.signal import correlate
 from . import _features     # pylint: disable = no-name-in-module
 from . import tools as _sigtools
 from .. import segment as _segment
-from .. typing import Array, ComplexArray, FloatArray, floatarray, IntArray
+from .. typing import Array, FloatArray, floatarray, IntArray
 from . import critical_bands as _cb
 from .. import _defaults
+
+if TYPE_CHECKING:
+    from . spectral import TransformResult
 
 
 def cdim(inp: FloatArray, delay: int, m_dim: int, n_bins: int = 1000,
@@ -334,12 +339,15 @@ def log_attack_time(inp: FloatArray, fps: int, ons_idx: IntArray,
     return floatarray(_np.log(attack_time))
 
 
-def loudness(frqs: FloatArray, bins: ComplexArray, resolution: float = 0.1) -> FloatArray:
+def loudness(sxx: TransformResult, resolution: float = 0.1) -> FloatArray:
     """Calculate a measure for the perceived loudness from a spectrogram.
 
+    The model works on absolute sound pressure levels, so the signal behind
+    ``sxx`` must be calibrated in Pa. Its power is taken from
+    ``sxx.ms_power``, which holds whatever scaling ``sxx`` was computed with.
+
     Args:
-        frqs:   Frquency axis.
-        bins:   Raw DFT bins.
+        sxx:    Spectrum or spectrogram of a signal in Pa.
         resolution: Bark width of the fine excitation-spreading grid (see
             ``critical_bands.excitation_pattern``); smaller is more
             accurate but more expensive.
@@ -347,8 +355,7 @@ def loudness(frqs: FloatArray, bins: ComplexArray, resolution: float = 0.1) -> F
     Returns:
         Estimate of the total loudness.
     """
-    power = _np.square(_np.abs(bins))
-    cbrs = _cb.excitation_pattern(frqs.squeeze(), power, resolution)
+    cbrs = _cb.excitation_pattern(sxx.frqs.squeeze(), sxx.ms_power, resolution)
     return _cb.total_loudness(cbrs, spread_input=False)
 
 
@@ -388,13 +395,17 @@ def roughness_helmholtz(d_frq: float, bins: FloatArray, frq_max: float,
     return out
 
 
-def sharpness(frqs: FloatArray, bins: ComplexArray, resolution: float = 0.1) -> FloatArray:
+def sharpness(sxx: TransformResult, resolution: float = 0.1) -> FloatArray:
     """Calculate a measure for the perception of auditory sharpness from a
     spectrogram.
 
+    Masking spreads further at higher levels, so sharpness depends on the
+    absolute sound pressure level, too. The signal behind ``sxx`` must hence
+    be calibrated in Pa. Its power is taken from ``sxx.ms_power``, which
+    holds whatever scaling ``sxx`` was computed with.
+
     Args:
-        frqs:    Frequencies.
-        bins:    Raw DFT bins.
+        sxx:    Spectrum or spectrogram of a signal in Pa.
         resolution: Bark width of the fine excitation-spreading grid (see
             ``critical_bands.excitation_pattern``); smaller is more
             accurate but more expensive.
@@ -402,8 +413,7 @@ def sharpness(frqs: FloatArray, bins: ComplexArray, resolution: float = 0.1) -> 
     Returns:
         Sharpness.
     """
-    power = _np.square(_np.abs(bins))
-    cbrs = _cb.excitation_pattern(frqs.squeeze(), power, resolution)
+    cbrs = _cb.excitation_pattern(sxx.frqs.squeeze(), sxx.ms_power, resolution)
     return _cb.sharpness(cbrs, spread_input=False)
 
 

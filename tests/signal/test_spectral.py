@@ -406,5 +406,45 @@ class TestFullScaleDb(unittest.TestCase):
         self.assertEqual(full_scale_db(params), 0.0)
 
 
+class TestMsPower(unittest.TestCase):
+    """``ms_power`` sums to the mean square of the signal, whatever the
+    scaling of the transform."""
+
+    fps = 9000
+    n_perseg = 512
+
+    def test_dft_satisfies_parseval_under_any_scaling(self) -> None:
+        """A spectrum sums to the window-weighted mean square of its input."""
+        n = 1000
+        sig = np.random.default_rng(0).standard_normal((n, 1))
+        for window in (None, 'hann', 'blackman'):
+            win = sp.signal.get_window(window or 'rect', n).reshape(-1, 1)
+            expected = float(((sig*win)**2).sum() / (win**2).sum())
+            for norm in (None, 'ortho', 'amplitude'):
+                for single_sided in (True, False):
+                    for n_fft in (None, n+1, 2048):
+                        with self.subTest(window=window, norm=norm,
+                                          single_sided=single_sided,
+                                          n_fft=n_fft):
+                            dft = Dft(self.fps, window, n_fft, norm=norm,
+                                      single_sided=single_sided)
+                            total = dft.transform(sig).ms_power.sum()
+                            self.assertAlmostEqual(float(total), expected,
+                                                   places=9)
+
+    def test_stft_frames_hold_the_mean_square_of_a_sinusoid(self) -> None:
+        """A sinusoid of amplitude A has mean square A²/2 in every frame."""
+        amp = 3.0
+        sig = sinusoid(self.fps * 25 / self.n_perseg, amp, fps=self.fps)
+        for window in (None, 'hann'):
+            for norm in (None, 'ortho', 'amplitude'):
+                with self.subTest(window=window, norm=norm):
+                    stft = Stft(fps=self.fps, n_perseg=self.n_perseg,
+                                n_overlap=self.n_perseg//2, window=window,
+                                norm=norm, extend=False, pad=False)
+                    totals = stft.transform(sig).ms_power.sum(axis=0)
+                    self.assertTrue(np.allclose(totals, amp**2 / 2))
+
+
 if __name__ == '__main__':
     unittest.main()

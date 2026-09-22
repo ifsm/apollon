@@ -113,12 +113,11 @@ class TestSpectralSpread(unittest.TestCase):
 
 class TestLoudness(unittest.TestCase):
 
-    def test_scales_with_bin_magnitude(self):
+    def test_scales_with_signal_level(self):
         """Loudness is finite, non-negative, and grows with signal level."""
         dft = Dft(fps=44100, window=None)
-        sxx = dft.transform(sinusoid(440, fps=44100))
-        quiet = features.loudness(sxx.frqs, sxx.bins)
-        loud = features.loudness(sxx.frqs, sxx.bins * 10)
+        quiet = features.loudness(dft.transform(sinusoid(440, fps=44100)))
+        loud = features.loudness(dft.transform(sinusoid(440, 10, fps=44100)))
         self.assertTrue(np.all(np.isfinite(quiet)))
         self.assertTrue(np.all(quiet >= 0))
         self.assertGreater(loud.item(), quiet.item())
@@ -126,35 +125,23 @@ class TestLoudness(unittest.TestCase):
 
 class TestSharpness(unittest.TestCase):
 
-    def test_scales_with_bin_magnitude(self):
+    def test_scales_with_signal_level(self):
         """Sharpness is finite and increases with signal level: masking
         spreads further upward in Bark at higher levels, so the same
         spectral shape reads sharper when louder."""
         dft = Dft(fps=44100, window=None)
-        sxx = dft.transform(sinusoid(440, fps=44100))
-        quiet = features.sharpness(sxx.frqs, sxx.bins)
-        loud = features.sharpness(sxx.frqs, sxx.bins * 10)
+        quiet = features.sharpness(dft.transform(sinusoid(440, fps=44100)))
+        loud = features.sharpness(dft.transform(sinusoid(440, 10, fps=44100)))
         self.assertTrue(np.all(np.isfinite(quiet)))
         self.assertGreater(loud.item(), quiet.item())
 
-    @unittest.expectedFailure
     def test_din45692_reference_stimulus(self):
         """DIN 45692's calibration reference stimulus -- narrow-band noise
         from 920 Hz to 1080 Hz at 60 dB SPL -- must measure 1 acum.
 
-        Tracked as open issue #11 (see
-        analyze-src-apollon-signal-critical-band-elegant-teacup.md).
-        critical_bands.excitation_pattern() now spreads at finer-than-1-Bark
-        resolution (default 0.1 Bark) before aggregating down to 1-Bark
-        bands, closing most of the gap: was ~0.93 acum with no spreading at
-        all, ~1.26 acum spreading only at coarse 1-Bark resolution, and now
-        ~1.12 acum at the default resolution. It still doesn't reach exactly
-        1.0 -- verified this converges to ~1.03-1.05 even at much finer
-        resolution (0.02-0.002 Bark), so a residual gap remains from other
-        model simplifications (no threshold-in-quiet correction, and
-        possible small discrepancies in the masking-slope transcription).
-        Remove the ``expectedFailure`` marker only once that residual is
-        also resolved and this reads 1.0.
+        The masking slopes depend on absolute level, so this also checks
+        that the stimulus is read at 60 dB SPL, whatever the window of the
+        transform.
         """
         fps = 44100
         n = fps * 2
@@ -167,10 +154,11 @@ class TestSharpness(unittest.TestCase):
         target_rms = SPL_REF * 10**(60/20)
         band *= target_rms / np.sqrt(np.mean(band**2))
 
-        dft = Dft(fps=fps, window=None)
-        sxx = dft.transform(band.reshape(-1, 1))
-        sharp = features.sharpness(sxx.frqs, sxx.bins)
-        self.assertAlmostEqual(sharp.item(), 1.0, places=2)
+        for window in (None, 'hann'):
+            with self.subTest(window=window):
+                sxx = Dft(fps=fps, window=window).transform(band.reshape(-1, 1))
+                sharp = features.sharpness(sxx)
+                self.assertAlmostEqual(sharp.item(), 1.0, places=2)
 
 
 class TestRoughness(unittest.TestCase):

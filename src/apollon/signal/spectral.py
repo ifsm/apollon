@@ -15,7 +15,7 @@ from apollon.segment.models import SegmentationParams
 
 from . models import (DftParams, Normalization, StftParams,
                       SpectralTransformParams)
-from .. typing import FloatArray, IntArray, ComplexArray
+from .. typing import FloatArray, IntArray, ComplexArray, floatarray
 from .. signal import features
 
 
@@ -141,7 +141,7 @@ class TransformResult(ABC):
     """Base class for transformation results"""
     def __init__(self, bins: ComplexArray) -> None:
         self._bins = bins
-        self._params: SpectralTransformParams
+        self._params: DftParams
         self._inp_size: int
 
     @property
@@ -167,7 +167,7 @@ class TransformResult(ABC):
 
     @property
     @abstractmethod
-    def params(self) -> SpectralTransformParams:
+    def params(self) -> DftParams:
         """Initial parameters"""
         return self._params
 
@@ -182,6 +182,35 @@ class TransformResult(ABC):
     def power(self) -> FloatArray:
         """Compute power spectrum"""
         return np.square(self.abs)
+
+    @property
+    def ms_power(self) -> FloatArray:
+        """Compute the mean-square power per bin
+
+        ``power`` carries the scale of the transform. Under the default
+        ``norm='amplitude'`` it reads the amplitude of a sinusoid, but summed
+        over bins it overcounts by the equivalent noise bandwidth of the
+        window. This undoes the scaling ``fft`` applied and normalizes by the
+        power of the window instead, so that the bins of each spectrum sum to
+        the window-weighted mean square of its frame, whatever ``norm``,
+        ``single_sided``, window, and FFT length. It is hence the quantity to
+        sum over frequency bands. For a signal in Pa, it is in Pa².
+        """
+        win = _sps.get_window(self._params.window or 'rect', self._inp_size)
+        n_fft = self._n_fft
+        norm = self._params.norm
+
+        pwr = self.power
+        if norm == 'amplitude':
+            pwr *= win.sum()**2
+        elif norm == 'ortho':
+            pwr *= n_fft
+
+        paired = _paired_bins(n_fft)
+        if self._params.single_sided:
+            pwr[paired] /= 2 if norm == 'ortho' else 4
+        pwr[paired] *= 2
+        return floatarray(pwr / (n_fft * np.sum(np.square(win))))
 
     @property
     def centroid(self) -> FloatArray:

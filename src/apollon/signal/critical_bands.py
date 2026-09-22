@@ -4,6 +4,7 @@ Critical band helpers
 import numpy as _np
 from scipy.signal.windows import get_window as _get_window
 
+from .. import _defaults
 from .. typing import FloatArray, floatarray
 
 
@@ -38,16 +39,19 @@ def level(cbi: FloatArray) -> FloatArray:
     """Compute the critical band level L_G from critical band intensities I_G.
 
     Args:
-        cbi: Critical band intensities, i.e. proportional to physical power,
-            not a pressure amplitude.
+        cbi: Critical band intensities as mean-square sound pressure per band
+            in Pa², i.e. power, not a pressure amplitude.
 
     Returns:
-        Critical band levels. Zero (silent) input maps to ``-inf`` rather
-        than a floor at the reference, so ``specific_loudness`` in turn maps
-        silence to zero loudness instead of a constant, non-physical floor.
+        Critical band levels in dB SPL. Zero (silent) input maps to ``-inf``
+        rather than a floor at the reference, so ``specific_loudness`` in turn
+        maps silence to zero loudness instead of a constant, non-physical
+        floor.
     """
-    # Reference intensity, ISO 226 / Zwicker & Fastl (1999) I_0 = 1e-12 W/m^2.
-    ref = 1e-12
+    # Reference sound pressure p_0 = 20 uPa, squared. For a plane wave in air,
+    # this equals the reference intensity I_0 = 1e-12 W/m^2 of Zwicker &
+    # Fastl (1999), expressed in the units of the input.
+    ref = _defaults.SPL_REF**2
     ratio = _np.maximum(cbi, 0.0) / ref
     out = _np.full_like(ratio, -_np.inf, dtype='float64')
     return floatarray(10.0 * _np.log10(ratio, where=ratio > 0, out=out))
@@ -82,10 +86,15 @@ def masking_slope(dz: FloatArray, frq: FloatArray,
     above it -- masking spreads further upward in frequency than downward.
     Same source as ``specific_loudness``'s Zwicker & Fastl (1999) citation.
 
+    The upper slope flattens by 0.2 dB/Bark per dB of masker level and would
+    turn positive above roughly 120 dB SPL, far outside the range the
+    formula was fitted to. It is limited to 0 dB/Bark there, so that the
+    excitation never exceeds the masker's own level.
+
     Args:
         dz: Bark distance from the masker (``z_target - z_masker``).
         frq: Masker centre frequency in Hz.
-        masker_level: Masker's own critical band level in dB.
+        masker_level: Masker's own critical band level in dB SPL.
 
     Returns:
         Excitation level (dB) relative to the masker's own level.
@@ -95,7 +104,7 @@ def masking_slope(dz: FloatArray, frq: FloatArray,
     # here to avoid an -inf * 0 = nan at dz == 0 rather than let it propagate.
     safe_level = _np.where(_np.isneginf(masker_level), 0.0, masker_level)
     lower = 27.0 * dz
-    upper = (-24.0 - 230.0/frq + 0.2*safe_level) * dz
+    upper = _np.minimum(-24.0 - 230.0/frq + 0.2*safe_level, 0.0) * dz
     return floatarray(_np.where(dz <= 0, lower, upper))
 
 
@@ -110,7 +119,8 @@ def spread(cbr: FloatArray, resolution: float = 1.0) -> FloatArray:
     time.
 
     Args:
-        cbr: Critical band rate spectrum (intensity/power).
+        cbr: Critical band rate spectrum as mean-square sound pressure per
+            band in Pa².
         resolution: Bark width of one row of ``cbr``. Defaults to the
             standard 1-Bark critical band; pass a smaller value when
             ``cbr`` is a finer-grained excitation pattern (see
@@ -150,10 +160,12 @@ def specific_loudness(cbr: FloatArray) -> FloatArray:
     standardized in DIN 45692: it scales with the 0.23 power of the critical
     band *intensity ratio* (not the dB level itself), so a constant dB step
     produces a constant multiplicative change in loudness. ``cbr`` should be
-    critical band intensities (i.e. power), consistent with ``level()``.
+    critical band intensities as mean-square sound pressure in Pa²,
+    consistent with ``level()``.
 
     Args:
-        cbr: Critical band rate spectrum (intensity/power).
+        cbr: Critical band rate spectrum as mean-square sound pressure per
+            band in Pa².
 
     Returns:
         Specific loudness
@@ -173,7 +185,8 @@ def total_loudness(cbr: FloatArray, spread_input: bool = True) -> FloatArray:
     not on the raw per-band intensities directly.
 
     Args:
-        cbr: Critical band rate spectrum (intensity/power).
+        cbr: Critical band rate spectrum as mean-square sound pressure per
+            band in Pa².
         spread_input: If ``True`` (default), apply ``spread`` (at the
             standard 1-Bark resolution) to ``cbr`` first. Set ``False``
             when ``cbr`` is already a prepared excitation pattern (e.g.
@@ -267,7 +280,9 @@ def excitation_pattern(frqs: FloatArray, power: FloatArray,
 
     Args:
         frqs: Frequency axis in Hz.
-        power: Power spectrum (or spectrogram) aligned with ``frqs``.
+        power: Mean-square sound pressure per bin in Pa², aligned with
+            ``frqs``, such as ``spectral.TransformResult.ms_power`` of a
+            signal in Pa. One spectrum, or a spectrogram.
         resolution: Bark width of the fine spreading grid. Smaller values
             track DIN 45692's calibration more closely, at higher
             computational cost (an O(n^2) masking-spread matrix per time
@@ -318,7 +333,8 @@ def sharpness(cbr_spctrm: FloatArray, spread_input: bool = True) -> FloatArray:
     Peeters citation, section 8.1.3).
 
     Args:
-        cbr_spctrm: Critical band rate Spectrogram
+        cbr_spctrm: Critical band rate spectrogram as mean-square sound
+            pressure per band in Pa²
         spread_input: If ``True`` (default), apply ``spread`` (at the
             standard 1-Bark resolution) to ``cbr_spctrm`` first. Set
             ``False`` when ``cbr_spctrm`` is already a prepared excitation
