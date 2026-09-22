@@ -24,12 +24,17 @@ import scipy.fft as _spf
 from . import filter as _filter
 from . models import (CepstralParams, CepstrumParams, MfccParams, StftParams,
                       TriangFilterSpec)
-from . spectral import Spectrogram, Stft
+from . spectral import Spectrogram, Stft, full_scale_db
 from .. typing import FloatArray, floatarray
 
 
 ENERGY_FLOOR = 1e-10
-"""Smallest band energy considered non-zero, see :func:`log_mel_energies`."""
+"""Default floor of :func:`log_mel_energies`, in the units of the power passed.
+
+That is -100 dB, and hence -100 dBFS for power at the default, calibrated STFT
+scaling. The transforms do not use it: they convert ``floor_dbfs`` into the
+units of their own power spectrum instead, see :func:`spectral.full_scale_db`.
+"""
 
 
 def log_mel_energies(power: FloatArray, fbank: FloatArray,
@@ -53,7 +58,7 @@ def log_mel_energies(power: FloatArray, fbank: FloatArray,
     Args:
         power:  Power spectrum, shaped ``(n_frqs, n_segments)``
         fbank:  Filter bank, shaped ``(n_filters, n_frqs)``
-        floor:  Lower bound on the band energies
+        floor:  Lower bound on the band energies, in the units of ``power``
 
     Returns:
         Log band energies in dB, shaped ``(n_filters, n_segments)``.
@@ -200,9 +205,11 @@ class MelCepstrogram:
 class Mfcc:
     """Mel-frequency cepstral coefficients of a signal"""
 
+    # pylint: disable = R0913
     def __init__(self, stft: StftParams, fb: TriangFilterSpec,
                  cepstrum: CepstrumParams | None = None,
-                 preemphasis: float = 0.97) -> None:
+                 preemphasis: float = 0.97,
+                 floor_dbfs: float = -100.0) -> None:
         """Transform a signal to Mel-frequency cepstral coefficients.
 
         The transform owns the whole chain: pre-emphasis of the signal, the
@@ -221,11 +228,36 @@ class Mfcc:
                           defaults of ``CepstrumParams``
             preemphasis:  Pre-emphasis coefficient applied to the signal.
                           ``0.0`` disables it
+            floor_dbfs:   Lowest band level retained, in dB relative to a
+                          full-scale sinusoid. Band energies below it are
+                          raised to it before the logarithm
+
+        The floor bounds the dynamic range the logarithm sees. Far below the
+        loudest part of a signal, band energies hold dither, quantization
+        noise and leakage rather than signal, and the logarithm magnifies
+        their fluctuation; the DCT would spread it over every coefficient.
+
+        ``floor_dbfs`` is converted into the units of the STFT's power
+        spectrum, so it denotes the same level whatever ``stft.norm`` and
+        ``stft.single_sided`` are. Being fixed rather than taken from the
+        data, it floors each segment independently of all others: cutting
+        the signal into chunks, or adding a loud event elsewhere, leaves the
+        coefficients of a segment unchanged. The reference is the full scale
+        of the input, though. Peak-normalizing the signal first, as
+        ``AudioFile.read(norm=True)`` does, turns it into a per-file
+        reference and gives that independence up.
+
+        The default suits 16-bit audio. It sits some 10 to 25 dB above the
+        quantization noise of each band -- close enough to discard little
+        signal, far enough that the noise cannot move a band by more than a
+        fraction of a decibel. Material with a higher noise floor of its own,
+        such as most acoustic recordings, warrants a higher floor.
 
         Raises:
             ValueError: If more cepstral coefficients are requested than the
-                        filter bank has filters, or if the filter bank cannot
-                        be built on the frequency axis implied by ``stft``
+                        filter bank has filters, if the filter bank cannot
+                        be built on the frequency axis implied by ``stft``,
+                        or if ``floor_dbfs`` is not finite
         """
         self._stft = Stft(fps=stft.fps, n_perseg=stft.n_perseg,
                           n_overlap=stft.n_overlap, window=stft.window,
@@ -234,7 +266,8 @@ class Mfcc:
                           extend=stft.extend, pad=stft.pad)
         self._params = MfccParams(stft=self._stft.params, fb=fb,
                                   cepstrum=cepstrum or CepstrumParams(),
-                                  preemphasis=preemphasis)
+                                  preemphasis=preemphasis,
+                                  floor_dbfs=floor_dbfs)
         self._fbank = _build_fbank(_rfftfreq(self._stft.params), fb)
 
     def transform(self, data: FloatArray) -> MelCepstrogram:
@@ -261,7 +294,8 @@ class MfccSpectrogram:
     """Mel-frequency cepstral coefficients of an existing ``Spectrogram``"""
 
     def __init__(self, fb: TriangFilterSpec,
-                 cepstrum: CepstrumParams | None = None) -> None:
+                 cepstrum: CepstrumParams | None = None,
+                 floor_dbfs: float = -100.0) -> None:
         """Transform a spectrogram to Mel-frequency cepstral coefficients.
 
         Use this transform to reuse a Short Time Fourier Transform that has
@@ -278,15 +312,20 @@ class MfccSpectrogram:
         stays the same.
 
         Args:
-            fb:        Specification of the triangular filter bank
-            cepstrum:  Parameters of the cepstrum. If ``None``, use the
-                       defaults of ``CepstrumParams``
+            fb:          Specification of the triangular filter bank
+            cepstrum:    Parameters of the cepstrum. If ``None``, use the
+                         defaults of ``CepstrumParams``
+            floor_dbfs:  Lowest band level retained, in dB relative to a
+                         full-scale sinusoid. It is converted into the units
+                         of each spectrogram's power by the spectrogram's own
+                         params, see :class:`Mfcc` for the rationale
 
         Raises:
             ValueError: If more cepstral coefficients are requested than the
-                        filter bank has filters
+                        filter bank has filters, or if ``floor_dbfs`` is not
+                        finite
         """
-        self._params = CepstralParams(fb=fb,
+        self._params = CepstralParams(fb=fb, floor_dbfs=floor_dbfs,
                                       cepstrum=cepstrum or CepstrumParams())
         self._frqs: FloatArray | None = None
         self._fbank: FloatArray | None = None
@@ -311,6 +350,7 @@ class MfccSpectrogram:
             self._fbank = fbank
             self._frqs = data.frqs
         params = MfccParams(stft=data.params, fb=self._params.fb,
+                            floor_dbfs=self._params.floor_dbfs,
                             cepstrum=self._params.cepstrum, preemphasis=None)
         return _assemble(data, fbank, params)
 
@@ -362,7 +402,8 @@ def _assemble(sxx: Spectrogram, fbank: FloatArray,
     Returns:
         Cepstral coefficients and the stages they came from.
     """
-    energies = log_mel_energies(sxx.power, fbank)
+    floor = 10**((params.floor_dbfs + full_scale_db(params.stft)) / 10)
+    energies = log_mel_energies(sxx.power, fbank, floor)
     coefs = cepstral_coefs(energies, params.cepstrum.dct_type,
                            params.cepstrum.n_coefs,
                            params.cepstrum.lifter_gain)

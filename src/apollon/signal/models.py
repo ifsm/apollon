@@ -1,7 +1,7 @@
 # pylint: disable = C0114, C0115, R0903
 
 from typing import Self, Literal
-from pydantic import BaseModel, model_validator, PositiveInt
+from pydantic import BaseModel, FiniteFloat, model_validator, PositiveInt
 
 
 Normalization = Literal["amplitude", "ortho"]
@@ -60,6 +60,7 @@ class CepstrumParams(BaseModel):
 
 class CepstralParams(BaseModel):
     fb: TriangFilterSpec
+    floor_dbfs: FiniteFloat = -100.0
     cepstrum: CepstrumParams = CepstrumParams()
 
     @model_validator(mode="after")

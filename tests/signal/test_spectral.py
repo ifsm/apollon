@@ -11,7 +11,7 @@ from pydantic import ValidationError
 from apollon.segment import ArraySegmentation
 from apollon.segment.models import SegmentationParams
 from apollon.signal.models import StftParams
-from apollon.signal.spectral import fft, Dft, Stft, StftSegments
+from apollon.signal.spectral import fft, full_scale_db, Dft, Stft, StftSegments
 from apollon.signal.tools import sinusoid
 
 
@@ -362,6 +362,48 @@ class TestStftNorm(unittest.TestCase):
             StftParams.model_validate_json(
                     '{"fps": 9000, "norm": true, "n_perseg": 512,'
                     ' "n_overlap": 256, "extend": true, "pad": true}')
+
+
+class TestFullScaleDb(unittest.TestCase):
+    """``full_scale_db`` must agree with what ``fft`` actually produces."""
+
+    fps = 9000
+    n_perseg = 512
+
+    def _peak_db(self, **kwargs) -> tuple[float, float]:
+        stft = Stft(fps=self.fps, n_perseg=self.n_perseg,
+                    n_overlap=self.n_perseg//2, extend=False, pad=False,
+                    **kwargs)
+        n_fft = kwargs.get('n_fft') or self.n_perseg
+        # a unit sinusoid on bin 50 of the n_fft grid, far from DC and Nyquist
+        sig = sinusoid(self.fps * 50 / n_fft, 1.0, fps=self.fps)
+        peak = 10 * np.log10(stft.transform(sig).power.max())
+        return peak, full_scale_db(stft.params)
+
+    def test_matches_a_full_scale_sinusoid(self) -> None:
+        for window in (None, 'hamming', 'hann'):
+            for norm in (None, 'ortho', 'amplitude'):
+                for single_sided in (True, False):
+                    with self.subTest(window=window, norm=norm,
+                                      single_sided=single_sided):
+                        peak, expected = self._peak_db(
+                            window=window, norm=norm,
+                            single_sided=single_sided)
+                        self.assertAlmostEqual(peak, expected, places=9)
+
+    def test_accounts_for_zero_padding(self) -> None:
+        """``'ortho'`` divides by the FFT length, not the window length."""
+        for norm in (None, 'ortho', 'amplitude'):
+            with self.subTest(norm=norm):
+                peak, expected = self._peak_db(window='hann', norm=norm,
+                                               n_fft=2*self.n_perseg)
+                self.assertAlmostEqual(peak, expected, places=9)
+
+    def test_is_zero_under_the_default_scaling(self) -> None:
+        """The default scaling is calibrated to full scale already."""
+        params = Stft(fps=self.fps, n_perseg=self.n_perseg,
+                      n_overlap=self.n_perseg//2, window='hamming').params
+        self.assertEqual(full_scale_db(params), 0.0)
 
 
 if __name__ == '__main__':

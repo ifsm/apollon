@@ -11,7 +11,7 @@ from apollon.signal.cepstral import (ENERGY_FLOOR, MelCepstrogram, Mfcc,
                                      log_mel_energies)
 from apollon.signal.filter import mel_space, preemphasis, triangular_filter_bank
 from apollon.signal.models import CepstrumParams, StftParams, TriangFilterSpec
-from apollon.signal.spectral import Stft
+from apollon.signal.spectral import Stft, full_scale_db
 from apollon.signal.tools import sinusoid
 
 
@@ -180,6 +180,73 @@ class TestMfcc(TestCase):
         self.assertFalse(np.allclose(mfcc.transform(self.sig).coefs,
                                      self.mfcc.transform(self.sig).coefs))
 
+    def test_floor_dbfs_defaults_to_minus_100(self) -> None:
+        self.assertEqual(self.mfcc.params.floor_dbfs, -100.0)
+
+    def test_default_floor_is_energy_floor(self) -> None:
+        """Under the default, calibrated scaling -100 dBFS is ``1e-10``."""
+        sxx = Stft(fps=FPS, n_perseg=N_PERSEG, n_overlap=N_PERSEG//2,
+                   window="hamming").transform(self.sig)
+        res = MfccSpectrogram(fb=self.fb).transform(sxx)
+        self.assertTrue(np.array_equal(
+            res.log_mel_energies, log_mel_energies(sxx.power, res.filter_bank)))
+
+    def _silent_tail(self) -> np.ndarray:
+        sig = self.sig.copy()
+        sig[sig.shape[0]//2:] = 0.0
+        return sig
+
+    def test_silence_reads_the_floor_in_every_scaling(self) -> None:
+        """A silent frame sits exactly at ``floor_dbfs``, shifted into the
+        units of the power spectrum by ``full_scale_db``."""
+        for norm in (None, "ortho", "amplitude"):
+            for single_sided in (True, False):
+                with self.subTest(norm=norm, single_sided=single_sided):
+                    mfcc = Mfcc(stft=stft_params(norm=norm,
+                                                 single_sided=single_sided),
+                                fb=self.fb, preemphasis=0.0, floor_dbfs=-60.0)
+                    lme = mfcc.transform(self._silent_tail()).log_mel_energies
+                    self.assertAlmostEqual(
+                        lme.min(), -60.0 + full_scale_db(mfcc.params.stft),
+                        places=9)
+
+    def test_floor_survives_changes_to_the_stft_scaling(self) -> None:
+        """Signal and floor move together, so the log energies of two
+        scalings differ by one constant everywhere, floored cells included.
+
+        With a floor fixed in the power's own units, floored cells would stay
+        put while the signal moved, and the offset would not be constant.
+        """
+        sig = self._silent_tail()
+        base = Mfcc(stft=stft_params(), fb=self.fb, preemphasis=0.0,
+                    floor_dbfs=-60.0)
+        ref = base.transform(sig).log_mel_energies
+        for norm in (None, "ortho"):
+            for single_sided in (True, False):
+                with self.subTest(norm=norm, single_sided=single_sided):
+                    mfcc = Mfcc(stft=stft_params(norm=norm,
+                                                 single_sided=single_sided),
+                                fb=self.fb, preemphasis=0.0, floor_dbfs=-60.0)
+                    lme = mfcc.transform(sig).log_mel_energies
+                    offset = full_scale_db(mfcc.params.stft)
+                    self.assertTrue(np.allclose(lme - ref, offset,
+                                                rtol=0, atol=1e-9))
+
+    def test_a_loud_event_leaves_other_frames_alone(self) -> None:
+        """The floor is fixed, so no segment depends on another."""
+        mfcc = Mfcc(stft=stft_params(), fb=self.fb, floor_dbfs=-60.0)
+        clicked = self.sig.copy()
+        clicked[:64] = 10.0
+        plain = mfcc.transform(self.sig).coefs
+        loud = mfcc.transform(clicked).coefs
+        self.assertTrue(np.array_equal(plain[:, 5:], loud[:, 5:]))
+
+    def test_non_finite_floor_raises(self) -> None:
+        for bad in (float("inf"), float("-inf"), float("nan")):
+            with self.subTest(floor_dbfs=bad):
+                with self.assertRaises(ValidationError):
+                    Mfcc(stft=stft_params(), fb=self.fb, floor_dbfs=bad)
+
     def test_zero_preemphasis_leaves_signal_unchanged(self) -> None:
         plain = Mfcc(stft=stft_params(), fb=self.fb, preemphasis=0.0)
         sxx = Stft(fps=FPS, n_perseg=N_PERSEG, n_overlap=N_PERSEG//2,
@@ -244,6 +311,19 @@ class TestMfccSpectrogram(TestCase):
         self.assertEqual(first.filter_bank.shape[1], first.frqs.shape[0])
         self.assertEqual(second.filter_bank.shape[1], second.frqs.shape[0])
         self.assertNotEqual(first.filter_bank.shape, second.filter_bank.shape)
+
+    def test_floor_is_converted_by_the_spectrogram_params(self) -> None:
+        """The floor lands at ``floor_dbfs`` on whatever scale the
+        spectrogram was computed with."""
+        sig = self.sig.copy()
+        sig[sig.shape[0]//2:] = 0.0
+        raw = Stft(fps=FPS, n_perseg=N_PERSEG, n_overlap=N_PERSEG//2,
+                   window="hamming", norm=None, single_sided=False)
+        sxx = raw.transform(sig)
+        lme = MfccSpectrogram(fb=self.fb, floor_dbfs=-60.0).transform(
+                sxx).log_mel_energies
+        self.assertAlmostEqual(lme.min(), -60.0 + full_scale_db(sxx.params),
+                               places=9)
 
     def test_params_hold_only_the_cepstral_stage(self) -> None:
         self.assertEqual(self.mfcc.params.fb, self.fb)

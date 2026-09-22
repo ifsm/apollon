@@ -103,6 +103,40 @@ def _paired_bins(n_fft: int) -> slice:
     return slice(1, -1 if n_fft % 2 == 0 else None)
 
 
+def full_scale_db(params: StftParams) -> float:
+    """Compute the level at which full scale appears in the power spectrum.
+
+    ``Spectrogram.power`` carries the scale of the transform that produced
+    it. That scale is set by ``norm`` and ``single_sided``, and depends on the
+    window and the FFT length besides. This returns where a full-scale
+    sinusoid -- unit amplitude, centred on a paired bin -- lands on that
+    scale, so that a level stated in dB relative to full scale can be
+    converted into the units of the power spectrum by adding it.
+
+    Under the default scaling, ``norm='amplitude'`` with
+    ``single_sided=True``, the result is 0 dB: power is then calibrated to
+    full scale already.
+
+    Args:
+        params:  Parameters of the Short Time Fourier Transform
+
+    Returns:
+        Level of a full-scale sinusoid in dB, in the units of the power
+        spectrum.
+    """
+    win_sum = abs(_sps.get_window(params.window or 'rect', params.n_perseg).sum())
+    n_fft = params.n_perseg if params.n_fft is None else params.n_fft
+
+    peak = win_sum / 2      # |rfft| of a unit sinusoid on a paired bin
+    if params.norm == 'amplitude':
+        peak /= win_sum
+    elif params.norm == 'ortho':
+        peak /= np.sqrt(n_fft)
+    if params.single_sided:
+        peak *= np.sqrt(2) if params.norm == 'ortho' else 2
+    return float(20 * np.log10(peak))
+
+
 class TransformResult(ABC):
     """Base class for transformation results"""
     def __init__(self, bins: ComplexArray) -> None:
