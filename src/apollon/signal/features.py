@@ -312,10 +312,11 @@ def spl(inp: FloatArray, ref: float = _defaults.SPL_REF) -> FloatArray:
         ref:  Reference level.
 
     Returns:
-        Average sound pressure level.
+        Average sound pressure level. Silent channels read ``-inf``.
     """
-    level = rms(inp)/ref
-    _np.log10(level, where=level>0, out=level)
+    ratio = rms(inp)/ref
+    level = _np.full_like(ratio, -_np.inf)
+    _np.log10(ratio, where=ratio>0, out=level)
     _np.multiply(level, 20.0, out=level)
     return level
 

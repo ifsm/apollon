@@ -65,6 +65,14 @@ class TestSpl(unittest.TestCase):
         res = features.spl(sig)
         self.assertEqual(res, 0.0)
 
+    def test_silence_is_minus_inf(self) -> None:
+        """Silence lies below any level, not at the reference."""
+        sig = np.zeros((100, 2))
+        sig[:, 1] = 1.0
+        res = features.spl(sig)
+        self.assertEqual(res[0, 0], -np.inf)
+        self.assertAlmostEqual(res[0, 1], 20*np.log10(1/SPL_REF))
+
 
 class TestRms(unittest.TestCase):
 

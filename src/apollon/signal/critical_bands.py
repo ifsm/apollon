@@ -332,12 +332,16 @@ def sharpness(cbr_spctrm: FloatArray, spread_input: bool = True) -> FloatArray:
             twice.
 
     Returns:
-        Sharpness for each time instant of the ``cbr_spctrm``.
+        Sharpness for each time instant of the ``cbr_spctrm``. Silent time
+        instants have no loudness to weight and read 0.
     """
     if spread_input:
         cbr_spctrm = spread(cbr_spctrm)
-    loud_specific = _np.maximum(specific_loudness(cbr_spctrm), _np.finfo('float64').eps) # pylint: disable=E1101
+    loud_specific = specific_loudness(cbr_spctrm)
     loud_total = loud_specific.sum(axis=0)
 
     cbrs = _np.arange(cbr_spctrm.shape[0], dtype='float64') + 0.5
-    return floatarray(0.11 * ((cbrs * weight_factor(cbrs)) @ loud_specific) / loud_total)
+    weighted = (cbrs * weight_factor(cbrs)) @ loud_specific
+    out = _np.zeros_like(loud_total, dtype='float64')
+    _np.divide(weighted, loud_total, out=out, where=loud_total > 0)
+    return floatarray(0.11 * out)

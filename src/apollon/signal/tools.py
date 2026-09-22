@@ -188,7 +188,10 @@ def white_noise(level: float, n_samples: int = 9000) -> FloatArray:
 
 
 def normalize(sig: FloatArray) -> FloatArray:
-    """Normlize a signal to [-1.0, 1.0].
+    """Normalize a signal to [-1.0, 1.0].
+
+    Each channel is divided by its own peak amplitude. Silent channels have
+    no peak and are returned as zeros.
 
     Args:
         sig: Input signal
@@ -196,7 +199,8 @@ def normalize(sig: FloatArray) -> FloatArray:
     Return:
         Normalized signal
     """
-    return sig / maxamp(sig)
+    peak = maxamp(sig)
+    return floatarray(sig / np.where(peak > 0, peak, 1.0))
 
 
 def sinusoid(frqs: Sequence[float] | float,

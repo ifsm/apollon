@@ -142,6 +142,17 @@ class TestSharpness(unittest.TestCase):
                   for band in (2, 8, 14, 17, 20)]
         self.assertTrue(np.all(np.diff(values) > 0))
 
+    def test_silence_reads_zero(self):
+        """A silent frame has no loudness to weight, and leaves the other
+        frames untouched."""
+        spctrm = np.random.default_rng(4).random((self.n_bands, 3)) * 1e-3
+        with_silence = spctrm.copy()
+        with_silence[:, 1] = 0.0
+        res = sharpness(with_silence)
+        self.assertEqual(res[1], 0.0)
+        self.assertTrue(np.allclose(res[[0, 2]], sharpness(spctrm)[[0, 2]]))
+        self.assertEqual(sharpness(np.zeros(self.n_bands)), 0.0)
+
     def test_weighting_onset(self):
         """The exponential weighting switches on above roughly 16 Bark."""
         self.assertEqual(weight_factor(np.array([15.5]))[0], 1.0)

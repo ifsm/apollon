@@ -61,6 +61,22 @@ class TestCorrCoefPearson(unittest.TestCase):
         self.assertTrue(np.allclose(res, expected))
 
 
+class TestNormalize(unittest.TestCase):
+    def test_scales_each_channel_to_unit_peak(self):
+        sig = np.array([[0.5, -2.0], [-0.25, 1.0]])
+        res = tools.normalize(sig)
+        self.assertTrue(np.allclose(np.abs(res).max(axis=0), 1.0))
+        self.assertTrue(np.allclose(res, [[1.0, -1.0], [-0.5, 0.5]]))
+
+    def test_silent_channel_stays_zero(self):
+        sig = np.zeros((10, 2))
+        sig[:, 1] = np.linspace(-2.0, 1.0, 10)
+        with np.errstate(all='raise'):
+            res = tools.normalize(sig)
+        self.assertTrue(np.all(res[:, 0] == 0.0))
+        self.assertAlmostEqual(np.abs(res[:, 1]).max(), 1.0)
+
+
 class TestLimit(unittest.TestCase):
     def setUp(self):
         self.inp = tools.amp([20.0, 40.0, 60.0])
