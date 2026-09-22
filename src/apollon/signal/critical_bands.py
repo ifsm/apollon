@@ -2,7 +2,6 @@
 Critical band helpers
 """
 import numpy as _np
-from scipy.signal.windows import get_window as _get_window
 
 from .. import _defaults
 from .. typing import FloatArray, floatarray
@@ -203,18 +202,16 @@ def total_loudness(cbr: FloatArray, spread_input: bool = True) -> FloatArray:
 def filter_bank(frqs: FloatArray, resolution: float = 1.0) -> FloatArray:
     """Return a critical band rate scaled filter bank.
 
-    Each filter is triangular, which lower and upper cuttoff frequencies
-    set to lower and upper bound of the given critical band rate.
+    Each row sums the power of the bins that fall into one Bark band of
+    width ``resolution``. Every bin belongs to exactly one band, with weight
+    one. The bands hence add up to the total power, and a tone contributes
+    the same power wherever it falls within its band.
 
     Row ``i`` of the returned filter bank always corresponds to Bark band
     ``i`` (of width ``resolution``). A band with no frequency bin in
     ``frqs`` gets an all-zero row rather than being omitted, so the row
     count and row-to-band mapping don't depend on how densely ``frqs``
     happens to sample the Bark scale.
-
-    Each band's triangular window is rescaled to sum to exactly the number
-    of bins it contains, so a band's total gain on a flat spectrum scales
-    with its bin count rather than fluctuating with the bin count's parity.
 
     Args:
         frqs:   Frequency axis in Hz
@@ -231,17 +228,10 @@ def filter_bank(frqs: FloatArray, resolution: float = 1.0) -> FloatArray:
     """
     if resolution <= 0:
         raise ValueError('resolution must be positive.')
-    z_frq = frq2cbr(frqs) / resolution
-    bands = z_frq.astype(int)
+    bands = (frq2cbr(frqs) / resolution).astype(int)
     n_bands = int(bands.max()) + 1 if bands.size else 0
-    fbank = _np.zeros((n_bands, z_frq.size))
-
-    for bnd in range(n_bands):
-        idx, = _np.nonzero(bands==bnd)
-        if idx.size:
-            window = _get_window('triang', idx.size, False)
-            fbank[bnd, idx] = window * (idx.size / window.sum())
-
+    fbank = _np.zeros((n_bands, bands.size))
+    fbank[bands, _np.arange(bands.size)] = 1.0
     return fbank
 
 

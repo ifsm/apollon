@@ -33,14 +33,16 @@ class TestFilterBank(unittest.TestCase):
         frqs = np.sort(frqs)
         fbank = filter_bank(frqs)
 
-        self.assertTrue(np.all(fbank >= 0))
-        # Each band's window is rescaled so its *sum* equals its bin count,
-        # not so its *peak* stays at 1 -- the peak approaches (but stays
-        # below) 2 as a band's bin count grows.
-        self.assertTrue(np.all(fbank <= 2))
+        # Every bin belongs to exactly one band, with weight one.
+        self.assertTrue(np.all((fbank == 0.0) | (fbank == 1.0)))
+        self.assertTrue(np.all(fbank.sum(axis=0) == 1.0))
 
-        non_zero_counts = np.sum(fbank > 0, axis=0)
-        self.assertTrue(np.all(non_zero_counts <= 1))
+    def test_conserves_power(self):
+        """The bands add up to the total power."""
+        frqs = np.fft.rfftfreq(2048, 1/44100)
+        power = np.random.default_rng(0).random(frqs.size)
+        fbank = filter_bank(frqs, resolution=0.1)
+        self.assertAlmostEqual((fbank @ power).sum(), power.sum())
 
     def test_empty_input(self):
         """Prüft das Verhalten bei leerem Input."""

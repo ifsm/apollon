@@ -122,6 +122,16 @@ class TestLoudness(unittest.TestCase):
         self.assertTrue(np.all(quiet >= 0))
         self.assertGreater(loud.item(), quiet.item())
 
+    def test_independent_of_position_in_band(self):
+        """Equal tones within one critical band read nearly equally loud,
+        wherever they fall in the model's analysis bands."""
+        fps = 44100
+        dft = Dft(fps=fps, window=None)
+        amp = SPL_REF * 10**(60/20) * np.sqrt(2)
+        loud = [features.loudness(dft.transform(sinusoid(frq, amp, fps=fps))).item()
+                for frq in range(920, 1081, 2)]
+        self.assertLess(max(loud) / min(loud), 1.05)
+
 
 class TestSharpness(unittest.TestCase):
 
