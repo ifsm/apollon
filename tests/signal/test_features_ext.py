@@ -28,6 +28,30 @@ def embed(sig, delay, m_dim):
                     axis=1)
 
 
+def cdim_bader_reference(snd, delay, m_dim, n_bins, scaling_size):
+    """Direct implementation of ``corr_dim_bader``.
+
+    The C code takes the distances between each of the first 2390 embedded
+    vectors and every vector from itself onward, i.e., the upper triangle of
+    the distance matrix including its zero diagonal.
+    """
+    n_vectors = 2390
+    vecs = embed(snd[:n_vectors+(m_dim-1)*delay].astype(float), delay, m_dim)
+    dists = np.concatenate([np.zeros(n_vectors), pdist(vecs)])
+    step = max(int(dists.max() / n_bins), 1)
+
+    hist = np.zeros(n_bins, dtype=int)
+    hist[0] = np.count_nonzero(dists < 1.0)
+    idx = ((np.floor(dists) - 1.0) / step).astype(int)
+    np.add.at(hist, idx[(dists >= 1.0) & (idx+2 < n_bins)] + 1, 1)
+    sums = np.cumsum(hist)
+
+    lo = int(np.argmax(hist[:int(n_bins*3/5)]))
+    hi = lo + scaling_size
+    return ((np.log(sums[hi]/dists.size) - np.log(sums[lo]/dists.size))
+            / (np.log(hi*step + 1.0) - np.log(lo*step + 1.0)))
+
+
 class ExtensionTestCase(unittest.TestCase):
     """Shared inputs."""
 
@@ -200,6 +224,20 @@ class TestResults(ExtensionTestCase):
     def test_cdim_bader_is_finite(self):
         out = _features.cdim_bader(self.snd, self.delay, self.m_dim, 1000, 10)
         self.assertTrue(np.isfinite(out))
+
+    def test_cdim_bader_matches_reference(self):
+        """The optimized distance loop computes the same distances as a
+        direct implementation. The samples are integers, so every squared
+        distance is exact."""
+        t = np.arange(3000) / 3000
+        x = (0.2*np.sin(2*np.pi*300*t) + 0.1*np.sin(2*np.pi*600*t)
+             + 0.01*np.random.default_rng(0).normal(size=3000))
+        snd = fti16(x.reshape(-1, 1)).ravel()
+        for args in ((14, 3, 1000, 10), (14, 40, 1000, 10), (7, 20, 500, 5)):
+            with self.subTest(args=args):
+                out = _features.cdim_bader(snd, *args)
+                self.assertAlmostEqual(out, cdim_bader_reference(snd, *args),
+                                       places=12)
 
 
 if __name__ == '__main__':

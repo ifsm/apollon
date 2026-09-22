@@ -203,23 +203,37 @@ corr_dim_bader (const short *snd, const size_t delay, const size_t m_dim,
      * definition. Moreover, the remaining distances are computed twice, i. e.,
      * the vectors at (n, m) and (m, n) are computed. Additionally, many other
      * distances are omitted.
+     *
+     * The loop over the embedding dimensions runs outside the loop over the
+     * vectors, so that the innermost loop walks contiguous memory and can be
+     * vectorized. Each distance still sums its dimensions in ascending order,
+     * which leaves the result unchanged.
      */
     for (size_t i = 0, cnt = 0; i < n_samples-bound; i++)
     {
-        for (size_t j = 0; j < n_samples-bound-i; j++)
+        const size_t n_row = n_samples - bound - i;
+        double *row = dists + cnt;
+
+        for (size_t m = 0; m < m_dim; m++)
         {
-            for (size_t m = 0; m < m_dim; m++)
+            const double ref = (double) snd[i+m*delay];
+            const short *other = snd + i + m*delay;
+            for (size_t j = 0; j < n_row; j++)
             {
-                double diff = (double) (snd[i+m*delay] - snd[i+j+m*delay]);
-                dists[cnt] += diff * diff;
+                double diff = ref - (double) other[j];
+                row[j] += diff * diff;
             }
-            dists[cnt] = sqrt (dists[cnt]);
-            if (dists[cnt] > dist_max)
-            {
-                dist_max = dists[cnt];
-            }
-            cnt++;
         }
+
+        for (size_t j = 0; j < n_row; j++)
+        {
+            row[j] = sqrt (row[j]);
+            if (row[j] > dist_max)
+            {
+                dist_max = row[j];
+            }
+        }
+        cnt += n_row;
     }
 
     /* Spread the histogram over the full range of distances, so that
