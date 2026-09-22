@@ -279,16 +279,21 @@ def spectral_flux(inp: FloatArray, delta: float = 1.0,
                   total: bool = True) -> FloatArray:
     r"""Estimate the spectral flux
 
+    The flux of a frame is the rectified increase of each bin over the
+    preceding frame. The first frame has no predecessor and reads 0.
+
     Args:
-        inp:    Input data. Each row is assumend DFT bins.
-        delta:  Sample spacing.
-        total:  Accumulate over first axis.
+        inp:    Magnitude spectrogram, shaped ``(n_frqs, n_frames)``. Each
+                column is a spectrum.
+        delta:  Spacing of the frames. The differences are divided by it.
+        total:  If ``True``, sum over the frequency axis.
 
     Returns:
-        Array of Spectral flux.
+        Spectral flux per frame, shaped ``(1, n_frames)``, or per bin and
+        frame if ``total`` is ``False``.
 
     Note:
-        Spextral flux is computed by
+        Spectral flux is computed by
 
         .. math::
             SF(i) = \sum_{j=0}^k H(|X_{i,j}| - |X_{i-1,j}|) \,,
@@ -297,8 +302,8 @@ def spectral_flux(inp: FloatArray, delta: float = 1.0,
         th spectrum :math:`X` of a spectrogram :math:`\boldsymbol X`.
     """
     inp = _np.atleast_2d(inp).astype('float64')
-    out = _np.empty_like(inp, dtype=_np.double)
-    _np.maximum(_np.gradient(inp, delta, axis=-1), 0, out=out)
+    out = _np.diff(inp, axis=-1, prepend=inp[..., :1]) / delta
+    _np.maximum(out, 0, out=out)
     if total:
         return floatarray(out.sum(axis=0, keepdims=True))
     return out

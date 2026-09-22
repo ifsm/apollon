@@ -119,6 +119,29 @@ class TestSpectralSpread(unittest.TestCase):
 
 
 
+class TestSpectralFlux(unittest.TestCase):
+    def setUp(self):
+        self.step = np.zeros((4, 6))
+        self.step[:, 3:] = 1.0
+
+    def test_onset_appears_in_its_own_frame(self):
+        """An increase from frame 2 to frame 3 shows in frame 3 only."""
+        flux = features.spectral_flux(self.step)
+        self.assertTrue(np.array_equal(flux, [[0, 0, 0, 4, 0, 0]]))
+
+    def test_decrease_is_ignored(self):
+        self.assertTrue(np.all(features.spectral_flux(1 - self.step) == 0))
+
+    def test_delta_divides_the_differences(self):
+        flux = features.spectral_flux(self.step, delta=0.5)
+        self.assertTrue(np.array_equal(flux, [[0, 0, 0, 8, 0, 0]]))
+
+    def test_per_bin(self):
+        flux = features.spectral_flux(self.step, total=False)
+        self.assertEqual(flux.shape, (4, 6))
+        self.assertTrue(np.all(flux[:, 3] == 1))
+
+
 class TestLoudness(unittest.TestCase):
 
     def test_scales_with_signal_level(self):
